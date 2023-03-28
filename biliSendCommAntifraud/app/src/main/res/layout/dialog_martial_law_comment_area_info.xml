@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="18dp"
+        android:layout_marginLeft="24dp"
+        android:layout_marginRight="20dp"
+        android:orientation="vertical">
+        <TableLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:shrinkColumns="1">
+            <TableRow
+                android:layout_marginVertical="5dp">
+                <TextView
+                    android:text="标题"
+                    />
+
+                <TextView
+                    android:id="@+id/txv_title"
+                    android:layout_marginLeft="10dp"
+                    android:textIsSelectable="true"/>
+            </TableRow>
+            <TableRow
+                android:layout_marginVertical="5dp">
+                <TextView
+                    android:text="UP主"/>
+                <TextView
+                    android:id="@+id/txv_up"
+                    android:layout_marginLeft="10dp"
+                    android:textIsSelectable="true"
+                    />
+            </TableRow>
+            <TableRow
+                android:layout_marginVertical="5dp">
+                <TextView
+                    android:text="默认控评方式"/>
+                <TextView
+                    android:id="@+id/txv_band_type"
+                    android:layout_marginLeft="10dp"
+                    android:textIsSelectable="true"/>
+            </TableRow>
+            <TableRow
+                android:layout_marginVertical="5dp">
+
+                <TextView android:text="评论区源ID" />
+
+                <TextView
+                    android:id="@+id/txv_source_id"
+                    android:layout_marginLeft="10dp"
+                    android:textIsSelectable="true"/>
+            </TableRow>
+            <TableRow
+                android:layout_marginVertical="5dp">
+                <TextView
+                    android:text="评论区oid"/>
+                <TextView
+                    android:id="@+id/txv_oid"
+                    android:layout_marginLeft="10dp"
+                    android:layout_width="0dp"
+                    android:textIsSelectable="true"
+                    />
+            </TableRow>
+
+            <TableRow
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginVertical="5dp">
+
+                <TextView android:text="评论区类型" />
+
+                <TextView
+                    android:id="@+id/txv_area_type"
+                    android:layout_marginLeft="10dp"
+                    android:textIsSelectable="true" />
+            </TableRow>
+
+        </TableLayout>
+
+    </LinearLayout>
+</LinearLayout>
