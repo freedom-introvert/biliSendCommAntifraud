@@ -1,0 +1,22 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.BiliSendCommAntifraud" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/pink</item>
+        <item name="colorPrimaryDark">@color/pink</item>
+        <item name="titleTextColor">@color/white</item>
+        <item name="windowActionBar">true</item>
+        <item name="colorAccent">@color/pink</item>
+    </style>
+
+    <style name="Theme.BiliSendCommAntifraud.HasActionBar" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/pink</item>
+        <item name="colorPrimaryDark">@color/pink</item>
+        <item name="titleTextColor">@color/white</item>
+        <item name="colorControlNormal">@android:color/white</item>
+        <item name="windowActionBar">true</item>
+        <item name="colorAccent">@color/pink</item>
+    </style>
+
+</resources>
