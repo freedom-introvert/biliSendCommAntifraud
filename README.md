@@ -111,7 +111,7 @@ graph TB
 评论不能正常显示时判断评论状态会发送测试回复评论、测试戒严的评论区会发送测试评论，请注意：申述后，这些自己已经删除的测试评论可能会被恢复，如果通知是“无法恢复”，那么不用管他，如果是“无违规”，请注意去删除测试评论！  
 ## 关于
 ### 讨论交流
-Telegram: [@biliSendCommAntifraud](https://t.me/biliroaming)
+Telegram: [@biliSendCommAntifraud](https://t.me/biliSendCommAntifraud)
 ### LOGO含义
 来自：Never Gonna Give You Up - Rick Astley  
 意为“发送成功”但是你被骗了🤪
