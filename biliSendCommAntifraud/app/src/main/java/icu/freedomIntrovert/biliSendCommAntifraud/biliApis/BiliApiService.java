@@ -1,0 +1,25 @@
+package icu.freedomIntrovert.biliSendCommAntifraud.biliApis;
+
+import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.http.Field;
+import retrofit2.http.FieldMap;
+import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
+import retrofit2.http.Header;
+import retrofit2.http.POST;
+import retrofit2.http.Query;
+
+public interface BiliApiService {
+    @GET("/x/web-interface/view")
+    Call<GeneralResponse<VideoInfo>> getVideoInfoByAid(@Query("aid") long aid);
+    @GET("/x/web-interface/view")
+    Call<GeneralResponse<VideoInfo>> getVideoInfoByBvid(@Query("bvid") String bvid);
+    @FormUrlEncoded
+    @POST("/x/v2/reply/add")
+    Call<GeneralResponse<CommentAddResult>> postComment(@Header ("cookie") String cookie,@FieldMap Map<String, String> map);
+    @FormUrlEncoded
+    @POST("/x/v2/reply/del")
+    Call<Void> deleteComment(@Header ("cookie") String cookie,@Field("csrf") String csrf, @Field("oid") long oid, @Field("type") int type, @Field("rpid") long rpid);
+}

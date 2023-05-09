@@ -1,11 +1,6 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
 
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -14,6 +9,11 @@ import android.util.Base64;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.StatisticsDBOpenHelper;
+import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.MartialLawCommentArea;
 
 public class MartialLawCommentAreaListActivity extends AppCompatActivity {
@@ -65,6 +65,7 @@ public class MartialLawCommentAreaListActivity extends AppCompatActivity {
                 ProgressDialog progressDialog = new ProgressDialog(context);
                 progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
                 progressDialog.setMessage("保存文件中");
+                progressDialog.setCancelable(false);
                 progressDialog.show();
                 new Thread(new Runnable() {
                     @Override
@@ -106,6 +107,7 @@ public class MartialLawCommentAreaListActivity extends AppCompatActivity {
                         });
                     }
                 }).start();
+                break;
             case REQUEST_CODE_IMPORT:
                 ProgressDialog progressDialog1 = new ProgressDialog(context);
                 progressDialog1.setProgressStyle(ProgressDialog.STYLE_SPINNER);

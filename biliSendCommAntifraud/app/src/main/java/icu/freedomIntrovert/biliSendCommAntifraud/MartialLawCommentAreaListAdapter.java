@@ -20,10 +20,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.StatisticsDBOpenHelper;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BandCommentBean;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.MartialLawCommentArea;
+import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 
 public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<MartialLawCommentAreaListAdapter.ViewHolder> {
     ArrayList<MartialLawCommentArea> areaArrayList;
@@ -86,18 +87,18 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
         }
         String defaultDisposalMethod = null;
         switch (area.defaultDisposalMethod) {
-            case BandCommentBean.BANNED_TYPE_SHADOW_BAN:
+            case BannedCommentBean.BANNED_TYPE_SHADOW_BAN:
                 holder.img_band_type.setImageDrawable(context.getDrawable(R.drawable.hide));
                 defaultDisposalMethod = "发评默认仅自己可见";
                 break;
-            case BandCommentBean.BANNED_TYPE_QUICK_DELETE:
+            case BannedCommentBean.BANNED_TYPE_QUICK_DELETE:
                 holder.img_band_type.setImageDrawable(context.getDrawable(R.drawable.deleted));
                 defaultDisposalMethod = "发评立即被系统删除";
                 break;
         }
         holder.txv_default_disposal_method.setText(defaultDisposalMethod);
         String finalDefaultDisposalMethod = defaultDisposalMethod;
-        String finalAreaType = areaType;
+        String finalAreaType = areaType+"(type="+area.areaType+")";
         holder.itemView.setOnClickListener(v -> {
             View dialogView = View.inflate(context, R.layout.dialog_martial_law_comment_area_info, null);
             TextView txv_title = dialogView.findViewById(R.id.txv_title);
@@ -108,7 +109,7 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
             TextView txv_area_type = dialogView.findViewById(R.id.txv_area_type);
             txv_title.setText(area.title);
             txv_up.setText("UP:" + area.up);
-            txv_oid.setText(area.oid);
+            txv_oid.setText(String.valueOf(area.oid));
             txv_source_id.setText(area.sourceId);
             txv_band_type.setText(finalDefaultDisposalMethod);
             txv_area_type.setText(finalAreaType);
@@ -131,15 +132,7 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
                     }).setNegativeButton("打开详情页", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            String url = null;
-                            if (area.areaType == CommentArea.AREA_TYPE_VIDEO) {
-                                url = "https://www.bilibili.com/video/" + area.sourceId;
-                            } else if (area.areaType == CommentArea.AREA_TYPE_ARTICLE) {
-                                url = "https://www.bilibili.com/read/" + area.sourceId;
-                            } else if (area.areaType == CommentArea.AREA_TYPE_DYNAMIC11 || area.areaType == CommentArea.AREA_TYPE_DYNAMIC17) {
-                                url = "https://t.bilibili.com/" + area.sourceId;
-                            }
-                            Uri uri = Uri.parse(url);
+                            Uri uri = Uri.parse(CommentUtil.sourceIdToUrl(area));
                             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                             context.startActivity(intent);
                         }
