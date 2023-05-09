@@ -33,10 +33,10 @@
                 android:layout_marginBottom="3dp"
                 android:background="@drawable/order_edt_note_bg"
                 android:gravity="start"
-                android:hint="BV号、cv号、分享链接"
-                android:maxLines="1"
-                android:lines="1"
+                android:hint="BV号、av号、cv号、分享链接"
                 android:inputType="text"
+                android:lines="1"
+                android:maxLines="1"
                 android:padding="5dp" />
 
 
@@ -56,16 +56,39 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="发送并检测" />
+
             <Button
+                android:id="@+id/btn_send_and_appeal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:id="@+id/btn_send_and_appeal"
-                android:text="发送并申诉"/>
+                android:text="发送并申诉" />
+
+
             <Button
                 android:id="@+id/btn_clean"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="清空输入内容"/>
+                android:text="清空输入内容" />
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+
+                <!-- 作为LSPosed模块，奇葩的问题，只改了java代码，软件再安装没有更新到，改了UI代码才会更新
+                <TextView
+                    android:id="@+id/txv_select_reply"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:maxLines="2"
+                    android:text="Test:73"
+                    android:textColor="@color/black" />
+                    -->
+            </LinearLayout>
+
         </LinearLayout>
 
     </LinearLayout>
@@ -77,8 +100,8 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="@color/white"
-        android:focusable="true"
         android:clickable="true"
+        android:focusable="true"
         android:orientation="vertical">
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -101,206 +124,263 @@
                 app:layout_constraintStart_toStartOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <LinearLayout
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:padding="6dp">
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:text="统计"
-                android:textSize="12sp"/>
-        </LinearLayout>
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/cl_band_comment_sw"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:foreground="?selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true">
+                android:orientation="vertical">
 
-            <FrameLayout
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:padding="6dp">
 
-                android:id="@+id/frameLayout"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:text="统计"
+                        android:textSize="12sp" />
+                </LinearLayout>
 
-                <ImageView
-                    android:layout_width="25dp"
-                    android:layout_height="25dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/record" />
-            </FrameLayout>
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/cl_band_comment_sw"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground">
 
-            <TextView
-                android:id="@+id/textView"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginStart="5dp"
-                android:gravity="center_vertical"
-                android:maxLines="2"
-                android:text="自动记录被ban评论和评论区"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                app:layout_constraintEnd_toStartOf="@+id/sw_auto_recorde"
-                app:layout_constraintStart_toEndOf="@+id/frameLayout" />
+                    <FrameLayout
 
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/sw_auto_recorde"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="15dp"
-                android:focusable="true"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
-        <LinearLayout
-            android:id="@+id/ll_band_comment_list"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:orientation="horizontal"
-            android:foreground="?selectableItemBackground"
-            android:focusable="true">
-            <FrameLayout
-                android:layout_width="48dp"
-                android:layout_height="48dp">
+                        android:id="@+id/frameLayout"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
 
-                <ImageView
-                    android:layout_width="26dp"
-                    android:layout_height="25dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_baseline_sms_failed_24" />
-            </FrameLayout>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:layout_marginStart="5dp"
-                android:text="@string/band_comment_list"
-                android:textColor="@color/black"
-                android:textSize="14sp"/>
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/record" />
+                    </FrameLayout>
 
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/ll_martial_law_comment_area_list"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:orientation="horizontal"
-            android:foreground="?selectableItemBackground"
-            android:focusable="true">
-            <FrameLayout
-                android:layout_width="48dp"
-                android:layout_height="48dp">
-                <ImageView
-                    android:layout_width="25dp"
-                    android:layout_height="25dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/shut_up"/>
-            </FrameLayout>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_marginStart="5dp"
-                android:gravity="center_vertical"
-                android:text="@string/martial_law_comment_area_list"
-                android:textColor="@color/black"
-                android:textSize="14sp"/>
+                    <TextView
+                        android:id="@+id/textView"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center_vertical"
+                        android:maxLines="2"
+                        android:text="自动记录被ban评论和评论区"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        app:layout_constraintEnd_toStartOf="@+id/sw_auto_recorde"
+                        app:layout_constraintStart_toEndOf="@+id/frameLayout" />
 
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:padding="6dp">
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/sw_auto_recorde"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="15dp"
+                        android:focusable="true"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:text="其他"
-                android:textSize="12sp"/>
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/ll_test_comment_pool"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:foreground="?selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true">
+                <LinearLayout
+                    android:id="@+id/ll_band_comment_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground"
+                    android:orientation="horizontal">
 
-            <FrameLayout
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp">
 
-                android:id="@+id/frameLayout2"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_baseline_sms_failed_24" />
+                    </FrameLayout>
 
-                <ImageView
-                    android:layout_width="25dp"
-                    android:layout_height="25dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/dice" />
-            </FrameLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center_vertical"
+                        android:text="@string/band_comment_list"
+                        android:textColor="@color/black"
+                        android:textSize="14sp" />
 
-            <TextView
-                android:id="@+id/textView2"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:maxLines="2"
-                android:layout_marginStart="5dp"
-                android:text="随机测试评论池"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
+                </LinearLayout>
 
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/ll_your_comment_area"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:foreground="?selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true">
+                <LinearLayout
+                    android:id="@+id/ll_martial_law_comment_area_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground"
+                    android:orientation="horizontal">
 
-            <FrameLayout
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp">
 
-                android:id="@+id/frameLayout3"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/shut_up" />
+                    </FrameLayout>
 
-                <ImageView
-                    android:layout_width="25dp"
-                    android:layout_height="25dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/comment_area" />
-            </FrameLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center_vertical"
+                        android:text="@string/martial_law_comment_area_list"
+                        android:textColor="@color/black"
+                        android:textSize="14sp" />
 
-            <TextView
-                android:id="@+id/textView3"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:maxLines="2"
-                android:layout_marginStart="5dp"
-                android:text="配置你的评论区"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
+                </LinearLayout>
 
-        </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:padding="6dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:text="设置"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/ll_test_comment_pool"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground">
+
+                    <FrameLayout
+
+                        android:id="@+id/frameLayout2"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/dice" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/textView2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center_vertical"
+                        android:maxLines="2"
+                        android:text="随机测试评论池"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/ll_your_comment_area"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground">
+
+                    <FrameLayout
+
+                        android:id="@+id/frameLayout3"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/comment_area" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/textView4"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center_vertical"
+                        android:maxLines="2"
+                        android:text="配置你的评论区"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
+
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/ll_wait_time"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground">
+
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_baseline_timer_24" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center_vertical"
+                        android:maxLines="2"
+                        android:text="发评后等待时长"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
+
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
     </LinearLayout>
 
 </androidx.drawerlayout.widget.DrawerLayout>

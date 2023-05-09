@@ -10,10 +10,11 @@ public class CommentArea {
     public static final int AREA_TYPE_DYNAMIC11 = 11;
     public static final int AREA_TYPE_DYNAMIC17 = 17;
 
-    public String oid, sourceId;
+    public long oid;
+    public String sourceId;
     public int areaType;
 
-    public CommentArea(String oid, String sourceId, int areaType) {
+    public CommentArea(long oid, String sourceId, int areaType) {
         this.oid = oid;
         this.sourceId = sourceId;
         this.areaType = areaType;
