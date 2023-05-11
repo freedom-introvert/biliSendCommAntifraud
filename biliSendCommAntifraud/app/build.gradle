@@ -13,7 +13,7 @@ android {
         minSdk 21
         targetSdk 32
         versionCode 200
-        versionName "2.0.0-beta"
+        versionName "2.0.0"
 
     }
 
