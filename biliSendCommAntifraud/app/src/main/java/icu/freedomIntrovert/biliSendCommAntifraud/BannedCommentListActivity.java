@@ -53,7 +53,7 @@ public class BannedCommentListActivity extends AppCompatActivity {
         bandCommentBeanArrayList.add(new BannedCommentBean("00000","BV1U8411t73A","这是一条评论",BannedCommentBean.BAND_TYPE_QUICK_DELETE,BannedCommentBean.AREA_VIDEO,new Date()));
         bandCommentBeanArrayList.add(new BannedCommentBean("00000","BV1U8411t73A","这是一条评论",BannedCommentBean.BAND_TYPE_SENSITIVE,BannedCommentBean.AREA_VIDEO,new Date()));
         */
-        bandCommentBeanArrayList = statisticsDBOpenHelper.queryAllBandComments();
+        bandCommentBeanArrayList = statisticsDBOpenHelper.queryAllBannedComments();
         bannedCommentListAdapter = new BannedCommentListAdapter(bandCommentBeanArrayList, context);
         recyclerView.setAdapter(bannedCommentListAdapter);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context);

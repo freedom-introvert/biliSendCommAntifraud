@@ -22,4 +22,9 @@ public interface BiliApiService {
     @FormUrlEncoded
     @POST("/x/v2/reply/del")
     Call<Void> deleteComment(@Header ("cookie") String cookie,@Field("csrf") String csrf, @Field("oid") long oid, @Field("type") int type, @Field("rpid") long rpid);
+    @GET("/x/v2/reply/reply")
+    Call<GeneralResponse<CommentReply>> getCommentReply(@Header ("cookie") String cookie,@Query("csrf")String csrf,@Query("oid") long oid,@Query("pn") int pn,@Query("ps") int ps,@Query("root") long root,@Query("type") int type);//csrf=a8bd67d9496b74f2b001b1e0529de4f9&oid=655062494&pn=1&ps=10&root=161192377344&type=1)
+    @GET("/x/v2/reply/reply")
+    Call<GeneralResponse<CommentReply>> getCommentReply(@Query("oid") long oid,@Query("pn") int pn,@Query("ps") int ps,@Query("root") long root,@Query("type") int type);
+
 }

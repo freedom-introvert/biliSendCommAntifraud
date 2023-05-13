@@ -11,6 +11,7 @@ import java.io.IOException;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliApiService;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentReply;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.VideoInfo;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
@@ -350,4 +351,13 @@ public class CommentManipulator {
     public Call<Void> deleteComment(CommentArea commentArea, long rpid) {
         return biliApiService.deleteComment(getCookie(), getCsrfFromCookie(), commentArea.oid, commentArea.areaType, rpid);
     }
+
+    public Call<GeneralResponse<CommentReply>> getCommentReplyNoAccount(CommentArea commentArea, long rootRpid,int pn){
+        return biliApiService.getCommentReply(commentArea.oid,pn,10,rootRpid,commentArea.areaType);
+    }
+
+    public Call<GeneralResponse<CommentReply>> getCommentReplyHasAccount(CommentArea commentArea, long rootRpid, int pn){
+        return biliApiService.getCommentReply(getCookie(),getCsrfFromCookie(),commentArea.oid,pn,10,rootRpid,commentArea.areaType);
+    }
+
 }
