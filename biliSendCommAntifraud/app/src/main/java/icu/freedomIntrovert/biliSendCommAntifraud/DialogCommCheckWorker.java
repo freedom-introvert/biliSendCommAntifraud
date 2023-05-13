@@ -2,6 +2,8 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -21,6 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentReply;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
@@ -49,6 +52,51 @@ public class DialogCommCheckWorker {
 
     public void checkComment(CommentArea commentArea, long rpid, long parent, long root, String comment, ProgressDialog dialog) {
         if (commentManipulator.cookieAreSet()) {
+            /*
+            commentPresenter.checkCommentStatusByNewMethod(commentArea, comment, rpid, new CommentPresenter.CheckCommentStatusByNewMethodCallBack() {
+                @Override
+                public void onSleeping(long waitTime) {
+                    dialog.setMessage("等待" + waitTime + "ms后检评论……");
+                }
+
+                @Override
+                public void onStartCheckComment() {
+                    dialog.setMessage("检查评论中……");
+                }
+
+                @Override
+                public void thenOk() {
+                    dialog.dismiss();
+                    DialogUtil.dialogMessage(context,"检查结果","评论正常显示！");
+                }
+
+                @Override
+                public void thenShadowBan() {
+                    dialog.dismiss();
+                    DialogUtil.dialogMessage(context,"检查结果","评论被ShadowBan！");
+                }
+
+                @Override
+                public void thenQuickDelete() {
+                    dialog.dismiss();
+                    DialogUtil.dialogMessage(context,"检查结果","评论被系统秒删！");
+                }
+
+                @Override
+                public void thenError() {
+                    dialog.dismiss();
+                    DialogUtil.dialogMessage(context,":(","啥情况！观众能看到评论而发评者却不能\n!!!∑(ﾟДﾟノ)ノ");
+                }
+
+                @Override
+                public void onNetworkError(Throwable th) {
+                    dialog.dismiss();
+                    toastNetError(th.getMessage());
+                }
+            });
+
+             */
+
             commentPresenter.checkCommentStatus(commentArea, comment, commentUtil.getRandomComment(commentArea), rpid, parent, root, new CommentPresenter.CheckCommentStatusCallBack() {
                 @Override
                 public void onSleeping(long waitTime) {
@@ -68,27 +116,34 @@ public class DialogCommCheckWorker {
 
                 @Override
                 public void onCommentNotFound(String sentTestComment) {
-                    dialog.setMessage("评论列表未找到改评论，正在使用测试评论：“" + sentTestComment + "”对其回复判断状态……");
+                    dialog.setMessage("评论列表未找到该评论，判断状态中……");
+                    //dialog.setMessage("评论列表未找到该评论，正在使用测试评论：“" + sentTestComment + "”对其回复判断状态……");
                 }
 
                 @Override
-                public void onCommentSendFail(int code, String message) {
+                public void onOtherError(int code, String message) {
+                    dialog.dismiss();
+                    DialogUtil.dialogMessage(context,"获取评论回复时发生错误！","code:"+code+"\nmessage:"+message);
+                }
+
+                @Override
+                public void onAccountFailure(int code, String message) {
                     dialog.dismiss();
                     if (code == -101) {
-                        showTokenExpires("收到错误信息：“" + message + "”，测试评论发送失败，可能Token已过期，请重新登录获取Cookie！");
+                        showTokenExpires("登录信息已过期，请重新登录（获取cookie）！");
                     } else {
-                        toastLong(message);
+                        showTokenExpires("code:" + code + "\nmessage:" + message);
                     }
                 }
 
                 @Override
-                public void thenShadowBan(CommentAddResult commentAddResult) {
+                public void thenShadowBan() {
                     dialog.dismiss();
                     showCommentBannedResult(BannedCommentBean.BANNED_TYPE_SHADOW_BAN, commentArea, rpid, parent, root, comment);
                 }
 
                 @Override
-                public void thenQuickDelete(CommentAddResult commentAddResult) {
+                public void thenQuickDelete() {
                     dialog.dismiss();
                     showCommentBannedResult(BannedCommentBean.BANNED_TYPE_QUICK_DELETE, commentArea, rpid, parent, root, comment);
                 }
@@ -99,6 +154,8 @@ public class DialogCommCheckWorker {
                     toastNetError(th.getMessage());
                 }
             });
+
+
         } else {
             dialog.dismiss();
             DialogUtil.dialogMessage(context, "未登录", "请先设置cookie！");
@@ -138,10 +195,10 @@ public class DialogCommCheckWorker {
         AlertDialog.Builder resultDialogBuilder = new AlertDialog.Builder(context).setTitle("检查结果");
         if (bannedType.equals(BannedCommentBean.BANNED_TYPE_SHADOW_BAN)) {
             resultDialogBuilder.setIcon(R.drawable.hide_black);
-            resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在无账号环境下无法找到，但自己可以成功对其进行回复，判定为被ShadowBan（仅自己可见），请检查评论内容或者检查评论区是否被戒严");
+            resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在无账号环境下无法找到，自己账号下获取该评论的回复列表成功，判定为被ShadowBan（仅自己可见），请检查评论内容或者检查评论区是否被戒严");
         } else if (bannedType.equals(BannedCommentBean.BANNED_TYPE_QUICK_DELETE)) {
             resultDialogBuilder.setIcon(R.drawable.deleted_black);
-            resultDialogBuilder.setMessage("尝试回复评论“" + CommentUtil.subComment(comment, 100) + "”时收到系统回复：“" + "已经被删除了" + "”，判定改评论被系统速删，请检查评论内容或者检查评论区是否被戒严");
+            resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在自己账号下获取该评论的回复列表和对该评论发送回复时均收到提示：“" + "已经被删除了" + "”，判定改评论被系统速删，请检查评论内容或者检查评论区是否被戒严");
         }
         resultDialogBuilder.setPositiveButton("关闭", (dialog, which) -> exitListener.exit());
         resultDialogBuilder.setNeutralButton("检查评论区", null);
@@ -156,7 +213,7 @@ public class DialogCommCheckWorker {
         });
         //更多评论选项
         resultDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
-            new AlertDialog.Builder(context).setTitle("更多选项").setItems(new String[]{"扫描敏感词", "申诉", "删除发布的评论"}, new DialogInterface.OnClickListener() {
+            new AlertDialog.Builder(context).setTitle("更多选项").setItems(new String[]{"扫描敏感词", "申诉", "删除发布的评论","复制rpid、oid、type"}, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     switch (which) {
@@ -206,6 +263,11 @@ public class DialogCommCheckWorker {
                                 }
                             });
                             break;
+                        case 3://复制rpid等评论信息
+                            ClipboardManager cm = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                            ClipData mClipData = ClipData.newPlainText("Label", "rpid:"+rpid+"\noid:"+commentArea.oid+"\ntype:"+commentArea.areaType);
+                            cm.setPrimaryClip(mClipData);
+                            toastShort("已复制");
                     }
                 }
             }).show();
@@ -501,5 +563,19 @@ public class DialogCommCheckWorker {
 
     public interface OnExitListener {
         public void exit();
+    }
+
+    public void test(){
+        commentManipulator.getCommentReplyHasAccount(new CommentArea(226406783,"null",1),164664965888L,1).enqueue(new BiliApiCallback<GeneralResponse<CommentReply>>() {
+            @Override
+            public void onError(Throwable th) {
+
+            }
+
+            @Override
+            public void onSuccess(GeneralResponse<CommentReply> response) {
+                DialogUtil.dialogMessage(context,"code:"+response.code, response.message);
+            }
+        });
     }
 }

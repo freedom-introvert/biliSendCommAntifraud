@@ -14,7 +14,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.MartialLawCommentArea;
 
 public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
-    public static final int VERSION = 3;
+    public static final int VERSION = 4;
     public static final String DB_NAME = "statistics.db";
     public static final String TABLE_NAME_BANNED_COMMENT = "banned_comment";
     public static final String TABLE_NAME_MARTIAL_LAW_AREA = "martial_law_comment_area";
@@ -25,7 +25,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE " + TABLE_NAME_BANNED_COMMENT + " ( rpid TEXT NOT NULL PRIMARY KEY,oid TEXT NOT NULL, sourceId TEXT NOT NULL, comment TEXT, bandType TEXT NOT NULL, commentAreaType INTEGER NOT NULL, date INTEGER NOT NULL,checkedArea INTEGER NOT NULL);");
+        db.execSQL("CREATE TABLE " + TABLE_NAME_BANNED_COMMENT + " ( rpid TEXT NOT NULL PRIMARY KEY,oid TEXT NOT NULL, sourceId TEXT NOT NULL, comment TEXT, bannedType TEXT NOT NULL, commentAreaType INTEGER NOT NULL, date INTEGER NOT NULL,checkedArea INTEGER NOT NULL);");
         db.execSQL("CREATE TABLE " + TABLE_NAME_MARTIAL_LAW_AREA + "( oid TEXT PRIMARY KEY NOT NULL UNIQUE, sourceId TEXT NOT NULL, areaType INTEGER NOT NULL, defaultDisposalMethod TEXT NOT NULL, title TEXT,up TEXT NOT NULL,coverImageData BLOB);");
     }
 
@@ -34,8 +34,10 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         switch (oldVersion){
             case 1 : //CREATE TABLE band_comment ( rpid TEXT NOT NULL PRIMARY KEY,oid TEXT NOT NULL, sourceId TEXT NOT NULL, comment TEXT, bandType TEXT NOT NULL, commentAreaType INTEGER NOT NULL, date INTEGER NOT NULL );
                 db.execSQL("ALTER TABLE band_comment ADD COLUMN checkedArea INTEGER NOT NULL default 0");
-            case 2 : //"CREATE TABLE band_comment + ( rpid TEXT NOT NULL PRIMARY KEY,oid TEXT NOT NULL, sourceId TEXT NOT NULL, comment TEXT, bandType TEXT NOT NULL, commentAreaType INTEGER NOT NULL, date INTEGER NOT NULL,checkedArea INTEGER NOT NULL);"
+            case 2 : //"CREATE TABLE band_comment ( rpid TEXT NOT NULL PRIMARY KEY,oid TEXT NOT NULL, sourceId TEXT NOT NULL, comment TEXT, bandType TEXT NOT NULL, commentAreaType INTEGER NOT NULL, date INTEGER NOT NULL,checkedArea INTEGER NOT NULL);"
                 db.execSQL("ALTER TABLE band_comment RENAME TO banned_comment");
+            case 3 :// "CREATE TABLE banned_comment ( rpid TEXT NOT NULL PRIMARY KEY,oid TEXT NOT NULL, sourceId TEXT NOT NULL, comment TEXT, bandType TEXT NOT NULL, commentAreaType INTEGER NOT NULL, date INTEGER NOT NULL,checkedArea INTEGER NOT NULL);
+                db.execSQL("ALTER TABLE banned_comment RENAME COLUMN bandType TO bannedType");
 
         }
     }
@@ -47,7 +49,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         values.put("oid", bandCommentBean.commentArea.oid);
         values.put("sourceId", bandCommentBean.commentArea.sourceId);
         values.put("comment", bandCommentBean.comment);
-        values.put("bandType", bandCommentBean.bannedType);
+        values.put("bannedType", bandCommentBean.bannedType);
         values.put("commentAreaType", bandCommentBean.commentArea.areaType);
         values.put("checkedArea",bandCommentBean.checkedArea);
         values.put("date", bandCommentBean.getTimeStampDate());
@@ -59,14 +61,14 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         return db.delete(TABLE_NAME_BANNED_COMMENT, "rpid = ?", new String[]{rpid});
     }
 
-    public ArrayList<BannedCommentBean> queryAllBandComments() {
-        ArrayList<BannedCommentBean> bandCommentBeanArrayList = new ArrayList<>();
+    public ArrayList<BannedCommentBean> queryAllBannedComments() {
+        ArrayList<BannedCommentBean> bannedCommentBeanArrayList = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
         System.out.println(db.getVersion());
         Cursor cursor = db.rawQuery("select * from " + TABLE_NAME_BANNED_COMMENT, null);
         while (cursor.moveToNext()) {
             CommentArea commentArea = new CommentArea(cursor.getLong(1), cursor.getString(2), cursor.getInt(5));
-            bandCommentBeanArrayList.add(new BannedCommentBean(
+            bannedCommentBeanArrayList.add(new BannedCommentBean(
                     commentArea,
                     cursor.getLong(0),
                     cursor.getString(3),
@@ -76,7 +78,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
             );
         }
         cursor.close();
-        return bandCommentBeanArrayList;
+        return bannedCommentBeanArrayList;
     }
 
     public long insertMartialLawCommentArea(MartialLawCommentArea area) {
