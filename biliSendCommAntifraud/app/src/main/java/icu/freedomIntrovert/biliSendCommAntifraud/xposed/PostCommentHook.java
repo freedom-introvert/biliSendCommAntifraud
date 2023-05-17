@@ -37,6 +37,7 @@ public class PostCommentHook implements IXposedHookLoadPackage {
                     Method getIntentMethod = param.thisObject.getClass().getMethod("getIntent");
                     Intent intent = (Intent) getIntentMethod.invoke(param.thisObject);
                     Bundle fragment_args = intent.getExtras().getBundle("fragment_args");
+                    XposedBridge.log(fragment_args.getString("oid"));
                     currentId.set(fragment_args.getString("oid"));
                 }
 
