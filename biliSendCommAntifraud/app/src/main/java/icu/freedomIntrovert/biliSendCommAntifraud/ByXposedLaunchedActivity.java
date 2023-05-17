@@ -70,7 +70,11 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                 }
             });
         } else {
-            worker.checkComment(new CommentArea(oid, id != null ? id : "null", Integer.parseInt(type)), Long.parseLong(resultRpid), Long.parseLong(parent), Long.parseLong(root), comment, progressDialog);
+            if (Integer.parseInt(type) == CommentArea.AREA_TYPE_DYNAMIC17) {//动态17的动态ID就是评论区oid
+                worker.checkComment(new CommentArea(oid, id != null ? String.valueOf(oid) : "null", Integer.parseInt(type)), Long.parseLong(resultRpid), Long.parseLong(parent), Long.parseLong(root), comment, progressDialog);
+            } else {//动态11的动态ID在ComposeActivity的Extras里获取
+                worker.checkComment(new CommentArea(oid, id != null ? id : "null", Integer.parseInt(type)), Long.parseLong(resultRpid), Long.parseLong(parent), Long.parseLong(root), comment, progressDialog);
+            }
         }
 
         //DialogUtil.dialogMessage(context, null, "oid=" + oid + "\ntype=" + type + "\nmessage=" + message + "\nrpid=" + resultRpid + "\nroot=" + root + "\nparent=" + parent + "\ncomment=" + comment);
