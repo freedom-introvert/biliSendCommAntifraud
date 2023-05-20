@@ -152,7 +152,7 @@
                 </LinearLayout>
 
                 <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/cl_band_comment_sw"
+                    android:id="@+id/cl_banned_comment_sw"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:clickable="true"
@@ -200,7 +200,7 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <LinearLayout
-                    android:id="@+id/ll_band_comment_list"
+                    android:id="@+id/ll_banned_comment_list"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:focusable="true"
@@ -377,6 +377,54 @@
                         android:gravity="center_vertical"
                         android:maxLines="2"
                         android:text="发评后等待时长"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
+
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:padding="6dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:text="关于"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/ll_github_project"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground">
+
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/github" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center_vertical"
+                        android:maxLines="2"
+                        android:text="GitHub项目"
                         android:textColor="@color/black"
                         android:textSize="14sp"
                         app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
