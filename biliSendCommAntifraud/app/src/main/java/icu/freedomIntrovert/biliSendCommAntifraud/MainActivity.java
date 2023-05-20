@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.Menu;
@@ -48,8 +49,8 @@ public class MainActivity extends AppCompatActivity {
     CommentPresenter commentPresenter;
     DrawerLayout drawerLayout;
     SwitchCompat sw_auto_recorde;
-    ConstraintLayout cl_band_comment_sw;
-    LinearLayout ll_band_comment, ll_martial_law_comment_area_list, ll_wait_time;
+    ConstraintLayout cl_banned_comment_sw;
+    LinearLayout ll_banned_comments, ll_martial_law_comment_area_list, ll_wait_time,ll_github_project;
     //NavigationView navigation_view;
     Toolbar toolbar;
     private Context context;
@@ -75,12 +76,14 @@ public class MainActivity extends AppCompatActivity {
         btn_send = findViewById(R.id.btn_send);
         btn_clean = findViewById(R.id.btn_clean);
         sp_config = getSharedPreferences("config", Context.MODE_PRIVATE);
-        ll_band_comment = findViewById(R.id.ll_band_comment_list);
+        ll_banned_comments = findViewById(R.id.ll_banned_comment_list);
         ll_martial_law_comment_area_list = findViewById(R.id.ll_martial_law_comment_area_list);
         ll_test_comment_pool = findViewById(R.id.ll_test_comment_pool);
         ll_you_comment_area = findViewById(R.id.ll_your_comment_area);
         ll_wait_time = findViewById(R.id.ll_wait_time);
-        cl_band_comment_sw = findViewById(R.id.cl_band_comment_sw);
+        cl_banned_comment_sw = findViewById(R.id.cl_banned_comment_sw);
+        ll_github_project = findViewById(R.id.ll_github_project);
+
         sw_auto_recorde = findViewById(R.id.sw_auto_recorde);
         btn_send_and_appeal = findViewById(R.id.btn_send_and_appeal);
         setSupportActionBar(toolbar);
@@ -99,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
 
         enableRecorde = sp_config.getBoolean("autoRecorde", true);
         sw_auto_recorde.setChecked(enableRecorde);
-        cl_band_comment_sw.setOnClickListener(v -> {
+        cl_banned_comment_sw.setOnClickListener(v -> {
             sw_auto_recorde.setChecked(!enableRecorde);
         });
 
@@ -117,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        ll_band_comment.setOnClickListener(v -> {
+        ll_banned_comments.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, BannedCommentListActivity.class));
         });
 
@@ -168,6 +171,12 @@ public class MainActivity extends AppCompatActivity {
                         .setNegativeButton("取消", new VoidDialogInterfaceOnClickListener())
                         .show();
             }
+        });
+
+        ll_github_project.setOnClickListener(v -> {
+            Uri uri = Uri.parse("https://github.com/freedom-introvert/biliSendCommAntifraud");
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            context.startActivity(intent);
         });
 
         btn_send.setOnClickListener(v -> {
