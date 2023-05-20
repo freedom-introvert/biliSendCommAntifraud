@@ -129,7 +129,7 @@ public class PostCommentHook implements IXposedHookLoadPackage {
                         contextField.setAccessible(true);
                         Context context = (Context) contextField.get(param.thisObject);
                         Class<?> biliCommentAddResultClass = biliCommentAddResult.getClass();
-                        if ((Integer) biliCommentAddResultClass.getField("action").get(biliCommentAddResult) == 0) {
+                        if ((Integer) biliCommentAddResultClass.getField("action").get(biliCommentAddResult) == 0) {//不等于0很可能是up开启了评论精选之类的，toast提示你了，检查无意义也误判
                             intent.putExtra("message", (String) biliCommentAddResultClass.getField("message").get(biliCommentAddResult));
                             intent.putExtra("oid", currentOid.get());
                             intent.putExtra("type", currentAreaType.get());
@@ -217,7 +217,7 @@ public class PostCommentHook implements IXposedHookLoadPackage {
                     contextField.setAccessible(true);
                     Context context = (Context) contextField.get(param.thisObject);
                     Class<?> biliCommentAddResultClass = biliCommentAddResult.getClass();
-                    if ((Integer) biliCommentAddResultClass.getField("action").get(biliCommentAddResult) == 0) {
+                    if ((Integer) biliCommentAddResultClass.getField("action").get(biliCommentAddResult) == 0) {//不等于0很可能是up开启了评论精选之类的，toast提示你了，检查无意义也误判
                         intent.putExtra("message", (String) biliCommentAddResultClass.getField("message").get(biliCommentAddResult));
                         intent.putExtra("oid", currentOid.get());
                         intent.putExtra("type", currentAreaType.get());

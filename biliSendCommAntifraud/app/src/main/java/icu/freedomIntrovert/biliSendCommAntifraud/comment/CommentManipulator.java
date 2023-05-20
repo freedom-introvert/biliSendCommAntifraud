@@ -56,7 +56,7 @@ public class CommentManipulator {
         return cookie.substring(csrfIndex + 9, csrfIndex + 32 + 9);
     }
 
-    public Call<GeneralResponse<VideoInfo>> getVideoInfoByAid(long aid){
+    public Call<GeneralResponse<VideoInfo>> getVideoInfoByAid(long aid) {
         return biliApiService.getVideoInfoByAid(aid);
     }
 
@@ -259,7 +259,7 @@ public class CommentManipulator {
     public MartialLawCommentArea getMartialLawCommentArea(CommentArea commentArea, long testCommentRpid, String randomComment) throws IOException {
         byte[] coverImageData = null;
         String title = null, up = null;
-        GeneralResponse<CommentAddResult> resp = sendComment(randomComment, testCommentRpid, testCommentRpid, commentArea).execute().body();
+        GeneralResponse<CommentReply> resp = getCommentReplyHasAccount(commentArea, testCommentRpid, 1).execute().body();
         if (commentArea.areaType == CommentArea.AREA_TYPE_VIDEO) {
             Request request = new Request.Builder().url("http://api.bilibili.com/x/web-interface/view?bvid=" + commentArea.sourceId).build();
             Response response = httpClient.newCall(request).execute();
@@ -309,17 +309,11 @@ public class CommentManipulator {
         } else {
             return null;
         }
-        try {
-            Thread.sleep(1200);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         String defaultDisposalMethod = null;
         if (resp.code == CommentAddResult.CODE_DELETED) {
             defaultDisposalMethod = BannedCommentBean.BANNED_TYPE_QUICK_DELETE;
         } else {
             defaultDisposalMethod = BannedCommentBean.BANNED_TYPE_SHADOW_BAN;
-            deleteComment(commentArea, resp.data.rpid).execute();
         }
         return new MartialLawCommentArea(commentArea, defaultDisposalMethod, title, up, coverImageData);
     }
@@ -352,12 +346,12 @@ public class CommentManipulator {
         return biliApiService.deleteComment(getCookie(), getCsrfFromCookie(), commentArea.oid, commentArea.areaType, rpid);
     }
 
-    public Call<GeneralResponse<CommentReply>> getCommentReplyNoAccount(CommentArea commentArea, long rootRpid,int pn){
-        return biliApiService.getCommentReply(commentArea.oid,pn,10,rootRpid,commentArea.areaType);
+    public Call<GeneralResponse<CommentReply>> getCommentReplyNoAccount(CommentArea commentArea, long rootRpid, int pn) {
+        return biliApiService.getCommentReply(commentArea.oid, pn, 10, rootRpid, commentArea.areaType);
     }
 
-    public Call<GeneralResponse<CommentReply>> getCommentReplyHasAccount(CommentArea commentArea, long rootRpid, int pn){
-        return biliApiService.getCommentReply(getCookie(),getCsrfFromCookie(),commentArea.oid,pn,10,rootRpid,commentArea.areaType);
+    public Call<GeneralResponse<CommentReply>> getCommentReplyHasAccount(CommentArea commentArea, long rootRpid, int pn) {
+        return biliApiService.getCommentReply(getCookie(), getCsrfFromCookie(), commentArea.oid, pn, 10, rootRpid, commentArea.areaType);
     }
 
 }
