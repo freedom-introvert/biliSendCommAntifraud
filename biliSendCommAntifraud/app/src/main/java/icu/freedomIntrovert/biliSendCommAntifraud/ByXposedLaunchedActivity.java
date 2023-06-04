@@ -51,7 +51,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
         String comment = intent.getStringExtra("comment");
         String id = intent.getStringExtra("id");
 
-        CommentPresenter commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 3000), sp_config.getBoolean("autoRecorde", true));
+        CommentPresenter commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000), sp_config.getBoolean("autoRecorde", true));
         DialogCommCheckWorker worker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, this::finish);
         ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, "检查中", "从哔哩哔哩APP来，正在获取评论区信息……");
         progressDialog.setCancelable(false);
@@ -71,7 +71,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
             });
         } else {
             if (Integer.parseInt(type) == CommentArea.AREA_TYPE_DYNAMIC17) {//动态17的动态ID就是评论区oid
-                worker.checkComment(new CommentArea(oid, id != null ? String.valueOf(oid) : "null", Integer.parseInt(type)), Long.parseLong(resultRpid), Long.parseLong(parent), Long.parseLong(root), comment, progressDialog);
+                worker.checkComment(new CommentArea(oid,String.valueOf(oid), Integer.parseInt(type)), Long.parseLong(resultRpid), Long.parseLong(parent), Long.parseLong(root), comment, progressDialog);
             } else {//动态11的动态ID在ComposeActivity的Extras里获取
                 worker.checkComment(new CommentArea(oid, id != null ? id : "null", Integer.parseInt(type)), Long.parseLong(resultRpid), Long.parseLong(parent), Long.parseLong(root), comment, progressDialog);
             }

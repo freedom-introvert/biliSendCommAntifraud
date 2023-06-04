@@ -16,6 +16,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.VideoInfo;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentScanResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.MartialLawCommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.ServiceGenerator;
 import okhttp3.FormBody;
@@ -142,7 +143,8 @@ public class CommentManipulator {
 
 
     public JSONObject requestComments(CommentArea commentArea, int next, long root, boolean hasCookie) throws IOException {
-        String url = "https://api.bilibili.com/x/v2/reply/main?mode=2&next=" + next + "&oid=" + commentArea.oid + "&plat=1&seek_rpid=&type=" + commentArea.areaType;
+        //String url = "https://api.bilibili.com/x/v2/reply/main?mode=2&next=" + next + "&oid=" + commentArea.oid + "&plat=1&seek_rpid=&type=" + commentArea.areaType;
+        String url = "https://api.bilibili.com/x/v2/reply?sort=0&pn=" + (next + 1)  + "&oid=" + commentArea.oid + "&plat=1&type=" + commentArea.areaType;
         if (root != 0) {
             url = "https://api.bilibili.com/x/v2/reply/reply?oid=" + commentArea.oid + "&pn=" + (next + 1) + "&ps=10&root=" + root + "&type=" + commentArea.areaType;
         }
@@ -169,33 +171,35 @@ public class CommentManipulator {
         return false;
     }
 
-    public boolean checkCommentExists(CommentArea commentArea, long rpid, long root) throws IOException {
+    public CommentScanResult scanComment(CommentArea commentArea, long rpid, long root) throws IOException {
         JSONArray replies;
         if (root == 0) {
             //获取第一页评论查找就行了
             replies = requestComments(commentArea, 0, root, false).getJSONObject("data").getJSONArray("replies");
             if (replies != null) {
                 for (int i = 0; i < replies.size(); i++) {
-                    if (replies.getJSONObject(i).getLong("rpid") == rpid) {
-                        return true;
+                    JSONObject biliCommentJsonObj = replies.getJSONObject(i);
+                    if (biliCommentJsonObj.getLong("rpid") == rpid) {
+                        return new CommentScanResult(true,biliCommentJsonObj.getBoolean("invisible"));
                     }
                 }
             }
-            return false;
+            return new CommentScanResult(false,false);
         } else {
             int next = 0;
             replies = requestComments(commentArea, next, root, false).getJSONObject("data").getJSONArray("replies");
             //因为评论回复列表的按照时间排序是倒序，所以遍历到最后一页
             while (replies != null) {
                 for (int i = 0; i < replies.size(); i++) {
-                    if (replies.getJSONObject(i).getLong("rpid") == rpid) {
-                        return true;
+                    JSONObject biliCommentJsonObj = replies.getJSONObject(i);
+                    if (biliCommentJsonObj.getLong("rpid") == rpid) {
+                        return new CommentScanResult(true,biliCommentJsonObj.getBoolean("invisible"));
                     }
                 }
                 next++;
                 replies = requestComments(commentArea, next, root, false).getJSONObject("data").getJSONArray("replies");
             }
-            return false;
+            return new CommentScanResult(false,false);
         }
     }
 

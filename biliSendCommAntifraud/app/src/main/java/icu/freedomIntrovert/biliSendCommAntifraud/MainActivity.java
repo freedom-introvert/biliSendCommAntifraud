@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
         commentManipulator = new CommentManipulator(new OkHttpClient(), sp_config.getString("cookie", ""));
         handler = new Handler();
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
-        commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 3000), sp_config.getBoolean("autoRecorde", true));
+        commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000), sp_config.getBoolean("autoRecorde", true));
         dialogCommSendWorker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, () -> {
         });
 
@@ -156,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
                 View dialogView = View.inflate(context, R.layout.edit_text, null);
                 EditText editText = dialogView.findViewById(R.id.edit_text);
                 editText.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
-                editText.setText(String.valueOf(sp_config.getLong("wait_time", 3000)));
+                editText.setText(String.valueOf(sp_config.getLong("wait_time", 5000)));
                 new AlertDialog.Builder(context).setTitle("设置发评后等待时间（毫秒/ms）")
                         .setView(dialogView)
                         .setPositiveButton("设置", new DialogInterface.OnClickListener() {

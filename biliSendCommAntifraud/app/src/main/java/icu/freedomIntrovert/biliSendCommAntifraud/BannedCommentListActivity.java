@@ -47,19 +47,12 @@ public class BannedCommentListActivity extends AppCompatActivity {
         context = this;
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
         recyclerView = findViewById(R.id.rv_band_comment);
-        /*
-        ArrayList<BannedCommentBean> bandCommentBeanArrayList = new ArrayList<>();
-        bandCommentBeanArrayList.add(new BannedCommentBean("00000","BV1U8411t73A","这是一条评论",BannedCommentBean.BAND_TYPE_SHADOW_BAN,BannedCommentBean.AREA_VIDEO,new Date()));
-        bandCommentBeanArrayList.add(new BannedCommentBean("00000","BV1U8411t73A","这是一条评论",BannedCommentBean.BAND_TYPE_QUICK_DELETE,BannedCommentBean.AREA_VIDEO,new Date()));
-        bandCommentBeanArrayList.add(new BannedCommentBean("00000","BV1U8411t73A","这是一条评论",BannedCommentBean.BAND_TYPE_SENSITIVE,BannedCommentBean.AREA_VIDEO,new Date()));
-        */
         bandCommentBeanArrayList = statisticsDBOpenHelper.queryAllBannedComments();
         bannedCommentListAdapter = new BannedCommentListAdapter(bandCommentBeanArrayList, context);
         recyclerView.setAdapter(bannedCommentListAdapter);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context);
         linearLayoutManager.setOrientation(RecyclerView.VERTICAL);
         recyclerView.setLayoutManager(linearLayoutManager);
-
     }
 
     @Override
@@ -158,7 +151,7 @@ public class BannedCommentListActivity extends AppCompatActivity {
                                         while ((csvLine = csvReader.readNext()) != null) {
                                             BannedCommentBean bannedCommentBean = new BannedCommentBean(csvLine[0], Long.parseLong(csvLine[1]), csvLine[2], csvLine[3], csvLine[4], csvLine[5], csvLine[6], csvLine[7]);
                                             System.out.println(bannedCommentBean);
-                                            if (statisticsDBOpenHelper.insertBannedComment(bannedCommentBean) > 0){
+                                            if (statisticsDBOpenHelper.insertBannedComment(bannedCommentBean) > 0) {
                                                 bannedCommentBeans.add(bannedCommentBean);
                                                 successCount++;
                                             } else {
@@ -170,7 +163,7 @@ public class BannedCommentListActivity extends AppCompatActivity {
                                         runOnUiThread(() -> {
                                             progressDialog1.dismiss();
                                             bannedCommentListAdapter.addData(bannedCommentBeans);
-                                            Toast.makeText(context, "成功导入" + finalSuccessCount + "条数据，失败"+ finalFailCount +"条", Toast.LENGTH_LONG).show();
+                                            Toast.makeText(context, "成功导入" + finalSuccessCount + "条数据，失败" + finalFailCount + "条", Toast.LENGTH_LONG).show();
                                         });
                                     } else {
                                         error("CSV字段不匹配！");
@@ -189,20 +182,17 @@ public class BannedCommentListActivity extends AppCompatActivity {
                             error("没有选择文件");
                         }
                     }
-                    public void error (String msg) {
+
+                    public void error(String msg) {
                         runOnUiThread(() -> {
                             progressDialog1.dismiss();
                             Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
                         });
                     }
                 });
-
-
-
-            }
+        }
 
     }
-
 
 
 }

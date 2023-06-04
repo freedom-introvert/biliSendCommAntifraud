@@ -15,6 +15,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentScanResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.ServiceGenerator;
 import retrofit2.Call;
@@ -77,20 +78,17 @@ public class CommentPresenter {
                     e.printStackTrace();
                 }
                 handler.post(callBack::onStartCheckComment);
-                if (commentManipulator.checkCommentExists(commentArea, rpid, root)) {
-                    handler.post(callBack::thenOk);
+                CommentScanResult commentScanResult = commentManipulator.scanComment(commentArea, rpid, root);
+                if (commentScanResult.isExists) {
+                    //判断是否被标记为invisible，使其在前端不可见
+                    if (commentScanResult.isInvisible){
+                        insertBannedComment(new BannedCommentBean(commentArea, rpid, mainComment, BannedCommentBean.BANNED_TYPE_INVISIBLE, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
+                        handler.post(callBack::thenInvisible);
+                    } else {
+                        handler.post(callBack::thenOk);
+                    }
                 } else {
                     handler.post(() -> callBack.onCommentNotFound(testComment));
-                    /*
-                    GeneralResponse<CommentAddResult> response;
-                    if (root == 0) {
-                        response = commentManipulator.sendComment(testComment, rpid, rpid, commentArea).execute().body();
-                    } else {
-                        response = commentManipulator.sendComment(testComment, rpid, root, commentArea).execute().body();
-                    }
-                    CommentAddResult commentAddResult = response.data;
-                     */
-
                     GeneralResponse<CommentReply> response = commentManipulator.getCommentReplyHasAccount(commentArea, rpid, 1).execute().body();
                     if (response.code == CommentAddResult.CODE_SUCCESS) {
                         try {
@@ -141,6 +139,8 @@ public class CommentPresenter {
         public void onOtherError(int code, String message);
 
         public void onAccountFailure(int code, String message);
+
+        public void thenInvisible();
 
         public void thenShadowBan();
 
@@ -206,7 +206,7 @@ public class CommentPresenter {
                         long testCommentRpid = response.data.rpid;
                         sleep(waitTime);
                         handler.post(callBack::onStartCheck);
-                        if (commentManipulator.checkCommentExists(commentArea, response.data.rpid, 0)) {
+                        if (commentManipulator.scanComment(commentArea, response.data.rpid, 0).isExists) {
                             deleteComment(commentArea, testCommentRpid).execute();
                             handler.post(callBack::thenAreaOk);
                         } else {
@@ -250,7 +250,7 @@ public class CommentPresenter {
                     long rpid = response.data.rpid;
                     sleep(waitTime);
                     handler.post(callBack::onStartCheck);
-                    if (commentManipulator.checkCommentExists(yourCommentArea, rpid, 0)) {
+                    if (commentManipulator.scanComment(yourCommentArea, rpid, 0).isExists) {
                         deleteComment(yourCommentArea, rpid).execute();
                         updateCheckedArea(mainCommentRpid, BannedCommentBean.CHECKED_ONLY_BANNED_IN_THIS_AREA);
                         handler.post(callBack::thenOnlyBannedInThisArea);
@@ -306,7 +306,7 @@ public class CommentPresenter {
                     GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(testComment1, 0, 0, mainCommentArea).execute().body();
                     sleep(waitTime);
                     long testCommentRpid = response.data.rpid;
-                    if (commentManipulator.checkCommentExists(mainCommentArea, testCommentRpid, 0)) {
+                    if (commentManipulator.scanComment(mainCommentArea, testCommentRpid, 0).isExists) {
                         deleteComment(mainCommentArea, testCommentRpid).execute();
                         checkIfOnlyBannedInThisArea();
                     } else {
@@ -329,7 +329,7 @@ public class CommentPresenter {
                     GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(comment, 0, 0, yourCommentArea).execute().body();
                     sleep(waitTime);
                     long testCommentRpid = response.data.rpid;
-                    if (commentManipulator.checkCommentExists(yourCommentArea, testCommentRpid, 0)) {
+                    if (commentManipulator.scanComment(yourCommentArea, testCommentRpid, 0).isExists) {
                         updateCheckedArea(mainCommRpid, BannedCommentBean.CHECKED_ONLY_BANNED_IN_THIS_AREA);
                         deleteComment(mainCommentArea, testCommentRpid).execute();
                         handler.post(callBack::onCommentIsOnlyBannedInThisArea);
@@ -366,6 +366,7 @@ public class CommentPresenter {
 
     public interface ScanSensitiveWorldCallBack extends NetworkCallBack {
         void onCommentSent(SpannableStringBuilder comment);
+        
     }
 
     private void sleep(long waitTime) {

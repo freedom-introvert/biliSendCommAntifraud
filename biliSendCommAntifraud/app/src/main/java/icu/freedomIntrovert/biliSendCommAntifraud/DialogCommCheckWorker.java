@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
-import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentReply;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
@@ -137,6 +136,12 @@ public class DialogCommCheckWorker {
                 }
 
                 @Override
+                public void thenInvisible() {
+                    dialog.dismiss();
+                    showCommentBannedResult(BannedCommentBean.BANNED_TYPE_INVISIBLE,commentArea,rpid,parent,root,comment);
+                }
+
+                @Override
                 public void thenShadowBan() {
                     dialog.dismiss();
                     showCommentBannedResult(BannedCommentBean.BANNED_TYPE_SHADOW_BAN, commentArea, rpid, parent, root, comment);
@@ -199,6 +204,9 @@ public class DialogCommCheckWorker {
         } else if (bannedType.equals(BannedCommentBean.BANNED_TYPE_QUICK_DELETE)) {
             resultDialogBuilder.setIcon(R.drawable.deleted_black);
             resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在自己账号下获取该评论的回复列表和对该评论发送回复时均收到提示：“" + "已经被删除了" + "”，判定改评论被系统速删，请检查评论内容或者检查评论区是否被戒严");
+        } else if (bannedType.equals(BannedCommentBean.BANNED_TYPE_INVISIBLE)){
+            resultDialogBuilder.setIcon(R.drawable.ghost_black);
+            resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在无账号环境下成功找到，但是被标记invisible，也就是隐身（在前端被隐藏）！这是非常罕见的情况……通常在评论发送很久时间后才会出现。可以的话把评论信息发给开发者，以分析触发条件");
         }
         resultDialogBuilder.setPositiveButton("关闭", (dialog, which) -> exitListener.exit());
         resultDialogBuilder.setNeutralButton("检查评论区", null);
@@ -237,7 +245,13 @@ public class DialogCommCheckWorker {
 
                                             @Override
                                             public void onRespInUI(int code, String toastText) {
-                                                toastLong(toastText);
+                                                //如果这个时候还出现“无可申述评论”那么可能把评论状态误判了或者在某种审核中
+                                                if (code == 12082) {
+                                                    commentPresenter.statisticsDBOpenHelper.updateBannedCommentBannedType(String.valueOf(rpid), BannedCommentBean.BANNED_TYPE_SUSPECTED_NO_PROBLEM);
+                                                    toastLong(toastText + "\n可能因为检查评论时误判了或评论在某种处理或审核状态，等待一段时间后应该可以显示");
+                                                } else {
+                                                    toastLong(toastText);
+                                                }
                                             }
 
                                             @Override
@@ -478,12 +492,12 @@ public class DialogCommCheckWorker {
                         spannableStringBuilder.setSpan(yellowSpan, finalPassText.length(), finalPassText.length() + finalSplit[0].length(), Spannable.SPAN_INCLUSIVE_INCLUSIVE);
                         spannableStringBuilder.setSpan(blueSpan, finalPassText.length() + finalSplit[0].length(), finalPassText.length() + finalSplit[0].length() + finalSplit[1].length(), Spannable.SPAN_INCLUSIVE_INCLUSIVE);
                         tvx_result.setText(spannableStringBuilder);
-                        txv_scanning_status.setText("发送评论……");
+                        txv_scanning_status.setText("发送评论&等待……");
                     });
                     GeneralResponse<CommentAddResult> resp = commentManipulator.sendComment(passText + split[0], 0, 0, yourCommentArea).execute().body();
                     long rpid1 = resp.data.rpid;
                     try {
-                        Thread.sleep(2000);
+                        Thread.sleep(commentPresenter.waitTime);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -543,7 +557,6 @@ public class DialogCommCheckWorker {
         }
     }
 
-
     public void toAppeal(String comment, CommentArea commentArea, String parent, String root, String areaIdentifier) {
 
     }
@@ -565,17 +578,4 @@ public class DialogCommCheckWorker {
         public void exit();
     }
 
-    public void test(){
-        commentManipulator.getCommentReplyHasAccount(new CommentArea(226406783,"null",1),164664965888L,1).enqueue(new BiliApiCallback<GeneralResponse<CommentReply>>() {
-            @Override
-            public void onError(Throwable th) {
-
-            }
-
-            @Override
-            public void onSuccess(GeneralResponse<CommentReply> response) {
-                DialogUtil.dialogMessage(context,"code:"+response.code, response.message);
-            }
-        });
-    }
 }
