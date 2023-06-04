@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
@@ -47,7 +48,7 @@ public class PostCommentHook implements IXposedHookLoadPackage {
                 }
             });
 
-            if (appVersionCode <= 7270300){//适配版本: ? - 7.25.0 - 7.27.0
+            if (appVersionCode <= 7270300) {//适配版本: ? - 7.25.0 - 7.27.0
 
                 XposedHelpers.findAndHookMethod("com.bilibili.app.comm.comment2.model.b", loadPackageParam.classLoader, "A", loadPackageParam.classLoader.loadClass("com.bilibili.app.comm.comment2.CommentContext"), java.lang.String.class, long.class, long.class, long.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, boolean.class, new XC_MethodHook() {
                     @Override
@@ -150,7 +151,38 @@ public class PostCommentHook implements IXposedHookLoadPackage {
                 });
             }
 
+            //强制显示invisible评论
+            XposedHelpers.findAndHookMethod("com.bapis.bilibili.main.community.reply.v1.ReplyControl", loadPackageParam.classLoader, "getInvisible", new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                }
 
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    super.afterHookedMethod(param);
+                    param.setResult(false);
+                }
+            });
+
+            //如果是invisible评论，在IP属地信息那标记是[隐藏评论]
+            XposedHelpers.findAndHookMethod("com.bapis.bilibili.main.community.reply.v1.ReplyControl", loadPackageParam.classLoader, "getLocation", new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+                    Object thisObject = methodHookParam.thisObject;
+                    Field invisibleField = thisObject.getClass().getDeclaredField("invisible_");
+                    invisibleField.setAccessible(true);
+                    boolean invisible = invisibleField.getBoolean(thisObject);
+                    Field locationField = thisObject.getClass().getDeclaredField("location_");
+                    locationField.setAccessible(true);
+                    String location = (String) locationField.get(thisObject);
+                    if (invisible) {
+                        return location + " [隐藏的评论]";
+                    } else {
+                        return location;
+                    }
+                }
+            });
 
         } else if (loadPackageParam.packageName.equals("com.bilibili.app.in")) {//适配版本：? - 3.16.0 - ?
             AtomicReference<Context> currentContext = new AtomicReference<>();
@@ -234,6 +266,20 @@ public class PostCommentHook implements IXposedHookLoadPackage {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     super.afterHookedMethod(param);
+                }
+            });
+
+            //强制显示invisible评论
+            XposedHelpers.findAndHookMethod("com.bapis.bilibili.main.community.reply.v1.ReplyControl", loadPackageParam.classLoader, "getInvisible", new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                }
+
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    super.afterHookedMethod(param);
+                    param.setResult(false);
                 }
             });
         }

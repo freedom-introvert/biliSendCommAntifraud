@@ -7,6 +7,11 @@ public class BannedCommentBean {
     public static final String BANNED_TYPE_SHADOW_BAN = "shadowBan";
     public static final String BANNED_TYPE_QUICK_DELETE = "quickDelete";
     public static final String BANNED_TYPE_SENSITIVE = "sensitive";
+    //基于前端的隐藏，评论正常出现在JSON数据中，但是"invisible": true，只是客户端不展示
+    public static final String BANNED_TYPE_INVISIBLE = "invisible";
+    //疑似没问题
+    public static final String BANNED_TYPE_SUSPECTED_NO_PROBLEM = "suspectedNoProblem";
+    //直接去申诉所导致的未知状态
     public static final String BANNED_TYPE_UNKNOWN = "unknown";
 
     //没有检查

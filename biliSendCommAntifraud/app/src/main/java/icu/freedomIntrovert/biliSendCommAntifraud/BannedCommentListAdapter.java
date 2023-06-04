@@ -66,20 +66,28 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
         holder.txv_comment.setText(bandCommentBean.comment);
         switch (bandCommentBean.bannedType) {
             case BannedCommentBean.BANNED_TYPE_SHADOW_BAN:
-                holder.imgv_band_type.setImageDrawable(context.getDrawable(R.drawable.hide));
-                holder.txv_band_type.setText("仅自己可见");
+                holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.hide));
+                holder.txv_banned_type.setText("仅自己可见");
                 break;
             case BannedCommentBean.BANNED_TYPE_QUICK_DELETE:
-                holder.imgv_band_type.setImageDrawable(context.getDrawable(R.drawable.deleted));
-                holder.txv_band_type.setText("被系统秒删");
+                holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.deleted));
+                holder.txv_banned_type.setText("被系统秒删");
                 break;
             case BannedCommentBean.BANNED_TYPE_SENSITIVE:
-                holder.imgv_band_type.setImageDrawable(context.getDrawable(R.drawable.sensitive));
-                holder.txv_band_type.setText("包含敏感词");
+                holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.sensitive));
+                holder.txv_banned_type.setText("包含敏感词");
+                break;
+            case BannedCommentBean.BANNED_TYPE_INVISIBLE:
+                holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.ghost));
+                holder.txv_banned_type.setText("评论被隐身");
                 break;
             case BannedCommentBean.BANNED_TYPE_UNKNOWN:
-                holder.imgv_band_type.setImageDrawable(context.getDrawable(R.drawable.unknown));
-                holder.txv_band_type.setText("未知");
+                holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.unknown));
+                holder.txv_banned_type.setText("未知");
+                break;
+            case BannedCommentBean.BANNED_TYPE_SUSPECTED_NO_PROBLEM:
+                holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.ic_baseline_access_time_24));
+                holder.txv_banned_type.setText("评论疑似正常");
                 break;
         }
         holder.txv_date.setText(bandCommentBean.getFormatDateFor_yMd());
@@ -112,8 +120,15 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
                 case BannedCommentBean.BANNED_TYPE_SENSITIVE:
                     txv_band_type.setText("包含敏感词");
                     break;
+                case BannedCommentBean.BANNED_TYPE_INVISIBLE:
+                    txv_band_type.setText("评论被隐身(可获取到，但前端不展示，因为属性：invisible=true)");
+                    break;
                 case BannedCommentBean.BANNED_TYPE_UNKNOWN:
                     txv_band_type.setText("未知（直接去申诉等无法得知具体状态）");
+                    break;
+                case BannedCommentBean.BANNED_TYPE_SUSPECTED_NO_PROBLEM:
+                    txv_band_type.setText("评论疑似正常，因为申诉时提示无可申诉评论（可能等待时间设置太短所以误判导致，或处于某种处理或审核状态，等待一段时间后应该可以显示）");
+                    break;
             }
             switch (bandCommentBean.commentArea.areaType) {
                 case CommentArea.AREA_TYPE_VIDEO:
@@ -184,17 +199,17 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         View itemView;
-        TextView txv_comment, txv_band_type, txv_info, txv_date;
-        ImageView imgv_band_type;
+        TextView txv_comment, txv_banned_type, txv_info, txv_date;
+        ImageView imgv_banned_type;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             this.itemView = itemView;
             txv_comment = itemView.findViewById(R.id.txv_comment_content);
-            txv_band_type = itemView.findViewById(R.id.txv_band_type);
+            txv_banned_type = itemView.findViewById(R.id.txv_band_type);
             txv_info = itemView.findViewById(R.id.txv_info);
             txv_date = itemView.findViewById(R.id.txv_date);
-            imgv_band_type = itemView.findViewById(R.id.img_band_type);
+            imgv_banned_type = itemView.findViewById(R.id.img_band_type);
         }
     }
 }

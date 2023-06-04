@@ -136,6 +136,13 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         return db.update(TABLE_NAME_BANNED_COMMENT,values,"rpid = ?",new String[]{rpid});
     }
 
+    public int updateBannedCommentBannedType(String rpid,String bannedType){
+        SQLiteDatabase db = getReadableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("bannedType",bannedType);
+        return db.update(TABLE_NAME_BANNED_COMMENT,values,"rpid = ?",new String[]{rpid});
+    }
+
     public Boolean getCommentAreaIsMartialLaw(String oid,String rpid){
         SQLiteDatabase db = getReadableDatabase();
         Boolean areaIsMartialLaw = null;
