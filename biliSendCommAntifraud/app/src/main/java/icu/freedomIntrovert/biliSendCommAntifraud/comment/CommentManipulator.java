@@ -28,7 +28,7 @@ import retrofit2.Call;
 
 public class CommentManipulator {
 
-    private OkHttpClient httpClient;
+    public OkHttpClient httpClient;
     private OkHttpClient httpClientNoRedirects;
     private BiliApiService biliApiService;
     private String cookie;

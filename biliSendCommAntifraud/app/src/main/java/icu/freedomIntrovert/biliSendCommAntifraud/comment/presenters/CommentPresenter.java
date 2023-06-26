@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import icu.freedomIntrovert.biliSendCommAntifraud.NetworkCallBack;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliApiService;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentReply;
@@ -26,16 +27,18 @@ public class CommentPresenter {
     public StatisticsDBOpenHelper statisticsDBOpenHelper;
     private boolean enableStatistics;
     public long waitTime;
+    public long waitTimeByHasPictures;
     private Executor executor;
     public BiliApiService biliApiService;
 
-    public CommentPresenter(Handler handler, CommentManipulator manipulator, StatisticsDBOpenHelper statisticsDBOpenHelper, long waitTime, boolean enableStatistics) {
+    public CommentPresenter(Handler handler, CommentManipulator manipulator, StatisticsDBOpenHelper statisticsDBOpenHelper, long waitTime,long waitTimeByHasPictures, boolean enableStatistics) {
         this.handler = handler;
         this.commentManipulator = manipulator;
         this.statisticsDBOpenHelper = statisticsDBOpenHelper;
         executor = Executors.newSingleThreadExecutor();
         biliApiService = ServiceGenerator.createService(BiliApiService.class);
         this.waitTime = waitTime;
+        this.waitTimeByHasPictures = waitTimeByHasPictures;
         this.enableStatistics = enableStatistics;
     }
 
@@ -59,6 +62,10 @@ public class CommentPresenter {
         });
     }
 
+    public void setWaitTimeByHasPictrues(long waitTimeByHasPictures) {
+
+    }
+
     public interface MatchToAreaCallBack extends NetworkCallBack {
         void onMatchedArea(CommentArea commentArea);
     }
@@ -68,12 +75,17 @@ public class CommentPresenter {
         return biliApiService.deleteComment(commentManipulator.getCookie(), commentManipulator.getCsrfFromCookie(), commentArea.oid, commentArea.areaType, rpid);
     }
 
-    public void checkCommentStatus(CommentArea commentArea, String mainComment, String testComment, long rpid, long parent, long root, CheckCommentStatusCallBack callBack) {
+    public void checkCommentStatus(CommentArea commentArea, String mainComment, String testComment, long rpid, long parent, long root, boolean hasPictures,CheckCommentStatusCallBack callBack) {
         executor.execute(() -> {
             try {
                 try {
-                    handler.post(() -> callBack.onSleeping(waitTime));
-                    Thread.sleep(waitTime);
+                    if (!hasPictures) {
+                        handler.post(() -> callBack.onSleeping(waitTime, -1));
+                        Thread.sleep(waitTime);
+                    } else {
+                        handler.post(() -> callBack.onSleeping(waitTime, waitTimeByHasPictures));
+                        Thread.sleep(waitTime+waitTimeByHasPictures);
+                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -128,7 +140,7 @@ public class CommentPresenter {
 
 
     public interface CheckCommentStatusCallBack extends NetworkCallBack {
-        public void onSleeping(long waitTime);
+        public void onSleeping(long waitTime,long waitTimeByPictures);
 
         public void onStartCheckComment();
 
@@ -388,6 +400,8 @@ public class CommentPresenter {
             statisticsDBOpenHelper.updateCheckedArea(String.valueOf(rpid), checkedType);
         }
     }
+
+
 
 
 }

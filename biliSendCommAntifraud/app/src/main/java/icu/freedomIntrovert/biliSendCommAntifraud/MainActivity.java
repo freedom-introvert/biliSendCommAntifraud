@@ -43,7 +43,7 @@ import okhttp3.OkHttpClient;
 
 public class MainActivity extends AppCompatActivity {
     EditText edt_bvid, edt_comment;
-    Button btn_send, btn_clean, btn_send_and_appeal;
+    Button btn_send, btn_clean, btn_send_and_appeal,btn_test;
     SharedPreferences sp_config;
     CommentManipulator commentManipulator;
     CommentPresenter commentPresenter;
@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
         commentManipulator = new CommentManipulator(new OkHttpClient(), sp_config.getString("cookie", ""));
         handler = new Handler();
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
-        commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000), sp_config.getBoolean("autoRecorde", true));
+        commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000),sp_config.getLong("wait_time_by_has_pictures", 10000), sp_config.getBoolean("autoRecorde", true));
         dialogCommSendWorker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, () -> {
         });
 
@@ -153,18 +153,27 @@ public class MainActivity extends AppCompatActivity {
         ll_wait_time.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                View dialogView = View.inflate(context, R.layout.edit_text, null);
-                EditText editText = dialogView.findViewById(R.id.edit_text);
-                editText.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
-                editText.setText(String.valueOf(sp_config.getLong("wait_time", 5000)));
+                View dialogView = View.inflate(context, R.layout.dialog_set_wait_time, null);
+                EditText editTextWTByCommentSent = dialogView.findViewById(R.id.edit_text_wt_by_after_comment_sent);
+                EditText editTextWTByHasPictures = dialogView.findViewById(R.id.edit_text_wt_by_has_pictures);
+                EditText editTextWTByDanmakuSent = dialogView.findViewById(R.id.edit_text_wt_danmaku_sent);
+                editTextWTByCommentSent.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
+                editTextWTByCommentSent.setText(String.valueOf(sp_config.getLong("wait_time", 5000)));
+                editTextWTByHasPictures.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
+                editTextWTByHasPictures.setText(String.valueOf(sp_config.getLong("wait_time_by_has_pictures", 10000)));
+                editTextWTByDanmakuSent.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
+                editTextWTByDanmakuSent.setText(String.valueOf(sp_config.getLong("wait_time_by_danmaku_sent",20000)));
                 new AlertDialog.Builder(context).setTitle("设置发评后等待时间（毫秒/ms）")
                         .setView(dialogView)
                         .setPositiveButton("设置", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                long waitTime = Long.parseLong(editText.getText().toString());
-                                sp_config.edit().putLong("wait_time", waitTime).apply();
+                                long waitTime = Long.parseLong(editTextWTByCommentSent.getText().toString());
+                                long waitTimeByHasPictures = Long.parseLong(editTextWTByHasPictures.getText().toString());
+                                long waitTimeByDanmakuSent = Long.parseLong(editTextWTByDanmakuSent.getText().toString());
+                                sp_config.edit().putLong("wait_time", waitTime).putLong("wait_time_by_has_pictures",waitTimeByHasPictures).putLong("wait_time_by_danmaku_sent",waitTimeByDanmakuSent).apply();
                                 commentPresenter.setWaitTime(waitTime);
+                                commentPresenter.setWaitTimeByHasPictrues(waitTimeByHasPictures);
                                 toastLong("设置成功！");
                             }
                         })
@@ -204,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onSuccess(GeneralResponse<CommentAddResult> response) {
                                 if (commentSendSuccess(response, commentArea, comment, dialog)) {
-                                    dialogCommSendWorker.checkComment(commentArea, response.data.rpid, 0, 0, comment, dialog);
+                                    dialogCommSendWorker.checkComment(commentArea, response.data.rpid, 0, 0, comment,false, dialog);
                                 }
                             }
                         });
@@ -294,6 +303,23 @@ public class MainActivity extends AppCompatActivity {
                 edt_comment.setText("");
             }).setNegativeButton("手滑了", new VoidDialogInterfaceOnClickListener()).show();
         });
+        /*
+        btn_test = findViewById(R.id.btn_test);
+        btn_test.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DanmakuManipulator danmakuManipulator = new DanmakuManipulator(new OkHttpClient());
+                DanmakuPresenter danmakuPresenter = new DanmakuPresenter(handler,danmakuManipulator,statisticsDBOpenHelper,5000,true);
+                DialogDanmakuCheckWorker dialogDanmakuCheckWorker = new DialogDanmakuCheckWorker(context, handler, danmakuPresenter, new OnExitListener() {
+                    @Override
+                    public void exit() {
+                        finish();
+                    }
+                });
+                dialogDanmakuCheckWorker.startCheckDanmaku(1155228366,0,"helloWorld",null,1);
+            }
+        });
+         */
 
     }
 
