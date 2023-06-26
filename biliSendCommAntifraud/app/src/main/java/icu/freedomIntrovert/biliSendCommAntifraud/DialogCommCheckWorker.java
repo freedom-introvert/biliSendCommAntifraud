@@ -13,6 +13,7 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -49,7 +50,7 @@ public class DialogCommCheckWorker {
         this.exitListener = exitListener;
     }
 
-    public void checkComment(CommentArea commentArea, long rpid, long parent, long root, String comment, ProgressDialog dialog) {
+    public void checkComment(CommentArea commentArea, long rpid, long parent, long root, String comment,boolean hasPictures, ProgressDialog dialog) {
         if (commentManipulator.cookieAreSet()) {
             /*
             commentPresenter.checkCommentStatusByNewMethod(commentArea, comment, rpid, new CommentPresenter.CheckCommentStatusByNewMethodCallBack() {
@@ -96,10 +97,15 @@ public class DialogCommCheckWorker {
 
              */
 
-            commentPresenter.checkCommentStatus(commentArea, comment, commentUtil.getRandomComment(commentArea), rpid, parent, root, new CommentPresenter.CheckCommentStatusCallBack() {
+            commentPresenter.checkCommentStatus(commentArea, comment, commentUtil.getRandomComment(commentArea), rpid, parent, root,hasPictures, new CommentPresenter.CheckCommentStatusCallBack() {
                 @Override
-                public void onSleeping(long waitTime) {
-                    dialog.setMessage("等待" + waitTime + "ms后检评论……");
+                public void onSleeping(long waitTime,long waitTimeByPictures) {
+                    if (waitTimeByPictures == -1){
+                        dialog.setMessage("等待" + waitTime + "ms后检评论……");
+                    } else {
+                        dialog.setMessage("评论包含图片，等待"+waitTime+"+"+waitTimeByPictures+"="+(waitTime+waitTimeByPictures)+"ms后检查评论……");
+                    }
+
                 }
 
                 @Override
@@ -156,6 +162,7 @@ public class DialogCommCheckWorker {
                 @Override
                 public void onNetworkError(Throwable th) {
                     dialog.dismiss();
+                    exitListener.exit();
                     toastNetError(th.getMessage());
                 }
             });
@@ -177,6 +184,13 @@ public class DialogCommCheckWorker {
                     public void onClick(DialogInterface dialog, int which) {
                         exitListener.exit();
                     }
+                })
+                .setOnKeyListener((dialog1, keyCode, event) -> {
+                    if (keyCode == KeyEvent.KEYCODE_BACK){
+                        exitListener.exit();
+                        return true;
+                    }
+                    return false;
                 })
                 .show();
     }
@@ -571,11 +585,6 @@ public class DialogCommCheckWorker {
 
     private void toastNetError(String msg) {
         toastShort("网络错误：" + msg);
-    }
-
-
-    public interface OnExitListener {
-        public void exit();
     }
 
 }

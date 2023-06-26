@@ -12,11 +12,10 @@ android {
         applicationId "icu.freedomIntrovert.biliSendCommAntifraud"
         minSdk 21
         targetSdk 32
-        versionCode 264
-        versionName "2.6.4"
+        versionCode 300
+        versionName "3.0.0-beta"
 
     }
-
     buildTypes {
         release {
             minifyEnabled false

@@ -1,4 +1,4 @@
-package icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters;
+package icu.freedomIntrovert.biliSendCommAntifraud;
 
 public interface NetworkCallBack {
     public void onNetworkError(Throwable th);
