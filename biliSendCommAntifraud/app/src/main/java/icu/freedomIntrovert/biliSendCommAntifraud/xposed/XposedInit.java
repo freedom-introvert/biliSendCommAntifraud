@@ -10,7 +10,6 @@ import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostCommentHook;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostCommentHookByGlobal;
-import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostDanmakuHook;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.ShowInvisibleCommentHook;
 
 public class XposedInit implements IXposedHookLoadPackage {
@@ -23,7 +22,8 @@ public class XposedInit implements IXposedHookLoadPackage {
             XposedBridge.log("bilibili version code:" + appVersionCode);
             HookStater hookStater = new HookStater(appVersionCode,classLoader);
             hookStater.startHook(new PostCommentHook());
-            hookStater.startHook(new PostDanmakuHook());
+            //暂时放弃弹幕检查
+            //hookStater.startHook(new PostDanmakuHook());
             hookStater.startHook(new ShowInvisibleCommentHook());
         } else if (loadPackageParam.packageName.equals("com.bilibili.app.in")){//国际版
             ClassLoader classLoader = loadPackageParam.classLoader;

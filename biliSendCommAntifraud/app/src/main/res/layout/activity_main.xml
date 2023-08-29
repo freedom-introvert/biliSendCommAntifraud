@@ -92,7 +92,7 @@
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:maxLines="2"
-                    android:text="Test:150"
+                    android:text="Test:152"
                     android:textColor="@color/black" />
 
             </LinearLayout>

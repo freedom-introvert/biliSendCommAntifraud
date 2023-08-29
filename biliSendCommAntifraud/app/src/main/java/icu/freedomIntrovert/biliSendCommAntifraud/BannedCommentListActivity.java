@@ -43,10 +43,10 @@ public class BannedCommentListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_band_comment_list);
+        setContentView(R.layout.activity_banned_comment_list);
         context = this;
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
-        recyclerView = findViewById(R.id.rv_band_comment);
+        recyclerView = findViewById(R.id.rv_banned_comment);
         bandCommentBeanArrayList = statisticsDBOpenHelper.queryAllBannedComments();
         bannedCommentListAdapter = new BannedCommentListAdapter(bandCommentBeanArrayList, context);
         recyclerView.setAdapter(bannedCommentListAdapter);

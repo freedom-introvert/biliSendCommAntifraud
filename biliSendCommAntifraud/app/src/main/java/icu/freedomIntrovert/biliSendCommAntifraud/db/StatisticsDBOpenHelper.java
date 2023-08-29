@@ -56,10 +56,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         return db.insert(TABLE_NAME_BANNED_COMMENT, null, values);
     }
 
-    public long deleteBannedComment(String rpid) {
-        SQLiteDatabase db = getWritableDatabase();
-        return db.delete(TABLE_NAME_BANNED_COMMENT, "rpid = ?", new String[]{rpid});
-    }
+
 
     public ArrayList<BannedCommentBean> queryAllBannedComments() {
         ArrayList<BannedCommentBean> bannedCommentBeanArrayList = new ArrayList<>();
@@ -175,6 +172,10 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         cursor.close();
         return commentIsOnlyBannedInThisArea;
     }
-    
 
+
+    public int deleteBannedComment(String rpid) {
+        SQLiteDatabase db = getReadableDatabase();
+        return db.delete(TABLE_NAME_BANNED_COMMENT,"rpid = ?",new String[]{rpid});
+    }
 }
