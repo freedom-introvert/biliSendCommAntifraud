@@ -25,7 +25,7 @@ public class CommentPresenter {
     private Handler handler;
     public CommentManipulator commentManipulator;
     public StatisticsDBOpenHelper statisticsDBOpenHelper;
-    private boolean enableStatistics;
+    public boolean enableStatistics;
     public long waitTime;
     public long waitTimeByHasPictures;
     private Executor executor;

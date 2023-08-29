@@ -345,7 +345,6 @@ public class CommentManipulator {
         return respJson;
     }
 
-
     public Call<Void> deleteComment(CommentArea commentArea, long rpid) {
         return biliApiService.deleteComment(getCookie(), getCsrfFromCookie(), commentArea.oid, commentArea.areaType, rpid);
     }

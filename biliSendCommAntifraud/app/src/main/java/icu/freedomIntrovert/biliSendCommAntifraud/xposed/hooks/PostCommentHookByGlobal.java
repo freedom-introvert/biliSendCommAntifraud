@@ -23,6 +23,7 @@ public class PostCommentHookByGlobal extends BaseHook {
         AtomicReference<String> currentId = new AtomicReference<>();
         AtomicReference<String> currentAreaType = new AtomicReference<>();
         AtomicReference<String> currentComment = new AtomicReference<>();
+        AtomicReference<String> currentHasPictures = new AtomicReference<>();
 
         XposedHelpers.findAndHookMethod("com.bilibili.lib.ui.ComposeActivity", classLoader, "onCreate", android.os.Bundle.class, new XC_MethodHook() {
             @Override
@@ -39,56 +40,118 @@ public class PostCommentHookByGlobal extends BaseHook {
                 super.afterHookedMethod(param);
             }
         });
-        
-        XposedHelpers.findAndHookMethod("com.bilibili.app.comm.comment2.model.b", classLoader, "z", java.lang.String.class, long.class, int.class, long.class, long.class, int.class, int.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, long.class, int.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, long.class, java.lang.String.class, java.lang.String.class, classLoader.loadClass("java.util.Map"), classLoader.loadClass("no1.a"), new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                super.beforeHookedMethod(param);
-                currentOid.set(String.valueOf(param.args[1]));
-                currentAreaType.set(String.valueOf(param.args[2]));
-                currentComment.set((String) param.args[8]);
-            }
-
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                super.afterHookedMethod(param);
-            }
-        });
-
-
-        XposedHelpers.findAndHookMethod("com.bilibili.app.comm.comment2.input.a", classLoader, "L", classLoader.loadClass("com.bilibili.okretro.GeneralResponse"), classLoader.loadClass("com.bilibili.app.comm.comment2.input.a$e"), classLoader.loadClass("dc.r"), new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                super.beforeHookedMethod(param);
-                Object generalResponse = param.args[0];
-                Object biliCommentAddResult = generalResponse.getClass().getField("data").get(generalResponse);
-                Intent intent = new Intent();
-                intent.setComponent(new ComponentName("icu.freedomIntrovert.biliSendCommAntifraud", "icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity"));
-                Field contextField = param.thisObject.getClass().getDeclaredField("a");
-                contextField.setAccessible(true);
-                Context context = (Context) contextField.get(param.thisObject);
-                Class<?> biliCommentAddResultClass = biliCommentAddResult.getClass();
-                if ((Integer) biliCommentAddResultClass.getField("action").get(biliCommentAddResult) == 0) {//不等于0很可能是up开启了评论精选之类的，toast提示你了，检查无意义也误判
-                    intent.putExtra("todo", ByXposedLaunchedActivity.TODO_CHECK_COMMENT);
-                    intent.putExtra("message", (String) biliCommentAddResultClass.getField("message").get(biliCommentAddResult));
-                    intent.putExtra("oid", currentOid.get());
-                    intent.putExtra("type", currentAreaType.get());
-                    intent.putExtra("rpid", String.valueOf((Long) biliCommentAddResultClass.getField("rpid").get(biliCommentAddResult)));
-                    intent.putExtra("root", String.valueOf((Long) biliCommentAddResultClass.getField("root").get(biliCommentAddResult)));
-                    intent.putExtra("parent", String.valueOf((Long) biliCommentAddResultClass.getField("parent").get(biliCommentAddResult)));
-                    intent.putExtra("comment", currentComment.get());
-                    intent.putExtra("id", currentId.get());
-                    intent.putExtra("hasPictures",false);
-                    XposedBridge.log("bilibili comment add result:" + intent.getExtras().toString());
-                    context.startActivity(intent);
+        if(appVersionCode <= 7082100) {
+            XposedHelpers.findAndHookMethod("com.bilibili.app.comm.comment2.model.b", classLoader, "z", java.lang.String.class, long.class, int.class, long.class, long.class, int.class, int.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, long.class, int.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, long.class, java.lang.String.class, java.lang.String.class, classLoader.loadClass("java.util.Map"), classLoader.loadClass("no1.a"), new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    currentOid.set(String.valueOf(param.args[1]));
+                    currentAreaType.set(String.valueOf(param.args[2]));
+                    currentComment.set((String) param.args[8]);
+                    
                 }
-            }
 
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                super.afterHookedMethod(param);
-            }
-        });
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    super.afterHookedMethod(param);
+                }
+            });
+            XposedHelpers.findAndHookMethod("com.bilibili.app.comm.comment2.input.a", classLoader, "L", classLoader.loadClass("com.bilibili.okretro.GeneralResponse"), classLoader.loadClass("com.bilibili.app.comm.comment2.input.a$e"), classLoader.loadClass("dc.r"), new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    Object generalResponse = param.args[0];
+                    Object biliCommentAddResult = generalResponse.getClass().getField("data").get(generalResponse);
+                    Intent intent = new Intent();
+                    intent.setComponent(new ComponentName("icu.freedomIntrovert.biliSendCommAntifraud", "icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity"));
+                    Field contextField = param.thisObject.getClass().getDeclaredField("a");
+                    contextField.setAccessible(true);
+                    Context context = (Context) contextField.get(param.thisObject);
+                    Class<?> biliCommentAddResultClass = biliCommentAddResult.getClass();
+                    if ((Integer) biliCommentAddResultClass.getField("action").get(biliCommentAddResult) == 0) {//不等于0很可能是up开启了评论精选之类的，toast提示你了，检查无意义也误判
+                        intent.putExtra("todo", ByXposedLaunchedActivity.TODO_CHECK_COMMENT);
+                        intent.putExtra("message", (String) biliCommentAddResultClass.getField("message").get(biliCommentAddResult));
+                        intent.putExtra("oid", currentOid.get());
+                        intent.putExtra("type", currentAreaType.get());
+                        intent.putExtra("rpid", String.valueOf((Long) biliCommentAddResultClass.getField("rpid").get(biliCommentAddResult)));
+                        intent.putExtra("root", String.valueOf((Long) biliCommentAddResultClass.getField("root").get(biliCommentAddResult)));
+                        intent.putExtra("parent", String.valueOf((Long) biliCommentAddResultClass.getField("parent").get(biliCommentAddResult)));
+                        intent.putExtra("comment", currentComment.get());
+                        intent.putExtra("id", currentId.get());
+                        intent.putExtra("hasPictures",false);
+                        XposedBridge.log("bilibili comment add result:" + intent.getExtras().toString());
+                        context.startActivity(intent);
+                    }
+                }
+
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    super.afterHookedMethod(param);
+                }
+            });
+        } else {
+            XposedHelpers.findAndHookMethod("com.bilibili.app.comm.comment2.model.b", classLoader, "y", java.lang.String.class, long.class, int.class, long.class, long.class, int.class, int.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, long.class, int.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, long.class, java.lang.String.class, java.lang.String.class, java.util.Map.class, classLoader.loadClass("qs1.a"), new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    currentOid.set(String.valueOf(param.args[1]));
+                    currentAreaType.set(String.valueOf(param.args[2]));
+                    currentComment.set((String) param.args[8]);
+                }
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    super.afterHookedMethod(param);
+                }
+            });
+            XposedHelpers.findAndHookMethod("com.bilibili.app.comm.comment2.model.b", classLoader, "z", classLoader.loadClass("com.bilibili.app.comm.comment2.CommentContext"), java.lang.String.class, long.class, long.class, long.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, boolean.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    currentOid.set(String.valueOf(param.args[1]));
+                    currentAreaType.set(String.valueOf(param.args[2]));
+                    currentComment.set((String) param.args[8]);
+                }
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    super.afterHookedMethod(param);
+                }
+            });
+            XposedHelpers.findAndHookMethod("com.bilibili.app.comm.comment2.input.a", classLoader, "K", classLoader.loadClass("com.bilibili.okretro.GeneralResponse"), classLoader.loadClass("com.bilibili.app.comm.comment2.input.a$e"), classLoader.loadClass("bc.r"), new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    Object generalResponse = param.args[0];
+                    Object biliCommentAddResult = generalResponse.getClass().getField("data").get(generalResponse);
+                    Intent intent = new Intent();
+                    intent.setComponent(new ComponentName("icu.freedomIntrovert.biliSendCommAntifraud", "icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity"));
+                    Field contextField = param.thisObject.getClass().getDeclaredField("a");
+                    contextField.setAccessible(true);
+                    Context context = (Context) contextField.get(param.thisObject);
+                    Class<?> biliCommentAddResultClass = biliCommentAddResult.getClass();
+                    if ((Integer) biliCommentAddResultClass.getField("action").get(biliCommentAddResult) == 0) {//不等于0很可能是up开启了评论精选之类的，toast提示你了，检查无意义也误判
+                        intent.putExtra("todo", ByXposedLaunchedActivity.TODO_CHECK_COMMENT);
+                        intent.putExtra("message", (String) biliCommentAddResultClass.getField("message").get(biliCommentAddResult));
+                        intent.putExtra("oid", currentOid.get());
+                        intent.putExtra("type", currentAreaType.get());
+                        intent.putExtra("rpid", String.valueOf((Long) biliCommentAddResultClass.getField("rpid").get(biliCommentAddResult)));
+                        intent.putExtra("root", String.valueOf((Long) biliCommentAddResultClass.getField("root").get(biliCommentAddResult)));
+                        intent.putExtra("parent", String.valueOf((Long) biliCommentAddResultClass.getField("parent").get(biliCommentAddResult)));
+                        intent.putExtra("comment", currentComment.get());
+                        intent.putExtra("id", currentId.get());
+                        intent.putExtra("hasPictures",false);
+                        XposedBridge.log("bilibili comment add result:" + intent.getExtras().toString());
+                        context.startActivity(intent);
+                    }
+                }
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    super.afterHookedMethod(param);
+                }
+            });
+        }
+
+
+
 
         //强制显示invisible评论
         XposedHelpers.findAndHookMethod("com.bapis.bilibili.main.community.reply.v1.ReplyControl", classLoader, "getInvisible", new XC_MethodHook() {
