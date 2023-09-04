@@ -121,7 +121,7 @@ graph TB
 
 **ShadowBan（仅自己可见）：** <span style="color:red"> 示例 </span>（红色字）
 
-被删除：<span style="color:red">~~示例~~</span>（红色字）
+**被删除：** <span style="color:red">~~示例~~</span>（红色字）
 
 **invisible：**<span style="color:#CCCCCC">示例</span>（灰色字）
 
