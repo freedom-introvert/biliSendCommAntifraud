@@ -69,8 +69,11 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
             String id = intent.getStringExtra("id");
             boolean hasPictures = intent.getBooleanExtra("hasPictures", false);
 
-            CommentPresenter commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000),sp_config.getLong("wait_time_by_has_pictures", 10000
-            ), sp_config.getBoolean("autoRecorde", true));
+            CommentPresenter commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper,
+                    sp_config.getLong("wait_time", 5000),
+                    sp_config.getLong("wait_time_by_has_pictures", 10000),
+                    sp_config.getBoolean("autoRecorde", true),
+                    sp_config.getBoolean("recordeHistory",true));
             DialogCommCheckWorker worker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, this::finish);
             ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, "检查中", "从哔哩哔哩APP来，正在获取评论区信息……");
             progressDialog.setCancelable(false);

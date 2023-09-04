@@ -12,6 +12,9 @@ public class BiliComment {
     public long parent;
     public Content content;
     public Member member;
+    public int rcount;
+    public int like;
+    public boolean invisible;
 
 
     public static class Member{

@@ -94,7 +94,6 @@ public class DialogCommCheckWorker {
                     toastNetError(th.getMessage());
                 }
             });
-
              */
 
             commentPresenter.checkCommentStatus(commentArea, comment, commentUtil.getRandomComment(commentArea), rpid, parent, root,hasPictures, new CommentPresenter.CheckCommentStatusCallBack() {
@@ -126,6 +125,11 @@ public class DialogCommCheckWorker {
                 }
 
                 @Override
+                public void onPageTurnForHasAccReply(int pn) {
+                    dialog.setMessage("正在有账号条件下查找评论回复列表，第"+pn+"页");
+                }
+
+                @Override
                 public void onOtherError(int code, String message) {
                     dialog.dismiss();
                     DialogUtil.dialogMessage(context,"获取评论回复时发生错误！","code:"+code+"\nmessage:"+message);
@@ -151,6 +155,12 @@ public class DialogCommCheckWorker {
                 public void thenShadowBan() {
                     dialog.dismiss();
                     showCommentBannedResult(BannedCommentBean.BANNED_TYPE_SHADOW_BAN, commentArea, rpid, parent, root, comment);
+                }
+
+                @Override
+                public void thenUnderReview() {
+                    dialog.dismiss();
+                    showCommentBannedResult(BannedCommentBean.BANNED_TYPE_UNDER_REVIEW, commentArea, rpid, parent, root, comment);
                 }
 
                 @Override
@@ -215,6 +225,9 @@ public class DialogCommCheckWorker {
         if (bannedType.equals(BannedCommentBean.BANNED_TYPE_SHADOW_BAN)) {
             resultDialogBuilder.setIcon(R.drawable.hide_black);
             resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在无账号环境下无法找到，自己账号下获取该评论的回复列表成功，判定为被ShadowBan（仅自己可见），请检查评论内容或者检查评论区是否被戒严");
+        }else if (bannedType.equals(BannedCommentBean.BANNED_TYPE_UNDER_REVIEW)){
+            resultDialogBuilder.setIcon(R.drawable.hide_black);
+            resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在无账号环境下无法找到，自己账号下获取该评论的回复列表成功，接着又能在无账号下获取回复，疑似审核中，此时你可能无法申诉（回复无可申诉评论），请后续来统计中复查（记得搜遍评论区）！");
         } else if (bannedType.equals(BannedCommentBean.BANNED_TYPE_QUICK_DELETE)) {
             resultDialogBuilder.setIcon(R.drawable.deleted_black);
             resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在自己账号下获取该评论的回复列表和对该评论发送回复时均收到提示：“" + "已经被删除了" + "”，判定改评论被系统速删，请检查评论内容或者检查评论区是否被戒严");

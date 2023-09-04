@@ -3,14 +3,19 @@ package icu.freedomIntrovert.biliSendCommAntifraud.comment;
 import android.util.ArrayMap;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 import java.io.IOException;
+import java.util.List;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliApiService;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentPage;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentReply;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.VideoInfo;
@@ -18,6 +23,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentScanResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.MartialLawCommentArea;
+import icu.freedomIntrovert.biliSendCommAntifraud.okretro.HttpUtil;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.ServiceGenerator;
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
@@ -144,9 +150,9 @@ public class CommentManipulator {
 
     public JSONObject requestComments(CommentArea commentArea, int next, long root, boolean hasCookie) throws IOException {
         //String url = "https://api.bilibili.com/x/v2/reply/main?mode=2&next=" + next + "&oid=" + commentArea.oid + "&plat=1&seek_rpid=&type=" + commentArea.areaType;
-        String url = "https://api.bilibili.com/x/v2/reply?sort=0&pn=" + (next + 1)  + "&oid=" + commentArea.oid + "&plat=1&type=" + commentArea.areaType;
+        String url = "https://api.bilibili.com/x/v2/reply?sort=0&pn=" + (next + 1) + "&oid=" + commentArea.oid + "&plat=1&type=" + commentArea.areaType;
         if (root != 0) {
-            url = "https://api.bilibili.com/x/v2/reply/reply?oid=" + commentArea.oid + "&pn=" + (next + 1) + "&ps=10&root=" + root + "&type=" + commentArea.areaType;
+            url = "https://api.bilibili.com/x/v2/reply/reply?sort=0&oid=" + commentArea.oid + "&pn=" + (next + 1) + "&ps=20&root=" + root + "&type=" + commentArea.areaType;
         }
         Request.Builder builder = new Request.Builder().url(url);
         if (hasCookie) {
@@ -180,11 +186,11 @@ public class CommentManipulator {
                 for (int i = 0; i < replies.size(); i++) {
                     JSONObject biliCommentJsonObj = replies.getJSONObject(i);
                     if (biliCommentJsonObj.getLong("rpid") == rpid) {
-                        return new CommentScanResult(true,biliCommentJsonObj.getBoolean("invisible"));
+                        return new CommentScanResult(true, biliCommentJsonObj.getBoolean("invisible"));
                     }
                 }
             }
-            return new CommentScanResult(false,false);
+            return new CommentScanResult(false, false);
         } else {
             int next = 0;
             replies = requestComments(commentArea, next, root, false).getJSONObject("data").getJSONArray("replies");
@@ -193,15 +199,101 @@ public class CommentManipulator {
                 for (int i = 0; i < replies.size(); i++) {
                     JSONObject biliCommentJsonObj = replies.getJSONObject(i);
                     if (biliCommentJsonObj.getLong("rpid") == rpid) {
-                        return new CommentScanResult(true,biliCommentJsonObj.getBoolean("invisible"));
+                        return new CommentScanResult(true, biliCommentJsonObj.getBoolean("invisible"));
                     }
                 }
                 next++;
                 replies = requestComments(commentArea, next, root, false).getJSONObject("data").getJSONArray("replies");
             }
-            return new CommentScanResult(false,false);
+            return new CommentScanResult(false, false);
         }
     }
+
+
+    public BiliComment findCommentFromCommentReplyArea(CommentArea commentArea, long rpid, long root, boolean hasAccount, @Nullable PageTurnListener pageTurnListener) throws IOException {
+        int pn = 1;
+        GeneralResponse<CommentReply> body;
+        if (hasAccount) {
+            body = getCommentReplyHasAccount(commentArea, root, pn).execute().body();
+        } else {
+            body = getCommentReplyNoAccount(commentArea, root, pn).execute().body();
+        }
+        if (pageTurnListener != null) {
+            pageTurnListener.onPageTurn(pn);
+        }
+        HttpUtil.respNotNull(body);
+        if (body.isSuccess()) {
+            List<BiliComment> replyComments = body.data.replies;
+            while (!(replyComments == null || replyComments.size() == 0)) {
+                for (BiliComment replyComment : replyComments) {
+                    if (replyComment.rpid == rpid) {
+                        return replyComment;
+                    }
+                }
+                pn++;
+                if (hasAccount) {
+                    body = getCommentReplyHasAccount(commentArea, root, pn).execute().body();
+                } else {
+                    body = getCommentReplyNoAccount(commentArea, root, pn).execute().body();
+                }
+                if (pageTurnListener != null) {
+                    pageTurnListener.onPageTurn(pn);
+                }
+                HttpUtil.respNotNull(body);
+                replyComments = body.data.replies;
+            }
+        } else {
+            throw new RuntimeException("在获取回复评论前未检查根评论状态，发生错误：code=" + body.code + " message=" + body.message);
+        }
+        return null;
+    }
+
+
+    public BiliComment findThisCommentFromEntireCommentArea(CommentArea commentArea, long rpid, boolean hasAccount, @Nullable PageTurnListener pageTurnListener) throws IOException {
+        int pn = 1;
+        GeneralResponse<CommentPage> body;
+        if (hasAccount) {
+            body = biliApiService.getCommentPageHasAccount(cookie,getCsrfFromCookie(),0, commentArea.oid, pn,commentArea.areaType,1).execute().body();
+        } else {
+            body = biliApiService.getCommentPageNoAccount(commentArea.oid, commentArea.areaType, pn, 0, 1).execute().body();
+        }
+        if (pageTurnListener != null) {
+            pageTurnListener.onPageTurn(pn);
+        }
+        HttpUtil.respNotNull(body);
+        if (body.isSuccess()) {
+            List<BiliComment> replyComments = body.data.replies;
+            if (body.data.top_replies != null) {
+                replyComments.addAll(body.data.top_replies);
+            }
+            while (!(replyComments == null || replyComments.size() == 0)) {
+                for (BiliComment replyComment : replyComments) {
+                    if (replyComment.rpid == rpid) {
+                        return replyComment;
+                    }
+                }
+                pn++;
+                if (hasAccount) {
+                    body = biliApiService.getCommentPageHasAccount(cookie,getCsrfFromCookie(),0, commentArea.oid, pn,commentArea.areaType,1).execute().body();
+                } else {
+                    body = biliApiService.getCommentPageNoAccount(commentArea.oid, commentArea.areaType, pn,0,1).execute().body();
+                }
+                if (pageTurnListener != null) {
+                    pageTurnListener.onPageTurn(pn);
+                }
+                HttpUtil.respNotNull(body);
+                replyComments = body.data.replies;
+            }
+        } else {
+            throw new RuntimeException("在获取回复评论前未检查跟评论状态，发生错误：code=" + body.code + " message=" + body.message);
+        }
+        return null;
+    }
+
+    public interface PageTurnListener {
+        void onPageTurn(int page);
+    }
+
 
     public CommentArea matchCommentArea(String input) throws IOException {
         if (input.startsWith("BV")) {
@@ -350,11 +442,11 @@ public class CommentManipulator {
     }
 
     public Call<GeneralResponse<CommentReply>> getCommentReplyNoAccount(CommentArea commentArea, long rootRpid, int pn) {
-        return biliApiService.getCommentReply(commentArea.oid, pn, 10, rootRpid, commentArea.areaType);
+        return biliApiService.getCommentReply(commentArea.oid, pn, 20, rootRpid, commentArea.areaType, 0);
     }
 
     public Call<GeneralResponse<CommentReply>> getCommentReplyHasAccount(CommentArea commentArea, long rootRpid, int pn) {
-        return biliApiService.getCommentReply(getCookie(), getCsrfFromCookie(), commentArea.oid, pn, 10, rootRpid, commentArea.areaType);
+        return biliApiService.getCommentReply(getCookie(), getCsrfFromCookie(), commentArea.oid, pn, 20, rootRpid, commentArea.areaType, 0);
     }
 
 }

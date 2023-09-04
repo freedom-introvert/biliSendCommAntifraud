@@ -203,6 +203,53 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/cl_recorde_history_comment_sw"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground">
+
+                    <FrameLayout
+
+                        android:id="@+id/frameLayout1"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/record" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/textView1"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center_vertical"
+                        android:maxLines="2"
+                        android:text="记录历史评论"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        app:layout_constraintEnd_toStartOf="@+id/sw_recorde_history"
+                        app:layout_constraintStart_toEndOf="@+id/frameLayout1" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/sw_recorde_history"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="15dp"
+                        android:focusable="true"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <LinearLayout
                     android:id="@+id/ll_banned_comment_list"
@@ -259,6 +306,35 @@
                         android:layout_marginStart="5dp"
                         android:gravity="center_vertical"
                         android:text="@string/martial_law_comment_area_list"
+                        android:textColor="@color/black"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/ll_history_comment"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp">
+
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/history" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center_vertical"
+                        android:text="历史评论列表"
                         android:textColor="@color/black"
                         android:textSize="14sp" />
 
@@ -429,7 +505,7 @@
                         android:layout_marginStart="5dp"
                         android:gravity="center_vertical"
                         android:maxLines="2"
-                        android:text="GitHub项目"
+                        android:text="GitHub项目&amp;使用说明"
                         android:textColor="@color/black"
                         android:textSize="14sp"
                         app:layout_constraintStart_toEndOf="@+id/frameLayout2" />

@@ -23,8 +23,12 @@ public interface BiliApiService {
     @POST("/x/v2/reply/del")
     Call<Void> deleteComment(@Header ("cookie") String cookie,@Field("csrf") String csrf, @Field("oid") long oid, @Field("type") int type, @Field("rpid") long rpid);
     @GET("/x/v2/reply/reply")
-    Call<GeneralResponse<CommentReply>> getCommentReply(@Header ("cookie") String cookie,@Query("csrf")String csrf,@Query("oid") long oid,@Query("pn") int pn,@Query("ps") int ps,@Query("root") long root,@Query("type") int type);//csrf=a8bd67d9496b74f2b001b1e0529de4f9&oid=655062494&pn=1&ps=10&root=161192377344&type=1)
+    Call<GeneralResponse<CommentReply>> getCommentReply(@Header ("cookie") String cookie,@Query("csrf")String csrf,@Query("oid") long oid,@Query("pn") int pn,@Query("ps") int ps,@Query("root") long root,@Query("type") int type,@Query("sort") int sort);
     @GET("/x/v2/reply/reply")
-    Call<GeneralResponse<CommentReply>> getCommentReply(@Query("oid") long oid,@Query("pn") int pn,@Query("ps") int ps,@Query("root") long root,@Query("type") int type);
+    Call<GeneralResponse<CommentReply>> getCommentReply(@Query("oid") long oid,@Query("pn") int pn,@Query("ps") int ps,@Query("root") long root,@Query("type") int type,@Query("sort") int sort);
+    @GET("/x/v2/reply")
+    Call<GeneralResponse<CommentPage>> getCommentPageNoAccount(@Query("oid") long oid,@Query("type") int type,@Query("pn") int pn,@Query("sort") int sort,@Query("plat") int plat);
+    @GET("/x/v2/reply")
+    Call<GeneralResponse<CommentPage>> getCommentPageHasAccount(@Header ("cookie") String cookie,@Query("csrf")String csrf,@Query("sort") int sort,@Query("oid") long oid,@Query("pn") int pn,@Query("type") int type,@Query("plat") int plat);
 
 }

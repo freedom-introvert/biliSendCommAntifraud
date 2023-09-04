@@ -1,5 +1,6 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -18,7 +19,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.BaseHook;
 
 public class PostCommentHook extends BaseHook {
-    AtomicReference<Context> currentContext = new AtomicReference<>();
+    AtomicReference<Context> currentContext;
     AtomicReference<String> currentOid;
     AtomicReference<String> currentId;
     AtomicReference<String> currentAreaType;
@@ -26,6 +27,7 @@ public class PostCommentHook extends BaseHook {
     AtomicReference<Boolean> currentHasPictures;
 
     public PostCommentHook() {
+        currentContext = new AtomicReference<>();
         currentOid = new AtomicReference<>();
         currentId = new AtomicReference<>();
         currentAreaType = new AtomicReference<>();
@@ -179,15 +181,34 @@ public class PostCommentHook extends BaseHook {
              */
 
             //感谢另一位大佬提供的代码，支持的版本范围更宽了！
-            XposedHelpers.findAndHookConstructor("com.bilibili.app.comm.comment2.inputv2.CommentPublisher", classLoader, android.content.Context.class, classLoader.loadClass("com.bilibili.app.comm.comment2.CommentContext"), new XC_MethodHook() {
+//            XposedHelpers.findAndHookConstructor("com.bilibili.app.comm.comment2.inputv2.CommentPublisher", classLoader, android.content.Context.class, classLoader.loadClass("com.bilibili.app.comm.comment2.CommentContext"), new XC_MethodHook() {
+//                @Override
+//                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+//                    super.beforeHookedMethod(param);
+//                    Context context = (Context) param.args[0];
+//                    if (context != null) {
+//                        currentContext.set(context);
+//                    }
+//                }
+//                @Override
+//                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+//                    super.afterHookedMethod(param);
+//                }
+//            });
+
+            //直接在Activity启动时获取context，哪位大佬的获取方式不稳，有时候是null，导致startActivity空指针的恶性bug
+            XposedHelpers.findAndHookMethod(Activity.class, "onCreate", Bundle.class, new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     super.beforeHookedMethod(param);
-                    currentContext.set((Context) param.args[0]);
                 }
+
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     super.afterHookedMethod(param);
+                    Context context = (Context) param.thisObject;
+                    currentContext.set(context);
+                    XposedBridge.log("context:"+context);
                 }
             });
 
