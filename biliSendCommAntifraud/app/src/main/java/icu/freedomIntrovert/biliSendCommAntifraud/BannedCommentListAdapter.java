@@ -6,6 +6,7 @@ import android.app.ProgressDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.view.View;
@@ -79,6 +80,10 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
                 holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.hide));
                 holder.txv_banned_type.setText("仅自己可见");
                 break;
+            case BannedCommentBean.BANNED_TYPE_UNDER_REVIEW:
+                holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.hide));
+                holder.txv_banned_type.setText("疑似审核中");
+                break;
             case BannedCommentBean.BANNED_TYPE_QUICK_DELETE:
                 holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.deleted));
                 holder.txv_banned_type.setText("被系统秒删");
@@ -137,6 +142,9 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
                 case BannedCommentBean.BANNED_TYPE_QUICK_DELETE:
                     txv_band_type.setText("被系统秒删");
                     break;
+                case BannedCommentBean.BANNED_TYPE_UNDER_REVIEW:
+                    txv_band_type.setText("疑似审核中");
+                    break;
                 case BannedCommentBean.BANNED_TYPE_SENSITIVE:
                     txv_band_type.setText("包含敏感词");
                     break;
@@ -150,18 +158,7 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
                     txv_band_type.setText("评论疑似正常，因为申诉时提示无可申诉评论（可能等待时间设置太短所以误判导致，或处于某种处理或审核状态，等待一段时间后应该可以显示）");
                     break;
             }
-            switch (bannedCommentBean.commentArea.areaType) {
-                case CommentArea.AREA_TYPE_VIDEO:
-                    txv_area_type.setText("视频(type=" + bannedCommentBean.commentArea.areaType + ")");
-                    break;
-                case CommentArea.AREA_TYPE_ARTICLE:
-                    txv_area_type.setText("专栏(type=" + bannedCommentBean.commentArea.areaType + ")");
-                    break;
-                case CommentArea.AREA_TYPE_DYNAMIC11:
-                case CommentArea.AREA_TYPE_DYNAMIC17:
-                    txv_area_type.setText("动态(type=" + bannedCommentBean.commentArea.areaType + ")");
-                    break;
-            }
+            txv_area_type.setText(bannedCommentBean.commentArea.getAreaTypeDesc());
             switch (bannedCommentBean.checkedArea) {
                 case BannedCommentBean.CHECKED_NO_CHECK:
                     txv_checkedArea.setText("未检查");
@@ -187,7 +184,7 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
                     .setNegativeButton("复查状态", (dialog13, which) -> {
                         ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, null, "复查中……");
                         progressDialog.show();
-                        commentReviewPresenter.reviewStatus(bannedCommentBean.commentArea, Long.parseLong(bannedCommentBean.rpid), new CommentReviewPresenter.ReviewStatusCallBack() {
+                        commentReviewPresenter.reviewStatus(bannedCommentBean.commentArea, bannedCommentBean.rpid, new CommentReviewPresenter.ReviewStatusCallBack() {
                             @Override
                             public void deleted() {
                                 progressDialog.dismiss();
@@ -195,21 +192,59 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
                             }
 
                             @Override
-                            public void shadowBanned() {
+                            public void shadowBanned(int like,int rcount) {
                                 DialogUtil.dialogMessage(context,"检查结果","评论处于shadowBan状态");
                                 progressDialog.dismiss();
                             }
 
                             @Override
-                            public void ok() {
-                                DialogUtil.dialogMessage(context,"检查结果","评论正常！");
+                            public void ok(int like,int rcount) {
                                 progressDialog.dismiss();
+                                new AlertDialog.Builder(context)
+                                        .setTitle("检查结果")
+                                        .setMessage("评论正常，是否继续翻遍评论区？")
+                                        .setNegativeButton("取消",new VoidDialogInterfaceOnClickListener())
+                                        .setPositiveButton("继续", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                searchThroughoutTheCommentArea(bannedCommentBean.commentArea, bannedCommentBean.rpid, holder);
+                                            }
+                                        })
+                                        .show();
+                            }
+
+                            @Override
+                            public void onPageTurnForNoAccReply(int pn) {
+                                progressDialog.setMessage("正在无账号条件下查找评论回复列表，第"+pn+"页");
+                            }
+
+                            @Override
+                            public void onPageTurnForHasAccReply(int pn) {
+                                progressDialog.setMessage("正在有账号条件下查找评论回复列表，第"+pn+"页");
+                            }
+
+                            @Override
+                            public void replyOk(int like, int replyCount) {
+                                progressDialog.dismiss();
+                                DialogUtil.dialogMessage(context,"检查结果","此回复评论正常显示！");
+                            }
+
+                            @Override
+                            public void rootCommentIsShadowBan() {
+                                progressDialog.dismiss();
+                                DialogUtil.dialogMessage(context,"检查结果","你的根评论后期遭到shadowBan，此条回复评论被连累了！");
+                            }
+
+                            @Override
+                            public void invisible(int like, int replyCount) {
+                                progressDialog.dismiss();
+                                DialogUtil.dialogMessage(context,"检查结果","评论invisible，前端不可见！");
                             }
 
                             @Override
                             public void onNetworkError(Throwable th) {
-                                DialogUtil.dialogMessage(context,"网络错误",th.getLocalizedMessage());
                                 progressDialog.dismiss();
+                                DialogUtil.dialogMessage(context,"网络错误",th.getLocalizedMessage());
                             }
                         });
                     })
@@ -232,6 +267,36 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
                                     }
                                 }).show();
                     }).show();
+        });
+    }
+
+    private void searchThroughoutTheCommentArea(CommentArea commentArea,long rpid, ViewHolder viewHolder){
+        ProgressDialog progressDialog = DialogUtil.newProgressDialog(context,"寻找中","准备……");
+        progressDialog.show();
+        commentReviewPresenter.searchThroughoutTheCommentArea(commentArea, rpid, new CommentReviewPresenter.SearchTTCommAreaCallback() {
+            @Override
+            public void onPageTurn(int pn) {
+                progressDialog.setMessage("正在无账号条件下查找评论列表，第"+pn+"页");
+            }
+
+            @Override
+            public void found() {
+                progressDialog.dismiss();
+                DialogUtil.dialogMessage(context,"寻找结果","无账号下找到了你的评论，该评论正常显示！");
+            }
+
+            @Override
+            public void notFound() {
+                progressDialog.dismiss();
+                notifyItemChanged(viewHolder.getAdapterPosition());
+                DialogUtil.dialogMessage(context,"寻找评论","无账号下翻遍了评论区，未找到你的评论！评论审核中或ShadowBan+");
+            }
+
+            @Override
+            public void onNetworkError(Throwable th) {
+                progressDialog.dismiss();
+                DialogUtil.dialogMessage(context,"网络错误",th.getLocalizedMessage());
+            }
         });
     }
 

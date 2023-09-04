@@ -20,8 +20,18 @@ public class CommentArea {
         this.areaType = areaType;
     }
 
-    public String getStringAreaType() {
-        return String.valueOf(areaType);
+    public String getAreaTypeDesc(){
+        switch (areaType) {
+            case CommentArea.AREA_TYPE_VIDEO:
+                return "视频(type=" + areaType + ")";
+            case CommentArea.AREA_TYPE_ARTICLE:
+                return"专栏(type=" +areaType + ")";
+            case CommentArea.AREA_TYPE_DYNAMIC11:
+            case CommentArea.AREA_TYPE_DYNAMIC17:
+                return "动态(type=" + areaType + ")";
+            default:
+                return String.valueOf(areaType);
+        }
     }
 
     @Override

@@ -48,14 +48,15 @@ public class MainActivity extends AppCompatActivity {
     CommentManipulator commentManipulator;
     CommentPresenter commentPresenter;
     DrawerLayout drawerLayout;
-    SwitchCompat sw_auto_recorde;
-    ConstraintLayout cl_banned_comment_sw;
-    LinearLayout ll_banned_comments, ll_martial_law_comment_area_list, ll_wait_time,ll_github_project;
+    SwitchCompat sw_auto_recorde,sw_recorde_history;
+    ConstraintLayout cl_banned_comment_sw,cl_recorde_history_comment_sw;
+    LinearLayout ll_banned_comments, ll_martial_law_comment_area_list,ll_history_comment, ll_wait_time,ll_github_project;
     //NavigationView navigation_view;
     Toolbar toolbar;
     private Context context;
     StatisticsDBOpenHelper statisticsDBOpenHelper;
     boolean enableRecorde;
+    boolean enableRecordeHistoryComment;
     LinearLayout ll_test_comment_pool;
     LinearLayout ll_you_comment_area;
     CommentUtil commentUtil;
@@ -68,6 +69,49 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         context = this;
+        sp_config = getSharedPreferences("config", Context.MODE_PRIVATE);
+        commentUtil = new CommentUtil(sp_config);
+        commentManipulator = new CommentManipulator(new OkHttpClient(), sp_config.getString("cookie", ""));
+        handler = new Handler();
+        statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
+        commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000),sp_config.getLong("wait_time_by_has_pictures", 10000), sp_config.getBoolean("autoRecorde", true),sp_config.getBoolean("recordeHistory",true));
+        dialogCommSendWorker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, () -> {
+        });
+
+        initView();
+        initAutoRecordeBannedCommentSW();
+        initRecordeHistoryCommentSW();
+        initTestCommentPoolItem();
+        initWaitTimeItem();
+        initHomePageCommentCheck();
+        initToNewActivityItem();
+
+        ll_you_comment_area.setOnClickListener(v -> {
+            commentUtil.setYourCommentArea(context, commentPresenter);
+        });
+
+
+
+        /*
+        btn_test = findViewById(R.id.btn_test);
+        btn_test.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DanmakuManipulator danmakuManipulator = new DanmakuManipulator(new OkHttpClient());
+                DanmakuPresenter danmakuPresenter = new DanmakuPresenter(handler,danmakuManipulator,statisticsDBOpenHelper,5000,true);
+                DialogDanmakuCheckWorker dialogDanmakuCheckWorker = new DialogDanmakuCheckWorker(context, handler, danmakuPresenter, new OnExitListener() {
+                    @Override
+                    public void exit() {
+                        finish();
+                    }
+                });
+                dialogDanmakuCheckWorker.startCheckDanmaku(1155228366,0,"helloWorld",null,1);
+            }
+        });
+         */
+    }
+
+    private void initView(){
         drawerLayout = findViewById(R.id.drawerLayout);
         //navigation_view = findViewById(R.id.navigation_view);
         toolbar = findViewById(R.id.toolbar);
@@ -75,31 +119,28 @@ public class MainActivity extends AppCompatActivity {
         edt_comment = findViewById(R.id.edt_comment);
         btn_send = findViewById(R.id.btn_send);
         btn_clean = findViewById(R.id.btn_clean);
-        sp_config = getSharedPreferences("config", Context.MODE_PRIVATE);
+
         ll_banned_comments = findViewById(R.id.ll_banned_comment_list);
         ll_martial_law_comment_area_list = findViewById(R.id.ll_martial_law_comment_area_list);
+        ll_history_comment = findViewById(R.id.ll_history_comment);
         ll_test_comment_pool = findViewById(R.id.ll_test_comment_pool);
         ll_you_comment_area = findViewById(R.id.ll_your_comment_area);
         ll_wait_time = findViewById(R.id.ll_wait_time);
         cl_banned_comment_sw = findViewById(R.id.cl_banned_comment_sw);
+        cl_recorde_history_comment_sw = findViewById(R.id.cl_recorde_history_comment_sw);
         ll_github_project = findViewById(R.id.ll_github_project);
 
         sw_auto_recorde = findViewById(R.id.sw_auto_recorde);
+        sw_recorde_history = findViewById(R.id.sw_recorde_history);
         btn_send_and_appeal = findViewById(R.id.btn_send_and_appeal);
         setSupportActionBar(toolbar);
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.drawer_open, R.string.drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
+    }
 
-        commentUtil = new CommentUtil(sp_config);
-        commentManipulator = new CommentManipulator(new OkHttpClient(), sp_config.getString("cookie", ""));
-        handler = new Handler();
-        statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
-        commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000),sp_config.getLong("wait_time_by_has_pictures", 10000), sp_config.getBoolean("autoRecorde", true));
-        dialogCommSendWorker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, () -> {
-        });
-
+    private void initAutoRecordeBannedCommentSW(){
         enableRecorde = sp_config.getBoolean("autoRecorde", true);
         sw_auto_recorde.setChecked(enableRecorde);
         cl_banned_comment_sw.setOnClickListener(v -> {
@@ -119,7 +160,33 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(context, "关闭自动记录", Toast.LENGTH_SHORT).show();
             }
         });
+    }
 
+    private void initRecordeHistoryCommentSW(){
+        enableRecordeHistoryComment = sp_config.getBoolean("recordeHistory", true);
+        sw_recorde_history.setChecked(enableRecordeHistoryComment);
+        cl_recorde_history_comment_sw.setOnClickListener(v -> {
+            sw_recorde_history.setChecked(!enableRecordeHistoryComment);
+        });
+
+        sw_recorde_history.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                enableRecordeHistoryComment = true;
+                commentPresenter.setEnableRecordeHistoryComment(true);
+                sp_config.edit().putBoolean("recordeHistory", true).apply();
+                Toast.makeText(context, "开启历史评论记录", Toast.LENGTH_SHORT).show();
+            } else {
+                enableRecordeHistoryComment = false;
+                commentPresenter.setEnableRecordeHistoryComment(false);
+                sp_config.edit().putBoolean("recordeHistory", false).apply();
+                Toast.makeText(context, "关闭历史评论记录", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
+
+    private void initToNewActivityItem(){
         ll_banned_comments.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, BannedCommentListActivity.class));
         });
@@ -128,6 +195,18 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(context, MartialLawCommentAreaListActivity.class));
         });
 
+        ll_history_comment.setOnClickListener(v -> {
+            startActivity(new Intent(context, HistoryCommentActivity.class));
+        });
+
+        ll_github_project.setOnClickListener(v -> {
+            Uri uri = Uri.parse("https://github.com/freedom-introvert/biliSendCommAntifraud");
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            context.startActivity(intent);
+        });
+    }
+
+    private void initTestCommentPoolItem() {
         ll_test_comment_pool.setOnClickListener(v -> {
             View edtView = View.inflate(context, R.layout.edit_text, null);
             EditText editText = edtView.findViewById(R.id.edit_text);
@@ -145,11 +224,9 @@ public class MainActivity extends AppCompatActivity {
                 new AlertDialog.Builder(context).setMessage("随机抽取一个用于回复自己的评论以及测试戒严评论区。因为重复（甚至相似）评论发布或回复的时候，有一定可能会被删掉或仅自己可见，造成检测戒严评论区或戒严评论区默认处理评论方式误判").setPositiveButton("知道了", new VoidDialogInterfaceOnClickListener()).show();
             });
         });
+    }
 
-        ll_you_comment_area.setOnClickListener(v -> {
-            commentUtil.setYourCommentArea(context, commentPresenter);
-        });
-
+    private void initWaitTimeItem() {
         ll_wait_time.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -181,13 +258,9 @@ public class MainActivity extends AppCompatActivity {
                         .show();
             }
         });
+    }
 
-        ll_github_project.setOnClickListener(v -> {
-            Uri uri = Uri.parse("https://github.com/freedom-introvert/biliSendCommAntifraud");
-            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-            context.startActivity(intent);
-        });
-
+    private void initHomePageCommentCheck(){
         btn_send.setOnClickListener(v -> {
             //Toast.makeText(MainActivity.this,edt_comment.getText().toString(),Toast.LENGTH_LONG).show();
             ProgressDialog dialog = new ProgressDialog(context);
@@ -248,7 +321,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onMatchedArea(CommentArea commentArea) {
                         if (commentArea != null) {
-                           progressDialog.setMessage("发送评论中……");
+                            progressDialog.setMessage("发送评论中……");
                             AppealDialogPresenter appealDialogPresenter = new AppealDialogPresenter(context, handler, commentManipulator);
                             commentManipulator.sendComment(comment,0,0,commentArea).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
                                 @Override
@@ -303,26 +376,7 @@ public class MainActivity extends AppCompatActivity {
                 edt_comment.setText("");
             }).setNegativeButton("手滑了", new VoidDialogInterfaceOnClickListener()).show();
         });
-        /*
-        btn_test = findViewById(R.id.btn_test);
-        btn_test.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                DanmakuManipulator danmakuManipulator = new DanmakuManipulator(new OkHttpClient());
-                DanmakuPresenter danmakuPresenter = new DanmakuPresenter(handler,danmakuManipulator,statisticsDBOpenHelper,5000,true);
-                DialogDanmakuCheckWorker dialogDanmakuCheckWorker = new DialogDanmakuCheckWorker(context, handler, danmakuPresenter, new OnExitListener() {
-                    @Override
-                    public void exit() {
-                        finish();
-                    }
-                });
-                dialogDanmakuCheckWorker.startCheckDanmaku(1155228366,0,"helloWorld",null,1);
-            }
-        });
-         */
-
     }
-
 
 
 
@@ -385,21 +439,17 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.cookie:
-                View edtView = View.inflate(MainActivity.this, R.layout.edit_text, null);
-                EditText editText = edtView.findViewById(R.id.edit_text);
-                editText.setText(sp_config.getString("cookie", ""));
-                new AlertDialog.Builder(MainActivity.this).setTitle("设置cookie").setView(edtView).setPositiveButton("设置", (dialog, which) -> {
-                    String cookie = editText.getText().toString();
-                    sp_config.edit().putString("cookie", cookie).commit();
-                    commentManipulator.setCookie(cookie);
-                }).setNegativeButton("取消", new VoidDialogInterfaceOnClickListener()).setNeutralButton("网页登录获取", (dialog, which) -> {
-                    startActivity(new Intent(context, WebViewLoginActivity.class));
-                }).show();
-                break;
-            default:
-                break;
+        if (item.getItemId() == R.id.cookie) {
+            View edtView = View.inflate(MainActivity.this, R.layout.edit_text, null);
+            EditText editText = edtView.findViewById(R.id.edit_text);
+            editText.setText(sp_config.getString("cookie", ""));
+            new AlertDialog.Builder(MainActivity.this).setTitle("设置cookie").setView(edtView).setPositiveButton("设置", (dialog, which) -> {
+                String cookie = editText.getText().toString();
+                sp_config.edit().putString("cookie", cookie).apply();
+                commentManipulator.setCookie(cookie);
+            }).setNegativeButton("取消", new VoidDialogInterfaceOnClickListener()).setNeutralButton("网页登录获取", (dialog, which) -> {
+                startActivity(new Intent(context, WebViewLoginActivity.class));
+            }).show();
         }
         return true;
     }

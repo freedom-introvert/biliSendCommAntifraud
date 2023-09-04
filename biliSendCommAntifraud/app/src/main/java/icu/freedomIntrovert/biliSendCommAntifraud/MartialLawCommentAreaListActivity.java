@@ -23,10 +23,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -190,7 +192,8 @@ public class MartialLawCommentAreaListActivity extends AppCompatActivity {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("text/csv");
-            intent.putExtra(Intent.EXTRA_TITLE, "戒严评论区列表.csv");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.CHINA);
+            intent.putExtra(Intent.EXTRA_TITLE, "戒严评论区列表"+sdf+".csv");
             startActivityForResult(intent, REQUEST_CODE_EXPORT);
         } else if (item.getItemId() == R.id.item_import) {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);

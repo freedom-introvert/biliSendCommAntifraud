@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.NetworkCallBack;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliApiService;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentReply;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
@@ -17,6 +18,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentScanResult;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.ServiceGenerator;
 import retrofit2.Call;
@@ -26,12 +28,13 @@ public class CommentPresenter {
     public CommentManipulator commentManipulator;
     public StatisticsDBOpenHelper statisticsDBOpenHelper;
     public boolean enableStatistics;
+    public boolean enableRecordeHistoryComment;
     public long waitTime;
     public long waitTimeByHasPictures;
     private Executor executor;
     public BiliApiService biliApiService;
 
-    public CommentPresenter(Handler handler, CommentManipulator manipulator, StatisticsDBOpenHelper statisticsDBOpenHelper, long waitTime,long waitTimeByHasPictures, boolean enableStatistics) {
+    public CommentPresenter(Handler handler, CommentManipulator manipulator, StatisticsDBOpenHelper statisticsDBOpenHelper, long waitTime,long waitTimeByHasPictures, boolean enableStatistics,boolean enableRecordeHistoryComment) {
         this.handler = handler;
         this.commentManipulator = manipulator;
         this.statisticsDBOpenHelper = statisticsDBOpenHelper;
@@ -40,6 +43,7 @@ public class CommentPresenter {
         this.waitTime = waitTime;
         this.waitTimeByHasPictures = waitTimeByHasPictures;
         this.enableStatistics = enableStatistics;
+        this.enableRecordeHistoryComment = enableRecordeHistoryComment;
     }
 
     public void setWaitTime(long waitTime) {
@@ -48,6 +52,10 @@ public class CommentPresenter {
 
     public void setEnableStatistics(boolean enableStatistics) {
         this.enableStatistics = enableStatistics;
+    }
+
+    public void setEnableRecordeHistoryComment(boolean enableRecordeHistoryComment) {
+        this.enableRecordeHistoryComment = enableRecordeHistoryComment;
     }
 
     public void matchToArea(String areaText, MatchToAreaCallBack callBack) {
@@ -77,6 +85,9 @@ public class CommentPresenter {
 
     public void checkCommentStatus(CommentArea commentArea, String mainComment, String testComment, long rpid, long parent, long root, boolean hasPictures,CheckCommentStatusCallBack callBack) {
         executor.execute(() -> {
+            if (enableRecordeHistoryComment) {
+                statisticsDBOpenHelper.insertHistoryComment(new HistoryComment(commentArea, rpid, parent,root,mainComment, new Date(), 0, 0, HistoryComment.STATE_NORMAL, new Date()));
+            }
             try {
                 try {
                     if (!hasPictures) {
@@ -97,38 +108,76 @@ public class CommentPresenter {
                         insertBannedComment(new BannedCommentBean(commentArea, rpid, mainComment, BannedCommentBean.BANNED_TYPE_INVISIBLE, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
                         handler.post(callBack::thenInvisible);
                     } else {
+                        //评论正常
+                        updateHistoryComment(rpid,HistoryComment.STATE_NORMAL);
                         handler.post(callBack::thenOk);
                     }
                 } else {
-                    handler.post(() -> callBack.onCommentNotFound(testComment));
-                    GeneralResponse<CommentReply> response = commentManipulator.getCommentReplyHasAccount(commentArea, rpid, 1).execute().body();
-                    if (response.code == CommentAddResult.CODE_SUCCESS) {
-                        try {
-                            Thread.sleep(2000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        //deleteComment(commentArea, response.data.rpid).execute();
-                        insertBannedComment(new BannedCommentBean(commentArea, rpid, mainComment, BannedCommentBean.BANNED_TYPE_SHADOW_BAN, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
-                        handler.post(callBack::thenShadowBan);
-                    } else if (response.code == CommentAddResult.CODE_DELETED) {
-                        //再尝试对评论进行回复，看看是否应session过期导致变成了游客视角
-                        GeneralResponse<CommentAddResult> response1 = commentManipulator.sendComment(testComment, rpid, root, commentArea).execute().body();
-                        if (response1.isSuccess()) {
-                            //应该不存在有账号获取评论列表被删除了还能回复的吧:(
-                            sleep(waitTime);
-                            deleteComment(commentArea, response1.data.rpid).execute();
-                            handler.post(callBack::thenShadowBan);
-                        } else if (response1.code == CommentAddResult.CODE_DELETED) {
-                            //如果获取的评论列表提示被删除和回复评论提示也被删除才算秒删
-                            insertBannedComment(new BannedCommentBean(commentArea, rpid, mainComment, BannedCommentBean.BANNED_TYPE_QUICK_DELETE, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
-                            handler.post(callBack::thenQuickDelete);
+                    //若不是评论回复
+                    if (root == 0) {
+                        handler.post(() -> callBack.onCommentNotFound(testComment));
+                        GeneralResponse<CommentReply> response = commentManipulator.getCommentReplyHasAccount(commentArea, rpid, 1).execute().body();
+                        respNotNull(response);
+                        if (response.code == CommentAddResult.CODE_SUCCESS) {
+                            try {
+                                Thread.sleep(2000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            //deleteComment(commentArea, response.data.rpid).execute();
+                            //评论shadowBan
+                            GeneralResponse<CommentReply> noACResp = commentManipulator.getCommentReplyNoAccount(commentArea, rpid, 0).execute().body();
+                            respNotNull(noACResp);
+                            if (noACResp.isSuccess()) {
+                                //找不到评论，有账号能获取评论列表，无账号也可以获取评论列表，这种情况大半申诉说无可申诉，除非你是UP发评论被shadowBan
+                                insertBannedComment(new BannedCommentBean(commentArea, rpid, mainComment, BannedCommentBean.BANNED_TYPE_UNDER_REVIEW, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
+                                updateHistoryComment(rpid, HistoryComment.STATE_SHADOW_BAN);
+                                handler.post(callBack::thenUnderReview);
+                            } else if (noACResp.code == CommentAddResult.CODE_DELETED) {
+                                insertBannedComment(new BannedCommentBean(commentArea, rpid, mainComment, BannedCommentBean.BANNED_TYPE_SHADOW_BAN, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
+                                updateHistoryComment(rpid, HistoryComment.STATE_SHADOW_BAN);
+                                handler.post(callBack::thenShadowBan);
+                            } else {
+                                handler.post(() -> callBack.onOtherError(noACResp.code, noACResp.message));
+                            }
+                        } else if (response.code == CommentAddResult.CODE_DELETED) {
+                            //再尝试对评论进行回复，看看是否应session过期导致变成了游客视角
+                            GeneralResponse<CommentAddResult> response1 = commentManipulator.sendComment(testComment, rpid, root, commentArea).execute().body();
+                            respNotNull(response1);
+                            if (response1.isSuccess()) {
+                                //应该不存在有账号获取评论列表被删除了还能回复的吧:(
+                                sleep(waitTime);
+                                deleteComment(commentArea, response1.data.rpid).execute();
+                                handler.post(callBack::thenShadowBan);
+                            } else if (response1.code == CommentAddResult.CODE_DELETED) {
+                                //如果获取的评论列表提示被删除和回复评论提示也被删除才算秒删
+                                insertBannedComment(new BannedCommentBean(commentArea, rpid, mainComment, BannedCommentBean.BANNED_TYPE_QUICK_DELETE, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
+                                updateHistoryComment(rpid, HistoryComment.STATE_DELETED);
+                                handler.post(callBack::thenQuickDelete);
+                            } else {
+                                //登录信息过期或其他异常
+                                handler.post(() -> callBack.onAccountFailure(response1.code, response1.message));
+                            }
                         } else {
-                            //登录信息过期或其他异常
-                            handler.post(() -> callBack.onAccountFailure(response1.code, response1.message));
+                            handler.post(() -> callBack.onOtherError(response.code, response.message));
                         }
+                    //是评论回复的处理方式
                     } else {
-                        handler.post(() -> callBack.onOtherError(response.code, response.message));
+                        BiliComment foundReply = commentManipulator.findCommentFromCommentReplyArea(commentArea, rpid, root, true, new CommentManipulator.PageTurnListener() {
+                            @Override
+                            public void onPageTurn(int page) {
+                                handler.post(() -> callBack.onPageTurnForHasAccReply(page));
+                            }
+                        });
+                        if (foundReply != null){
+                            insertBannedComment(new BannedCommentBean(commentArea, rpid, mainComment, BannedCommentBean.BANNED_TYPE_SHADOW_BAN, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
+                            updateHistoryComment(rpid, HistoryComment.STATE_SHADOW_BAN);
+                            handler.post(callBack::thenShadowBan);
+                        } else {
+                            insertBannedComment(new BannedCommentBean(commentArea, rpid, mainComment, BannedCommentBean.BANNED_TYPE_QUICK_DELETE, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
+                            updateHistoryComment(rpid, HistoryComment.STATE_DELETED);
+                            handler.post(callBack::thenQuickDelete);
+                        }
                     }
                 }
             } catch (IOException e) {
@@ -140,23 +189,27 @@ public class CommentPresenter {
 
 
     public interface CheckCommentStatusCallBack extends NetworkCallBack {
-        public void onSleeping(long waitTime,long waitTimeByPictures);
+        void onSleeping(long waitTime,long waitTimeByPictures);
 
-        public void onStartCheckComment();
+        void onStartCheckComment();
 
-        public void thenOk();
+        void thenOk();
 
-        public void onCommentNotFound(String sentTestComment);
+        void onCommentNotFound(String sentTestComment);
 
-        public void onOtherError(int code, String message);
+        void onPageTurnForHasAccReply(int pn);
 
-        public void onAccountFailure(int code, String message);
+        void onOtherError(int code, String message);
 
-        public void thenInvisible();
+        void onAccountFailure(int code, String message);
 
-        public void thenShadowBan();
+        void thenInvisible();
 
-        public void thenQuickDelete();
+        void thenShadowBan();
+
+        void thenUnderReview();
+
+        void thenQuickDelete();
     }
 
 
@@ -194,17 +247,17 @@ public class CommentPresenter {
 
     public interface CheckCommentStatusByNewMethodCallBack extends NetworkCallBack {
 
-        public void onSleeping(long waitTime);
+        void onSleeping(long waitTime);
 
-        public void onStartCheckComment();
+        void onStartCheckComment();
 
-        public void thenOk();
+        void thenOk();
 
-        public void thenShadowBan();
+        void thenShadowBan();
 
-        public void thenQuickDelete();
+        void thenQuickDelete();
 
-        public void thenError();
+        void thenError();
     }
 
     public void checkCommentAreaMartialLaw(CommentArea commentArea, long mainCommRpid, String testComment, String testComment2, CheckCommentAreaMartialLawCalBack callBack) {
@@ -213,6 +266,7 @@ public class CommentPresenter {
             public void run() {
                 try {
                     GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(testComment, 0, 0, commentArea).execute().body();
+                    respNotNull(response);
                     if (response.isSuccess()) {
                         handler.post(() -> callBack.onTestCommentSent(testComment));
                         long testCommentRpid = response.data.rpid;
@@ -241,15 +295,15 @@ public class CommentPresenter {
     }
 
     public interface CheckCommentAreaMartialLawCalBack extends NetworkCallBack {
-        public void onTestCommentSent(String testComment);
+        void onTestCommentSent(String testComment);
 
-        public void onStartCheck();
+        void onStartCheck();
 
-        public void onCommentSendFail(int code, String message);
+        void onCommentSendFail(int code, String message);
 
-        public void thenAreaOk();
+        void thenAreaOk();
 
-        public void thenMartialLaw();
+        void thenMartialLaw();
     }
 
     public void checkIfOnlyBannedInThisArea(CommentArea yourCommentArea, long mainCommentRpid, String comment, CheckIfOnlyBannedInThisAreaCallBack callBack) {
@@ -259,6 +313,7 @@ public class CommentPresenter {
                 try {
                     GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(comment, 0, 0, yourCommentArea).execute().body();
                     handler.post(() -> callBack.onCommentSent(yourCommentArea.sourceId));
+                    respNotNull(response);
                     long rpid = response.data.rpid;
                     sleep(waitTime);
                     handler.post(callBack::onStartCheck);
@@ -280,13 +335,13 @@ public class CommentPresenter {
     }
 
     public interface CheckIfOnlyBannedInThisAreaCallBack extends NetworkCallBack {
-        public void onCommentSent(String yourCommentArea);
+        void onCommentSent(String yourCommentArea);
 
-        public void onStartCheck();
+        void onStartCheck();
 
-        public void thenOnlyBannedInThisArea();
+        void thenOnlyBannedInThisArea();
 
-        public void thenBannedInYourArea();
+        void thenBannedInYourArea();
     }
 
     public void readyToScanSensitiveWorld(CommentArea mainCommentArea, CommentArea yourCommentArea, long mainCommRpid, String comment, String testComment1, String testComment2, ReadyToScanSensitiveWorldCallBack callBack) {
@@ -317,6 +372,7 @@ public class CommentPresenter {
                     handler.post(callBack::onStartCheckAreaMartialLaw);
                     GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(testComment1, 0, 0, mainCommentArea).execute().body();
                     sleep(waitTime);
+                    respNotNull(response);
                     long testCommentRpid = response.data.rpid;
                     if (commentManipulator.scanComment(mainCommentArea, testCommentRpid, 0).isExists) {
                         deleteComment(mainCommentArea, testCommentRpid).execute();
@@ -340,6 +396,7 @@ public class CommentPresenter {
                     handler.post(callBack::onStartCheckIsOnlyBannedInThisArea);
                     GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(comment, 0, 0, yourCommentArea).execute().body();
                     sleep(waitTime);
+                    respNotNull(response);
                     long testCommentRpid = response.data.rpid;
                     if (commentManipulator.scanComment(yourCommentArea, testCommentRpid, 0).isExists) {
                         updateCheckedArea(mainCommRpid, BannedCommentBean.CHECKED_ONLY_BANNED_IN_THIS_AREA);
@@ -360,16 +417,18 @@ public class CommentPresenter {
     }
 
     public interface ReadyToScanSensitiveWorldCallBack extends NetworkCallBack {
-        public void onCommentIsOnlyBannedInThisArea();
+        void onCommentIsOnlyBannedInThisArea();
 
-        public void onCommentAreaIsMartialLaw();
+        void onCommentAreaIsMartialLaw();
 
-        public void onStartCheckIsOnlyBannedInThisArea();
+        void onStartCheckIsOnlyBannedInThisArea();
 
-        public void onStartCheckAreaMartialLaw();
+        void onStartCheckAreaMartialLaw();
 
-        public void startScan();
+        void startScan();
     }
+
+
 
 
     public void scanSensitiveWorld(CommentArea yourCommentArea, String comment) {
@@ -395,13 +454,23 @@ public class CommentPresenter {
         }
     }
 
+    private void updateHistoryComment(long rpid,String state){
+        if (enableRecordeHistoryComment){
+            statisticsDBOpenHelper.updateHistoryComment(rpid,state,0,0,new Date());
+        }
+    }
+
     private void updateCheckedArea(long rpid, int checkedType) {
         if (enableStatistics) {
             statisticsDBOpenHelper.updateCheckedArea(String.valueOf(rpid), checkedType);
         }
     }
 
-
+    private void respNotNull(GeneralResponse<?> generalResponse) throws IOException {
+        if (generalResponse == null){
+            throw new IOException("response is null!");
+        }
+    }
 
 
 }

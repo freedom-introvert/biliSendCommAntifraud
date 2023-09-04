@@ -4,16 +4,16 @@ plugins {
 
 android {
     namespace 'icu.freedomIntrovert.biliSendCommAntifraud'
-    compileSdk 32
+    compileSdk 33
     lint {
         baseline = file("lint-baseline.xml")
     }
     defaultConfig {
         applicationId "icu.freedomIntrovert.biliSendCommAntifraud"
         minSdk 21
-        targetSdk 32
-        versionCode 310
-        versionName "3.1.0"
+        targetSdk 33
+        versionCode 400
+        versionName "4.0.0"
 
     }
     buildTypes {

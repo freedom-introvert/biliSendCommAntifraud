@@ -3,6 +3,6 @@ package icu.freedomIntrovert.biliSendCommAntifraud.biliApis;
 import java.util.ArrayList;
 
 public class CommentReply {
-    BiliComment root;
-    ArrayList<BiliComment> replies;
+    public BiliComment root;
+    public ArrayList<BiliComment> replies;
 }
