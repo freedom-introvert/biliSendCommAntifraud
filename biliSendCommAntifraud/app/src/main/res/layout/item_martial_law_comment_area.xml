@@ -45,7 +45,7 @@
                     android:maxLines="2"
                     android:minLines="2"
 
-                    android:textColor="@color/black"
+                    android:textColor="@color/dark_font"
                     app:layout_constraintTop_toTopOf="parent"
                     tools:layout_editor_absoluteX="5dp" />
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#303030</color>
+    <color name="dark_font">#FFFFFF</color>
+    <color name="menu_icon">#BAB7A6</color>
+    <color name="pink">#D34E7D</color>
+</resources>

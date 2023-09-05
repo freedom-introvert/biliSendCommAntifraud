@@ -58,7 +58,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                     .setMessage("intent参数错误，intentExtras:" + intent.getExtras())
                     .setNegativeButton("关闭", (dialog, which) -> finish())
                     .show();
-        } else if (todo == TODO_CHECK_COMMENT){
+        } else if (todo == TODO_CHECK_COMMENT) {
             String message = intent.getStringExtra("message");
             long oid = Long.parseLong(intent.getStringExtra("oid"));
             String type = intent.getStringExtra("type");
@@ -73,7 +73,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                     sp_config.getLong("wait_time", 5000),
                     sp_config.getLong("wait_time_by_has_pictures", 10000),
                     sp_config.getBoolean("autoRecorde", true),
-                    sp_config.getBoolean("recordeHistory",true));
+                    sp_config.getBoolean("recordeHistory", true));
             DialogCommCheckWorker worker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, this::finish);
             ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, "检查中", "从哔哩哔哩APP来，正在获取评论区信息……");
             progressDialog.setCancelable(false);
@@ -94,23 +94,25 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
             } else {
                 if (Integer.parseInt(type) == CommentArea.AREA_TYPE_DYNAMIC17) {//动态17的动态ID就是评论区oid
                     worker.checkComment(new CommentArea(oid, String.valueOf(oid), Integer.parseInt(type)), Long.parseLong(resultRpid), Long.parseLong(parent), Long.parseLong(root), comment, hasPictures, progressDialog);
+                } else if (Integer.parseInt(type) == CommentArea.AREA_TYPE_ARTICLE) {
+                    worker.checkComment(new CommentArea(oid,"cv"+oid,Integer.parseInt(type)),Long.parseLong(resultRpid), Long.parseLong(parent), Long.parseLong(root), comment, hasPictures, progressDialog);
                 } else {//动态11的动态ID在ComposeActivity的Extras里获取
                     worker.checkComment(new CommentArea(oid, id != null ? id : "null", Integer.parseInt(type)), Long.parseLong(resultRpid), Long.parseLong(parent), Long.parseLong(root), comment, hasPictures, progressDialog);
                 }
             }
-        } else if (todo == TODO_CHECK_DANMAKU){
+        } else if (todo == TODO_CHECK_DANMAKU) {
             DialogDanmakuCheckWorker worker = new DialogDanmakuCheckWorker(context, handler, new DanmakuPresenter(handler, danmakuManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time_by_danmaku_sent", 20000), sp_config.getBoolean("autoRecorde", true)), new OnExitListener() {
                 @Override
                 public void exit() {
                     finish();
                 }
             });
-            long oid = intent.getLongExtra("oid",0);
-            long dmid = intent.getLongExtra("dmid",0);
+            long oid = intent.getLongExtra("oid", 0);
+            long dmid = intent.getLongExtra("dmid", 0);
             String content = intent.getStringExtra("content");
             String accessKey = intent.getStringExtra("accessKey");
-            long avid = intent.getLongExtra("avid",0);
-            worker.startCheckDanmaku(oid,dmid,content,accessKey,avid);
+            long avid = intent.getLongExtra("avid", 0);
+            worker.startCheckDanmaku(oid, dmid, content, accessKey, avid);
             //DialogUtil.dialogMessage(context,"extras",intent.getExtras().toString());
             //worker.startCheckDanmaku(oid,dmid,content,accessKey,avid);
             //String accessKey =

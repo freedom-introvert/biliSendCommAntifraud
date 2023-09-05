@@ -5,7 +5,7 @@
     android:viewportHeight="260">
   <path
       android:pathData="M0,0h480v260h-480z"
-      android:fillColor="#ff679a"/>
+      android:fillColor="@color/pink"/>
   <path
       android:pathData="M26,106.5a65,65 0,1 0,130 0a65,65 0,1 0,-130 0z"
       android:strokeWidth="0"
@@ -13,11 +13,11 @@
   <path
       android:pathData="m86.43,110.37l81,-53l81,53l-81,53l-81,-53z"
       android:strokeWidth="0"
-      android:fillColor="#ff679a"/>
+      android:fillColor="@color/pink"/>
   <path
       android:pathData="M98,70.5a10,9.5 0,1 0,20 0a10,9.5 0,1 0,-20 0z"
       android:strokeWidth="0"
-      android:fillColor="#ff679a"/>
+      android:fillColor="@color/pink"/>
   <path
       android:strokeWidth="1"
       android:pathData="m364.6,96l-35.2,0c-2.42,0 -4.4,1.85 -4.4,4.1l0,36.9l8.8,-8.2l30.8,0c2.42,0 4.4,-1.85 4.4,-4.1l0,-24.6c0,-2.26 -1.98,-4.1 -4.4,-4.1l0,0zM360.2,120.6l-26.4,0l0,-4.1l26.4,0l0,4.1l0,0zM360.2,114.45l-26.4,0l0,-4.1l26.4,0l0,4.1l0,0zM360.2,108.3l-26.4,0l0,-4.1l26.4,0l0,4.1l0,0z"

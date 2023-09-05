@@ -93,7 +93,7 @@
                     android:gravity="center"
                     android:maxLines="2"
                     android:text="Test:152"
-                    android:textColor="@color/black" />
+                    android:textColor="@color/dark_font" />
 
             </LinearLayout>
 -->
@@ -107,7 +107,7 @@
         android:layout_width="300dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="@color/white"
+        android:background="@color/background"
         android:clickable="true"
         android:focusable="true"
         android:orientation="vertical">
@@ -188,7 +188,7 @@
                         android:gravity="center_vertical"
                         android:maxLines="2"
                         android:text="自动记录被ban评论和评论区"
-                        android:textColor="@color/black"
+                        android:textColor="@color/dark_font"
                         android:textSize="14sp"
                         app:layout_constraintEnd_toStartOf="@+id/sw_auto_recorde"
                         app:layout_constraintStart_toEndOf="@+id/frameLayout" />
@@ -235,7 +235,7 @@
                         android:gravity="center_vertical"
                         android:maxLines="2"
                         android:text="记录历史评论"
-                        android:textColor="@color/black"
+                        android:textColor="@color/dark_font"
                         android:textSize="14sp"
                         app:layout_constraintEnd_toStartOf="@+id/sw_recorde_history"
                         app:layout_constraintStart_toEndOf="@+id/frameLayout1" />
@@ -276,7 +276,7 @@
                         android:layout_marginStart="5dp"
                         android:gravity="center_vertical"
                         android:text="@string/band_comment_list"
-                        android:textColor="@color/black"
+                        android:textColor="@color/dark_font"
                         android:textSize="14sp" />
 
                 </LinearLayout>
@@ -306,7 +306,7 @@
                         android:layout_marginStart="5dp"
                         android:gravity="center_vertical"
                         android:text="@string/martial_law_comment_area_list"
-                        android:textColor="@color/black"
+                        android:textColor="@color/dark_font"
                         android:textSize="14sp" />
 
                 </LinearLayout>
@@ -335,7 +335,7 @@
                         android:layout_marginStart="5dp"
                         android:gravity="center_vertical"
                         android:text="历史评论列表"
-                        android:textColor="@color/black"
+                        android:textColor="@color/dark_font"
                         android:textSize="14sp" />
 
                 </LinearLayout>
@@ -386,7 +386,7 @@
                         android:gravity="center_vertical"
                         android:maxLines="2"
                         android:text="随机测试评论池"
-                        android:textColor="@color/black"
+                        android:textColor="@color/dark_font"
                         android:textSize="14sp"
                         app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
 
@@ -424,7 +424,7 @@
                         android:gravity="center_vertical"
                         android:maxLines="2"
                         android:text="配置你的评论区"
-                        android:textColor="@color/black"
+                        android:textColor="@color/dark_font"
                         android:textSize="14sp"
                         app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
 
@@ -458,7 +458,7 @@
                         android:gravity="center_vertical"
                         android:maxLines="2"
                         android:text="发评后等待时长"
-                        android:textColor="@color/black"
+                        android:textColor="@color/dark_font"
                         android:textSize="14sp"
                         app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
 
@@ -506,7 +506,7 @@
                         android:gravity="center_vertical"
                         android:maxLines="2"
                         android:text="GitHub项目&amp;使用说明"
-                        android:textColor="@color/black"
+                        android:textColor="@color/dark_font"
                         android:textSize="14sp"
                         app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
 

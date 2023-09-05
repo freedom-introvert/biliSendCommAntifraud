@@ -8,7 +8,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
         android:layout_marginLeft="25dp"
-        android:textColor="@color/black"
+        android:textColor="@color/dark_font"
         android:textSize="15sp"
         android:text="评论发送之后等待"/>
     <EditText
@@ -23,7 +23,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="25dp"
-        android:textColor="@color/black"
+        android:textColor="@color/dark_font"
         android:textSize="15sp"
         android:text="发图片时再多等待"/>
     <EditText
@@ -38,7 +38,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="25dp"
-        android:textColor="@color/black"
+        android:textColor="@color/dark_font"
         android:textSize="15sp"
         android:text="弹幕发送之后等待"/>
     <EditText

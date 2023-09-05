@@ -44,7 +44,7 @@
                     android:maxLines="2"
                     android:minLines="2"
                     android:text="网络上重拳出击，现实中唯唯诺诺"
-                    android:textColor="@color/black"
+                    android:textColor="@color/dark_font"
                     app:layout_constraintEnd_toEndOf="@+id/constraintLayout"
                     app:layout_constraintStart_toStartOf="@+id/constraintLayout"
                     app:layout_constraintTop_toTopOf="parent" />
