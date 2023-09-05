@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="background">#FAFAFA</color>
+    <color name="dark_font">#000000</color>
+    <color name="menu_icon">#454859</color>
     <color name="pink">#ff679a</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>

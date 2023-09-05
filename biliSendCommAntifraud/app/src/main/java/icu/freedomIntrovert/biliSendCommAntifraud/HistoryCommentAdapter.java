@@ -61,7 +61,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
             holder.txv_comment.setTextColor(context.getResources().getColor(R.color.gray));
             holder.txv_comment.getPaint().setFlags(Paint.ANTI_ALIAS_FLAG);
         } else {
-            holder.txv_comment.setTextColor(context.getResources().getColor(R.color.black));
+            holder.txv_comment.setTextColor(context.getResources().getColor(R.color.dark_font));
             holder.txv_comment.getPaint().setFlags(Paint.ANTI_ALIAS_FLAG);
         }
         holder.txv_date.setText(historyComment.getFormatDateFor_yMd());

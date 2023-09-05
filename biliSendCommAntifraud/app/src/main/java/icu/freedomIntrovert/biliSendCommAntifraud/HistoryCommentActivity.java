@@ -3,6 +3,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -191,6 +192,19 @@ public class HistoryCommentActivity extends AppCompatActivity {
                 });
         }
 
+    }
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(getConfigurationContext(newBase));
+    }
+
+    private static Context getConfigurationContext(Context context) {
+        Configuration configuration = context.getResources().getConfiguration();
+        if (configuration.fontScale > 0.86f) {
+            configuration.fontScale = 0.86f;
+        }
+        return context.createConfigurationContext(configuration);
     }
 
 

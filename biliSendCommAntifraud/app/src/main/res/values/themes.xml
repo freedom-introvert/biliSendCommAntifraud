@@ -1,6 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.BiliSendCommAntifraud" parent="Theme.AppCompat.Light.NoActionBar">
+    
+    <style name="Theme.BiliSendCommAntifraud" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/pink</item>
         <item name="colorPrimaryDark">@color/pink</item>
@@ -9,7 +10,7 @@
         <item name="colorAccent">@color/pink</item>
     </style>
 
-    <style name="Theme.BiliSendCommAntifraud.HasActionBar" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="Theme.BiliSendCommAntifraud.HasActionBar" parent="Theme.AppCompat.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/pink</item>
         <item name="colorPrimaryDark">@color/pink</item>
@@ -19,7 +20,7 @@
         <item name="colorAccent">@color/pink</item>
     </style>
 
-    <style name="dialog_activity" parent="@style/Theme.AppCompat.Light.Dialog">
+    <style name="dialog_activity" parent="@style/Theme.AppCompat.DayNight.Dialog">
         <!-- 去黑边 -->
         <item name="android:windowFrame">@null</item>
         <!-- 设置是否可滑动 -->
@@ -40,6 +41,7 @@
         <item name="windowNoTitle">true</item>
 
         <item name="colorAccent">@color/pink</item>
+
     </style>
 
 </resources>
