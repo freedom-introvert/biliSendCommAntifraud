@@ -107,7 +107,7 @@ public class PostCommentHookByGlobal extends BaseHook {
                 }
             });
 
-            XposedHelpers.findAndHookMethod("qs1.c", classLoader, "a", java.lang.Class.class, new XC_MethodHook() {
+            XposedHelpers.findAndHookMethod("retrofit2.Retrofit", classLoader, "b", java.lang.Class.class, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     super.afterHookedMethod(param);
