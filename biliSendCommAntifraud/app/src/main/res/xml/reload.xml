@@ -1,3 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--若只改变Java代码adb安装时无法更新，导致模块是旧的，要更新资源才触发更新，奇怪的问题-->
-<counter>26</counter>
+<counter>30</counter>

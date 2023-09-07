@@ -127,12 +127,13 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                                 public void ok(int like,int rcount) {
                                     progressDialog.dismiss();
                                     //notifyDataSetChanged();
-                                    HistoryComment historyComment1 = historyCommentList.get(holder.getAdapterPosition());
+                                    int index = holder.getAdapterPosition();
+                                    HistoryComment historyComment1 = historyCommentList.get(index);
                                     historyComment1.state = HistoryComment.STATE_NORMAL;
                                     historyComment1.like = like;
                                     historyComment1.replyCount = rcount;
                                     statisticsDBOpenHelper.updateHistoryComment(historyComment.rpid,HistoryComment.STATE_NORMAL,like,rcount,new Date());
-                                    notifyItemChanged(holder.getAdapterPosition());
+                                    notifyItemChanged(index);
                                     new AlertDialog.Builder(context)
                                             .setTitle("检查结果")
                                             .setMessage("评论正常，是否继续翻遍评论区？")
@@ -140,7 +141,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                                             .setPositiveButton("继续", new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
-                                                    searchThroughoutTheCommentArea(historyComment,holder);
+                                                    searchThroughoutTheCommentArea(historyComment,index);
                                                 }
                                             })
                                             .show();
@@ -239,7 +240,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         }
     }
 
-    private void searchThroughoutTheCommentArea(HistoryComment historyComment,ViewHolder viewHolder){
+    private void searchThroughoutTheCommentArea(HistoryComment historyComment,int index){
         ProgressDialog progressDialog = DialogUtil.newProgressDialog(context,"寻找中","准备……");
         progressDialog.show();
         commentReviewPresenter.searchThroughoutTheCommentArea(historyComment.commentArea, historyComment.rpid, new CommentReviewPresenter.SearchTTCommAreaCallback() {
@@ -258,11 +259,11 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
             public void notFound() {
                 progressDialog.dismiss();
                 statisticsDBOpenHelper.updateHistoryComment(historyComment.rpid,HistoryComment.STATE_SHADOW_BAN,historyComment.like,historyComment.replyCount,new Date());
-                HistoryComment historyComment1 = historyCommentList.get(viewHolder.getAdapterPosition());
+                HistoryComment historyComment1 = historyCommentList.get(index);
                 historyComment1.state = HistoryComment.STATE_SHADOW_BAN;
                 historyComment1.like = historyComment.like;
                 historyComment1.replyCount = historyComment.replyCount;
-                notifyItemChanged(viewHolder.getAdapterPosition());
+                notifyItemChanged(index);
                 DialogUtil.dialogMessage(context,"寻找评论","无账号下翻遍了评论区，未找到你的评论！评论审核中或ShadowBan+");
             }
 
