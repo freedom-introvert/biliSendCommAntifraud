@@ -34,7 +34,7 @@
         android:layout_marginRight="20dp"
         android:layout_marginTop="15dp"
         android:layout_marginBottom="15dp"/>
-    <TextView
+    <!-- <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="25dp"
@@ -48,6 +48,6 @@
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
         android:layout_marginTop="15dp"
-        android:layout_marginBottom="15dp"/>
+        android:layout_marginBottom="15dp"/> -->
 
 </LinearLayout>
