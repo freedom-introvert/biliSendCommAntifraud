@@ -11,6 +11,6 @@
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
         android:layout_marginTop="15dp"
-        android:layout_marginBottom="15dp"/>
+        android:layout_marginBottom="15dp" />
 
 </LinearLayout>

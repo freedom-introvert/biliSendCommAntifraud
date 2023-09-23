@@ -82,6 +82,15 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         return bannedCommentBeanArrayList;
     }
 
+    public boolean checkBannedCommentIsExists(long rpid){
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_NAME_BANNED_COMMENT + " WHERE rpid = ?", new String[]{String.valueOf(rpid)});
+        cursor.moveToNext();
+        boolean exists = cursor.getInt(0) > 0;
+        cursor.close();
+        return exists;
+    }
+
     public long insertMartialLawCommentArea(MartialLawCommentArea area) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -246,5 +255,28 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
     public int deleteHistoryComment(long rpid){
         SQLiteDatabase db = getWritableDatabase();
         return db.delete(TABLE_NAME_HISTORY_COMMENT,"rpid = ?",new String[]{String.valueOf(rpid)});
+    }
+
+    public HistoryComment getHistoryComment(long rpid){
+        SQLiteDatabase db = getReadableDatabase();
+        GreatCursor cursor = new GreatCursor(db.rawQuery("select * from "+TABLE_NAME_HISTORY_COMMENT+" where rpid = ?",new String[]{String.valueOf(rpid)}));
+        if (cursor.moveToNext()) {
+            HistoryComment historyComment = new HistoryComment(
+                    new CommentArea(cursor.getInt("oid"),cursor.getString("source_id"),cursor.getInt("area_type")),
+                    cursor.getLong("rpid"),
+                    cursor.getLong("parent"),
+                    cursor.getLong("root"),
+                    cursor.getString("comment"),
+                    new Date(cursor.getLong("date")),
+                    cursor.getInt("like"),
+                    cursor.getInt("reply"),
+                    cursor.getString("last_state"),
+                    new Date(cursor.getLong("last_check_date")));
+            cursor.close();
+            return historyComment;
+        } else {
+            cursor.close();
+            return null;
+        }
     }
 }

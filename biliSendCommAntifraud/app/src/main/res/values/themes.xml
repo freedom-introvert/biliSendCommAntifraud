@@ -15,7 +15,7 @@
         <item name="colorPrimary">@color/pink</item>
         <item name="colorPrimaryDark">@color/pink</item>
         <item name="titleTextColor">@color/white</item>
-        <item name="colorControlNormal">@android:color/white</item>
+       
         <item name="windowActionBar">true</item>
         <item name="colorAccent">@color/pink</item>
     </style>

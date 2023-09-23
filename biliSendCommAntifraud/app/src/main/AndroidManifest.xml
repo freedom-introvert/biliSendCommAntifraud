@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
@@ -14,10 +15,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BiliSendCommAntifraud.HasActionBar"
         tools:targetApi="31">
+        <service
+            android:name=".WaitService"
+            android:enabled="true"
+            android:exported="true"></service>
+
         <activity
             android:name=".HistoryCommentActivity"
+            android:exported="true"
             android:label="历史评论记录"
-            android:exported="false"
+            android:theme="@style/Theme.BiliSendCommAntifraud.HasActionBar"
             android:parentActivityName=".MainActivity">
             <meta-data
                 android:name="android.app.lib_name"
@@ -78,7 +85,6 @@
             android:theme="@style/Theme.BiliSendCommAntifraud">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
