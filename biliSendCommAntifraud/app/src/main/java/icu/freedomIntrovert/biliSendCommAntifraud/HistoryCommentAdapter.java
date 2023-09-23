@@ -4,11 +4,11 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.graphics.Paint;
 import android.os.Handler;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,8 +19,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentReviewPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import okhttp3.OkHttpClient;
@@ -30,14 +34,29 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
     StatisticsDBOpenHelper statisticsDBOpenHelper;
     List<HistoryComment> historyCommentList;
     CommentReviewPresenter commentReviewPresenter;
+    CommentPresenter commentPresenter;
+    DialogCommCheckWorker dialogCommCheckWorker;
 
     public HistoryCommentAdapter(Context context,List<HistoryComment> historyCommentList,StatisticsDBOpenHelper statisticsDBOpenHelper) {
         this.context = context;
         this.statisticsDBOpenHelper = statisticsDBOpenHelper;
         this.historyCommentList = historyCommentList;
-        SharedPreferences sp_config = context.getSharedPreferences("config", Context.MODE_PRIVATE);
-        CommentManipulator commentManipulator = new CommentManipulator(new OkHttpClient(), sp_config.getString("cookie", ""));
-        commentReviewPresenter = new CommentReviewPresenter(new Handler(), commentManipulator);
+        Config config = new Config(context);
+        Handler handler = new Handler();
+        CommentManipulator commentManipulator = new CommentManipulator(new OkHttpClient(), config.getCookie());
+        commentReviewPresenter = new CommentReviewPresenter(handler, commentManipulator);
+        commentPresenter = new CommentPresenter(handler,commentManipulator,statisticsDBOpenHelper,config);
+        this.dialogCommCheckWorker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, new CommentUtil(config.sp_config), new OnExitListenerByComment() {
+            @Override
+            public void rpid(long rpid) {
+                historyCommentList.add(0, statisticsDBOpenHelper.getHistoryComment(rpid));
+            }
+
+            @Override
+            public void exit() {
+                notifyDataSetChanged();
+            }
+        });
     }
 
     @NonNull
@@ -113,8 +132,12 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                                 @Override
                                 public void shadowBanned(int like,int rcount) {
                                     progressDialog.dismiss();
-                                    //notifyDataSetChanged();
                                     HistoryComment historyComment1 = historyCommentList.get(holder.getAdapterPosition());
+                                    //仅在评论被shadowBan时加统计，删除就算了，因为评论很有很多情况都是用户自己删的
+                                    //如果检查前是正常，但是扫描后shadowBan，则是秋后算账
+                                    if (historyComment.state.equals(HistoryComment.STATE_NORMAL) && !statisticsDBOpenHelper.checkBannedCommentIsExists(historyComment.rpid)) {
+                                        statisticsDBOpenHelper.insertBannedComment(new BannedCommentBean(historyComment.commentArea, historyComment.rpid, historyComment.comment, BannedCommentBean.BANNED_TYPE_SHADOW_BAN_RECKONING, new Date(),  BannedCommentBean.CHECKED_NO_CHECK));
+                                    }
                                     historyComment1.state = HistoryComment.STATE_SHADOW_BAN;
                                     historyComment1.like = like;
                                     historyComment1.replyCount = rcount;
@@ -213,7 +236,47 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                         .show();
             }
         });
+        holder.itemView.setOnLongClickListener(v -> {
+            View view = View.inflate(context,R.layout.edit_text, null);
+            EditText editText = view.findViewById(R.id.edit_text);
+            editText.setText(historyComment.comment);
+            new AlertDialog.Builder(context)
+                    .setTitle("编辑重发")
+                    .setView(view)
+                    .setNegativeButton("取消",new VoidDialogInterfaceOnClickListener())
+                    .setPositiveButton("发送", (dialog, which) -> {
+                        ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, "重发评论", "正在发送...");
+                        progressDialog.show();
+                        commentPresenter.resendComment(historyComment, editText.getText().toString(), new CommentPresenter.ResendCommentCallBack() {
+                            @Override
+                            public void onSendFailed(int code, String msg) {
+                                progressDialog.dismiss();
+                                DialogUtil.dialogMessage(context, "发送失败", "message:"+msg+"\ncode:"+code);
+                            }
+
+                            @Override
+                            public void onSendSuccessAndSleep(long waitTime) {
+                                progressDialog.setMessage("评论已发送，等待"+waitTime+"ms后检查状态...");
+                            }
+
+                            @Override
+                            public void onResentComment(CommentAddResult commentAddResult) {
+                                dialogCommCheckWorker.checkComment(historyComment.commentArea,commentAddResult.rpid,commentAddResult.parent, commentAddResult.root, editText.getText().toString(),false,progressDialog);
+                            }
+
+                            @Override
+                            public void onNetworkError(Throwable th) {
+                                progressDialog.dismiss();
+                                DialogUtil.dialogMessage(context, "网络错误", th.getMessage());
+                            }
+                        });
+                    })
+                    .show();
+            return false;
+        });
     }
+
+
     @Override
     public int getItemCount() {
         return historyCommentList.size();

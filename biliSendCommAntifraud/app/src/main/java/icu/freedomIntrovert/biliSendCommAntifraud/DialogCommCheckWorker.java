@@ -52,60 +52,7 @@ public class DialogCommCheckWorker {
 
     public void checkComment(CommentArea commentArea, long rpid, long parent, long root, String comment,boolean hasPictures, ProgressDialog dialog) {
         if (commentManipulator.cookieAreSet()) {
-            /*
-            commentPresenter.checkCommentStatusByNewMethod(commentArea, comment, rpid, new CommentPresenter.CheckCommentStatusByNewMethodCallBack() {
-                @Override
-                public void onSleeping(long waitTime) {
-                    dialog.setMessage("等待" + waitTime + "ms后检评论……");
-                }
-
-                @Override
-                public void onStartCheckComment() {
-                    dialog.setMessage("检查评论中……");
-                }
-
-                @Override
-                public void thenOk() {
-                    dialog.dismiss();
-                    DialogUtil.dialogMessage(context,"检查结果","评论正常显示！");
-                }
-
-                @Override
-                public void thenShadowBan() {
-                    dialog.dismiss();
-                    DialogUtil.dialogMessage(context,"检查结果","评论被ShadowBan！");
-                }
-
-                @Override
-                public void thenQuickDelete() {
-                    dialog.dismiss();
-                    DialogUtil.dialogMessage(context,"检查结果","评论被系统秒删！");
-                }
-
-                @Override
-                public void thenError() {
-                    dialog.dismiss();
-                    DialogUtil.dialogMessage(context,":(","啥情况！观众能看到评论而发评者却不能\n!!!∑(ﾟДﾟノ)ノ");
-                }
-
-                @Override
-                public void onNetworkError(Throwable th) {
-                    dialog.dismiss();
-                    toastNetError(th.getMessage());
-                }
-            });
-             */
-
             commentPresenter.checkCommentStatus(commentArea, comment, commentUtil.getRandomComment(commentArea), rpid, parent, root,hasPictures, new CommentPresenter.CheckCommentStatusCallBack() {
-                @Override
-                public void onSleeping(long waitTime,long waitTimeByPictures) {
-                    if (waitTimeByPictures == -1){
-                        dialog.setMessage("等待" + waitTime + "ms后检评论……");
-                    } else {
-                        dialog.setMessage("评论包含图片，等待"+waitTime+"+"+waitTimeByPictures+"="+(waitTime+waitTimeByPictures)+"ms后检查评论……");
-                    }
-
-                }
 
                 @Override
                 public void onStartCheckComment() {
@@ -115,7 +62,7 @@ public class DialogCommCheckWorker {
                 @Override
                 public void thenOk() {
                     dialog.dismiss();
-                    showCommentIsOkResult(comment);
+                    showCommentIsOkResult(comment,rpid);
                 }
 
                 @Override
@@ -184,19 +131,22 @@ public class DialogCommCheckWorker {
         }
     }
 
-    private void showCommentIsOkResult(String comment) {
+    private void showCommentIsOkResult(String comment,long rpid) {
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("检查结果")
                 .setMessage("你的评论：“" + comment + "”正常显示！")
                 .setCancelable(false)
-                .setPositiveButton("关闭", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        exitListener.exit();
+                .setPositiveButton("关闭", (dialog12, which) -> {
+                    if (exitListener instanceof OnExitListenerByComment) {
+                        ((OnExitListenerByComment) exitListener).rpid(rpid);
                     }
+                    exitListener.exit();
                 })
                 .setOnKeyListener((dialog1, keyCode, event) -> {
                     if (keyCode == KeyEvent.KEYCODE_BACK){
+                        if (exitListener instanceof OnExitListenerByComment) {
+                            ((OnExitListenerByComment) exitListener).rpid(rpid);
+                        }
                         exitListener.exit();
                         return true;
                     }
@@ -235,7 +185,12 @@ public class DialogCommCheckWorker {
             resultDialogBuilder.setIcon(R.drawable.ghost_black);
             resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在无账号环境下成功找到，但是被标记invisible，也就是隐身（在前端被隐藏）！这是非常罕见的情况……通常在评论发送很久时间后才会出现。可以的话把评论信息发给开发者，以分析触发条件");
         }
-        resultDialogBuilder.setPositiveButton("关闭", (dialog, which) -> exitListener.exit());
+        resultDialogBuilder.setPositiveButton("关闭", (dialog, which) -> {
+            if (exitListener instanceof OnExitListenerByComment) {
+                ((OnExitListenerByComment) exitListener).rpid(rpid);
+            }
+            exitListener.exit();
+        });
         resultDialogBuilder.setNeutralButton("检查评论区", null);
         resultDialogBuilder.setNegativeButton("更多评论选项", null);
         AlertDialog resultDialog = resultDialogBuilder.show();
@@ -300,6 +255,9 @@ public class DialogCommCheckWorker {
                                 public void onSuccess(Void unused) {
                                     resultDialog.dismiss();
                                     toastLong("删除成功！");
+                                    if (exitListener instanceof OnExitListenerByComment) {
+                                        ((OnExitListenerByComment) exitListener).rpid(rpid);
+                                    }
                                     exitListener.exit();
                                 }
                             });

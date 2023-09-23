@@ -79,7 +79,7 @@ public class CommentUtil {
         View dialogView = View.inflate(context, R.layout.edit_text, null);
         EditText editText = dialogView.findViewById(R.id.edit_text);
         editText.setText(getAreaSourceText());
-        AlertDialog dialog = new AlertDialog.Builder(context).setTitle("你的评论区（你是up主），用于检测查重黑名单与扫描敏感词").setView(dialogView).setNegativeButton("取消", new VoidDialogInterfaceOnClickListener()).setPositiveButton("设置", null).show();
+        AlertDialog dialog = new AlertDialog.Builder(context).setTitle("你的评论区（你是up主，填bv号或动态链接），用于检测查重黑名单与扫描敏感词").setView(dialogView).setNegativeButton("取消", new VoidDialogInterfaceOnClickListener()).setPositiveButton("设置", null).show();
         dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

@@ -16,6 +16,7 @@ public class BannedCommentBean extends Comment{
     public static final String BANNED_TYPE_SUSPECTED_NO_PROBLEM = "suspectedNoProblem";
     //直接去申诉所导致的未知状态
     public static final String BANNED_TYPE_UNKNOWN = "unknown";
+    public static final String BANNED_TYPE_SHADOW_BAN_RECKONING = "shadowBanRecking";
 
     //没有检查
     public static final int CHECKED_NO_CHECK = 0;

@@ -100,7 +100,6 @@ public class CommentManipulator {
         } else {
             return null;
         }
-
     }
 /*
     public CommentSendResult sendComment(String comment, CommentArea commentArea, String parent, String root) throws IOException {

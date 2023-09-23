@@ -80,6 +80,10 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
                 holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.hide));
                 holder.txv_banned_type.setText("仅自己可见");
                 break;
+            case BannedCommentBean.BANNED_TYPE_SHADOW_BAN_RECKONING:
+                holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.hide));
+                holder.txv_banned_type.setText("仅自己可见(秋后算账)");
+                break;
             case BannedCommentBean.BANNED_TYPE_UNDER_REVIEW:
                 holder.imgv_banned_type.setImageDrawable(context.getDrawable(R.drawable.hide));
                 holder.txv_banned_type.setText("疑似审核中");
@@ -138,6 +142,9 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
             switch (bannedCommentBean.bannedType) {
                 case BannedCommentBean.BANNED_TYPE_SHADOW_BAN:
                     txv_band_type.setText("仅自己可见");
+                    break;
+                case BannedCommentBean.BANNED_TYPE_SHADOW_BAN_RECKONING:
+                    txv_band_type.setText("仅自己可见(秋后算账)");
                     break;
                 case BannedCommentBean.BANNED_TYPE_QUICK_DELETE:
                     txv_band_type.setText("被系统秒删");

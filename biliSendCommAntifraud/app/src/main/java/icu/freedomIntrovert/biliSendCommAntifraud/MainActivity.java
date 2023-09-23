@@ -1,6 +1,7 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -43,14 +44,14 @@ import okhttp3.OkHttpClient;
 
 public class MainActivity extends AppCompatActivity {
     EditText edt_bvid, edt_comment;
-    Button btn_send, btn_clean, btn_send_and_appeal,btn_test;
+    Button btn_send, btn_clean, btn_send_and_appeal, btn_test;
     SharedPreferences sp_config;
     CommentManipulator commentManipulator;
     CommentPresenter commentPresenter;
     DrawerLayout drawerLayout;
-    SwitchCompat sw_auto_recorde,sw_recorde_history;
-    ConstraintLayout cl_banned_comment_sw,cl_recorde_history_comment_sw;
-    LinearLayout ll_banned_comments, ll_martial_law_comment_area_list,ll_history_comment, ll_wait_time,ll_github_project;
+    SwitchCompat sw_auto_recorde, sw_recorde_history;
+    ConstraintLayout cl_banned_comment_sw, cl_recorde_history_comment_sw;
+    LinearLayout ll_banned_comments, ll_martial_law_comment_area_list, ll_history_comment, ll_wait_time, ll_github_project;
     //NavigationView navigation_view;
     Toolbar toolbar;
     private Context context;
@@ -62,19 +63,21 @@ public class MainActivity extends AppCompatActivity {
     CommentUtil commentUtil;
     Handler handler;
     DialogCommCheckWorker dialogCommSendWorker;
+    public static Activity activity;
 
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        activity = this;
         context = this;
         sp_config = getSharedPreferences("config", Context.MODE_PRIVATE);
         commentUtil = new CommentUtil(sp_config);
         commentManipulator = new CommentManipulator(new OkHttpClient(), sp_config.getString("cookie", ""));
         handler = new Handler();
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
-        commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000),sp_config.getLong("wait_time_by_has_pictures", 10000), sp_config.getBoolean("autoRecorde", true),sp_config.getBoolean("recordeHistory",true));
+        commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000), sp_config.getLong("wait_time_by_has_pictures", 10000), sp_config.getBoolean("autoRecorde", true), sp_config.getBoolean("recordeHistory", true));
         dialogCommSendWorker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, () -> {
         });
 
@@ -91,27 +94,29 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-
-        /*
         btn_test = findViewById(R.id.btn_test);
         btn_test.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                DanmakuManipulator danmakuManipulator = new DanmakuManipulator(new OkHttpClient());
-                DanmakuPresenter danmakuPresenter = new DanmakuPresenter(handler,danmakuManipulator,statisticsDBOpenHelper,5000,true);
-                DialogDanmakuCheckWorker dialogDanmakuCheckWorker = new DialogDanmakuCheckWorker(context, handler, danmakuPresenter, new OnExitListener() {
-                    @Override
-                    public void exit() {
-                        finish();
-                    }
-                });
-                dialogDanmakuCheckWorker.startCheckDanmaku(1155228366,0,"helloWorld",null,1);
+                Intent intent = new Intent(context, WaitService.class);
+                intent.putExtra("waitTime",10000);
+                startService(intent);
+
+
+
+                // NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+                //NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(),"waiting");
+                //builder.setSmallIcon(R.drawable.launcher);
+                //builder.setContentTitle("下载");
+                //builder.setContentText("正在下载");
+
+
             }
         });
-         */
+
     }
 
-    private void initView(){
+    private void initView() {
         drawerLayout = findViewById(R.id.drawerLayout);
         //navigation_view = findViewById(R.id.navigation_view);
         toolbar = findViewById(R.id.toolbar);
@@ -140,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
         toggle.syncState();
     }
 
-    private void initAutoRecordeBannedCommentSW(){
+    private void initAutoRecordeBannedCommentSW() {
         enableRecorde = sp_config.getBoolean("autoRecorde", true);
         sw_auto_recorde.setChecked(enableRecorde);
         cl_banned_comment_sw.setOnClickListener(v -> {
@@ -162,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void initRecordeHistoryCommentSW(){
+    private void initRecordeHistoryCommentSW() {
         enableRecordeHistoryComment = sp_config.getBoolean("recordeHistory", true);
         sw_recorde_history.setChecked(enableRecordeHistoryComment);
         cl_recorde_history_comment_sw.setOnClickListener(v -> {
@@ -185,8 +190,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-    private void initToNewActivityItem(){
+    private void initToNewActivityItem() {
         ll_banned_comments.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, BannedCommentListActivity.class));
         });
@@ -239,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
                 editTextWTByHasPictures.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
                 editTextWTByHasPictures.setText(String.valueOf(sp_config.getLong("wait_time_by_has_pictures", 10000)));
                 editTextWTByDanmakuSent.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
-                editTextWTByDanmakuSent.setText(String.valueOf(sp_config.getLong("wait_time_by_danmaku_sent",20000)));
+                editTextWTByDanmakuSent.setText(String.valueOf(sp_config.getLong("wait_time_by_danmaku_sent", 20000)));
                 new AlertDialog.Builder(context).setTitle("设置发评后等待时间（毫秒/ms）")
                         .setView(dialogView)
                         .setPositiveButton("设置", new DialogInterface.OnClickListener() {
@@ -248,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
                                 long waitTime = Long.parseLong(editTextWTByCommentSent.getText().toString());
                                 long waitTimeByHasPictures = Long.parseLong(editTextWTByHasPictures.getText().toString());
                                 long waitTimeByDanmakuSent = Long.parseLong(editTextWTByDanmakuSent.getText().toString());
-                                sp_config.edit().putLong("wait_time", waitTime).putLong("wait_time_by_has_pictures",waitTimeByHasPictures).putLong("wait_time_by_danmaku_sent",waitTimeByDanmakuSent).apply();
+                                sp_config.edit().putLong("wait_time", waitTime).putLong("wait_time_by_has_pictures", waitTimeByHasPictures).putLong("wait_time_by_danmaku_sent", waitTimeByDanmakuSent).apply();
                                 commentPresenter.setWaitTime(waitTime);
                                 commentPresenter.setWaitTimeByHasPictrues(waitTimeByHasPictures);
                                 toastLong("设置成功！");
@@ -260,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void initHomePageCommentCheck(){
+    private void initHomePageCommentCheck() {
         btn_send.setOnClickListener(v -> {
             //Toast.makeText(MainActivity.this,edt_comment.getText().toString(),Toast.LENGTH_LONG).show();
             ProgressDialog dialog = new ProgressDialog(context);
@@ -286,7 +290,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onSuccess(GeneralResponse<CommentAddResult> response) {
                                 if (commentSendSuccess(response, commentArea, comment, dialog)) {
-                                    dialogCommSendWorker.checkComment(commentArea, response.data.rpid, 0, 0, comment,false, dialog);
+                                    dialogCommSendWorker.checkComment(commentArea, response.data.rpid, 0, 0, comment, false, dialog);
                                 }
                             }
                         });
@@ -323,7 +327,7 @@ public class MainActivity extends AppCompatActivity {
                         if (commentArea != null) {
                             progressDialog.setMessage("发送评论中……");
                             AppealDialogPresenter appealDialogPresenter = new AppealDialogPresenter(context, handler, commentManipulator);
-                            commentManipulator.sendComment(comment,0,0,commentArea).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
+                            commentManipulator.sendComment(comment, 0, 0, commentArea).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
                                 @Override
                                 public void onError(Throwable th) {
                                     progressDialog.dismiss();
@@ -334,7 +338,7 @@ public class MainActivity extends AppCompatActivity {
                                 public void onSuccess(GeneralResponse<CommentAddResult> response) {
                                     progressDialog.dismiss();
                                     toastLong("评论发送成功，请填写申诉信息");
-                                    if (commentSendSuccess(response,commentArea,comment,progressDialog)) {
+                                    if (commentSendSuccess(response, commentArea, comment, progressDialog)) {
                                         appealDialogPresenter.appeal(edt_bvid.getText().toString(), comment, new AppealDialogPresenter.CallBack() {
                                             @Override
                                             public void onRespInUI(int code, String toastText) {
@@ -377,7 +381,6 @@ public class MainActivity extends AppCompatActivity {
             }).setNegativeButton("手滑了", new VoidDialogInterfaceOnClickListener()).show();
         });
     }
-
 
 
     private boolean commentSendSuccess(GeneralResponse<CommentAddResult> response, CommentArea commentArea, String comment, DialogInterface dialog) {
@@ -466,4 +469,5 @@ public class MainActivity extends AppCompatActivity {
         }
         return context.createConfigurationContext(configuration);
     }
+
 }
