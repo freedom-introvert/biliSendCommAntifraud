@@ -40,6 +40,8 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.AppealDialo
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.BiliApiCallback;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressTimer;
 import okhttp3.OkHttpClient;
 
 public class MainActivity extends AppCompatActivity {
@@ -94,25 +96,49 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        btn_test = findViewById(R.id.btn_test);
-        btn_test.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(context, WaitService.class);
-                intent.putExtra("waitTime",10000);
-                startService(intent);
-
-
-
-                // NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
-                //NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(),"waiting");
-                //builder.setSmallIcon(R.drawable.launcher);
-                //builder.setContentTitle("下载");
-                //builder.setContentText("正在下载");
-
-
-            }
-        });
+//        btn_test = findViewById(R.id.btn_test);
+//        btn_test.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                ProgressBarDialog progressBarDialog = new ProgressBarDialog.Builder(context)
+//                        .setTitle("等待中")
+//                        .setMessage("等待(0/1000)ms")
+//                        .setPositiveButton("后台等待", null)
+//                        .setMax(1000)
+//                        .show();
+//                progressBarDialog.getButton(DialogInterface.BUTTON_POSITIVE)
+//                        .setOnClickListener(new View.OnClickListener() {
+//                            @Override
+//                            public void onClick(View v) {
+//                                toastShort("hello");
+//                            }
+//                        });
+//
+//                new Thread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//
+//                        new ProgressTimer(5000, 1000, new ProgressTimer.ProgressLister() {
+//                            @Override
+//                            public void onNewProgress(int progress, long sleepSeg) {
+//                                runOnUiThread(new Runnable() {
+//                                    @Override
+//                                    public void run() {
+//                                        progressBarDialog.setProgress(progress);
+//                                        progressBarDialog.setMessage(String.format(Locale.getDefault(), "等待(%d/5000)ms", progress * sleepSeg));
+//                                    }
+//                                });
+//                            }
+//                        }).start();
+//                        progressBarDialog.setIndeterminate(true);
+//                    }
+//                }).start();
+//                //progressBar.setMax(100);
+//                //progressBar.setProgress(10);
+//
+//
+//            }
+//        });
 
     }
 
@@ -267,12 +293,12 @@ public class MainActivity extends AppCompatActivity {
     private void initHomePageCommentCheck() {
         btn_send.setOnClickListener(v -> {
             //Toast.makeText(MainActivity.this,edt_comment.getText().toString(),Toast.LENGTH_LONG).show();
-            ProgressDialog dialog = new ProgressDialog(context);
-            dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            dialog.setTitle("发布并检测评论");
-            dialog.setMessage("正在获取评论区信息……");
-            dialog.setCancelable(false);
-            dialog.show();
+            ProgressBarDialog dialog = new ProgressBarDialog.Builder(context)
+                    .setTitle("发布并检测评论")
+                    .setMessage("正在获取评论区信息……")
+                    .setIndeterminate(true)
+                    .setCancelable(false)
+                    .show();
 
             commentPresenter.matchToArea(edt_bvid.getText().toString(), new CommentPresenter.MatchToAreaCallBack() {
                 @Override
@@ -290,7 +316,20 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onSuccess(GeneralResponse<CommentAddResult> response) {
                                 if (commentSendSuccess(response, commentArea, comment, dialog)) {
-                                    dialogCommSendWorker.checkComment(commentArea, response.data.rpid, 0, 0, comment, false, dialog);
+                                    dialog.setIndeterminate(false);
+                                    new Thread(() -> {
+                                        new ProgressTimer(commentPresenter.waitTime, ProgressBarDialog.DEFAULT_MAX_PROGRESS, new ProgressTimer.ProgressLister() {
+                                            @Override
+                                            public void onNewProgress(int progress, long sleepSeg) {
+                                                runOnUiThread(() -> {
+                                                    dialog.setMessage("等待("+progress*sleepSeg+"/"+commentPresenter.waitTime+")ms后检查评论");
+                                                    dialog.setProgress(progress);
+                                                });
+                                            }
+                                        }).start();
+                                        dialogCommSendWorker.checkComment(commentArea, response.data.rpid, 0, 0, comment, false, dialog);
+                                    }).start();
+
                                 }
                             }
                         });

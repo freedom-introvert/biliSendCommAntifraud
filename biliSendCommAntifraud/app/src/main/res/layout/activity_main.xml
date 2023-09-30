@@ -70,11 +70,11 @@
                 android:layout_height="wrap_content"
                 android:text="清空输入内容" />
 
-            <Button
+           <!--<Button
                 android:id="@+id/btn_test"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="测试" />
+                android:text="测试" /> -->
 
 
             <!-- 作为LSPosed模块，奇葩的问题，只改了java代码，软件再安装没有更新到，改了UI代码才会更新

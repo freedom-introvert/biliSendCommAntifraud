@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
 }
 
+def currentTimeMillis = System.currentTimeMillis();
+
 android {
     namespace 'icu.freedomIntrovert.biliSendCommAntifraud'
     compileSdk 33
@@ -12,9 +14,9 @@ android {
         applicationId "icu.freedomIntrovert.biliSendCommAntifraud"
         minSdk 21
         targetSdk 33
-        versionCode 440
-        versionName "4.4.0"
-
+        versionCode 450
+        //versionName "4.5.0_dev_${currentTimeMillis}" //每编译一次改变版本号，以更新模块
+        versionName "4.5.0"
     }
     buildTypes {
         release {

@@ -1,15 +1,16 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Process;
+import android.provider.Settings;
 import android.view.Window;
 import android.widget.Toast;
 
@@ -29,6 +30,8 @@ import icu.freedomIntrovert.biliSendCommAntifraud.danmaku.DanmakuManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.danmaku.DanmakuPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.BiliApiCallback;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressTimer;
 import okhttp3.OkHttpClient;
 
 public class ByXposedLaunchedActivity extends AppCompatActivity {
@@ -78,64 +81,80 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
 
             boolean hasPictures = intent.getBooleanExtra("hasPictures", false);
 
+            long totalWaitTime;
             String proMsg;
             if (hasPictures) {
-                proMsg = "评论包含图片，等待" + waitTime + "+" + waitTimeByHasPictures + "=" + (waitTime + waitTimeByHasPictures) + "ms后检查评论……";
+                totalWaitTime = waitTime + waitTimeByHasPictures;
+                proMsg = "评论包含图片，等待" + waitTime + "+" + waitTimeByHasPictures + "=(%d/" + totalWaitTime + ")ms后检查评论……";
             } else {
-                proMsg = "等待" + waitTime + "ms后检评论……";
+                totalWaitTime = waitTime;
+                proMsg = "等待(%d/" + waitTime + ")ms后检评论……";
             }
 
-            ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, "等待中", proMsg);
-            long lastTime = System.currentTimeMillis();
-            progressDialog.setButton(DialogInterface.BUTTON_POSITIVE, "后台等待", (dialog, which) -> {
-                toContinueTo = false;
-                Intent intent1 = new Intent(context, WaitService.class);
-                if (hasPictures) {
-                    intent1.putExtra("wait_time", (waitTime + waitTimeByHasPictures) - (System.currentTimeMillis() - lastTime));
-                } else {
-                    intent1.putExtra("wait_time", waitTime - (System.currentTimeMillis() - lastTime));
+            ProgressBarDialog progressBarDialog = new ProgressBarDialog.Builder(context)
+                    .setTitle("等待中")
+                    .setMessage(String.format(proMsg,0))
+                    .setPositiveButton("后台等待",null)
+                    .setCancelable(false)
+                    .show();
+            ProgressTimer progressTimer = new ProgressTimer(totalWaitTime, ProgressBarDialog.DEFAULT_MAX_PROGRESS, new ProgressTimer.ProgressLister() {
+                @Override
+                public void onNewProgress(int progress, long sleepSeg) {
+                    runOnUiThread(() -> {
+                        progressBarDialog.setProgress(progress);
+                        progressBarDialog.setMessage(String.format(proMsg,progress*sleepSeg));
+                    });
                 }
-                intent1.putExtra("check_extras", intent.getExtras());
-                startService(intent1);
-                finish();
             });
-            progressDialog.setCancelable(false);
-            progressDialog.show();
+            long lastTime = System.currentTimeMillis();
+            progressBarDialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(v -> {
+                if (checkNotificationPermission(context)) {
+                    Intent intent1 = new Intent(context, WaitService.class);
+                    if (hasPictures) {
+                        intent1.putExtra("wait_time", totalWaitTime - (System.currentTimeMillis() - lastTime));
+                    } else {
+                        intent1.putExtra("wait_time", waitTime - (System.currentTimeMillis() - lastTime));
+                    }
+                    intent1.putExtra("check_extras", intent.getExtras());
+                    startService(intent1);
+                    toContinueTo = false;
+                    finish();
+                } else {
+                    Toast.makeText(context, "请授予通知权限！", Toast.LENGTH_LONG).show();
+                    requestNotificationPermission(context);
+                }
+            });
 
             new Thread(() -> {
                 if (!hasPictures) {
-                    try {
-                        Thread.sleep(waitTime);
-                        if (toContinueTo) {
-                            runOnUiThread(() -> {
-                                progressDialog.setTitle("检查中");
-                                progressDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
-                                toCheck(intent.getExtras(), TODO_CHECK_COMMENT, progressDialog);
-                            });
-                        }
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                    progressTimer.start();
+                    if (toContinueTo) {
+                        runOnUiThread(() -> {
+                            progressBarDialog.setIndeterminate(true);
+                            progressBarDialog.setTitle("检查中");
+                            progressBarDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+                            toCheck(intent.getExtras(), TODO_CHECK_COMMENT, progressBarDialog);
+                        });
                     }
                 } else {
-                    try {
-                        Thread.sleep(waitTime + waitTimeByHasPictures);
-                        if (toContinueTo) {
-                            runOnUiThread(() -> {
-                                progressDialog.setTitle("检查中");
-                                progressDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
-                                toCheck(intent.getExtras(), TODO_CHECK_COMMENT, progressDialog);
-                            });
-                        }
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                    progressTimer.start();
+                    if (toContinueTo) {
+                        runOnUiThread(() -> {
+                            progressBarDialog.setIndeterminate(true);
+                            progressBarDialog.setTitle("检查中");
+                            progressBarDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+                            toCheck(intent.getExtras(), TODO_CHECK_COMMENT, progressBarDialog);
+                        });
                     }
                 }
             }).start();
         } else if (todo == TODO_CONTINUE_CHECK_COMMENT){
-
-            ProgressDialog progressDialog = DialogUtil.newProgressDialog(context,"检查中","恢复检查进度……");
-            progressDialog.setCancelable(false);
-            progressDialog.show();
+            ProgressBarDialog progressBarDialog = new ProgressBarDialog.Builder(context)
+                    .setTitle("检查中")
+                    .setMessage("恢复检查进度……")
+                    .setIndeterminate(true)
+                    .setCancelable(false)
+                    .show();
             Bundle extras = intent.getBundleExtra("check_extras");
             if (extras != null){
                 Set<String> keySet = extras.keySet();
@@ -145,11 +164,11 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                 }
                 System.out.println(extras.getBundle("check_extras"));
             }
-            toCheck(extras,TODO_CHECK_COMMENT,progressDialog);
+            toCheck(extras,TODO_CHECK_COMMENT,progressBarDialog);
         }
     }
 
-    private void toCheck(@Nullable Bundle extras, int todo, @NonNull ProgressDialog progressDialog) {
+    private void toCheck(@Nullable Bundle extras, int todo, @NonNull ProgressBarDialog progressDialog) {
         if (extras == null){
             progressDialog.dismiss();
             DialogUtil.dialogMessage(context,"未传入参数异常","参数："+extras);
@@ -202,13 +221,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                     }
                 }
             } else if (todo == TODO_CHECK_DANMAKU) {
-                DialogDanmakuCheckWorker worker = new DialogDanmakuCheckWorker(context, handler, new DanmakuPresenter(handler, danmakuManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time_by_danmaku_sent", 20000), sp_config.getBoolean("autoRecorde", true)), new OnExitListener() {
-                    @Override
-                    public void exit() {
-                        finish();
-                        Process.killProcess(Process.myPid());
-                    }
-                });
+                DialogDanmakuCheckWorker worker = new DialogDanmakuCheckWorker(context, handler, new DanmakuPresenter(handler, danmakuManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time_by_danmaku_sent", 20000), sp_config.getBoolean("autoRecorde", true)), () -> finish());
                 long dmid = extras.getLong("dmid", 0);
                 String content = extras.getString("content");
                 String accessKey = extras.getString("accessKey");
@@ -240,5 +253,26 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
             configuration.fontScale = 0.86f;
         }
         return context.createConfigurationContext(configuration);
+    }
+    public static boolean checkNotificationPermission(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (notificationManager != null) {
+                return notificationManager.areNotificationsEnabled();
+            }
+        } else {
+            // 对于Android 6.0及以下版本，无法直接检查通知权限，需要用户手动设置
+            return true;
+        }
+        return false;
+    }
+    public static void requestNotificationPermission(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+            intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
+            context.startActivity(intent);
+        } else {
+            Toast.makeText(context, "无法自动请求通知权限，请手动设置", Toast.LENGTH_SHORT).show();
+        }
     }
 }
