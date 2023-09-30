@@ -22,6 +22,8 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentScanResult
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.ServiceGenerator;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressTimer;
 import retrofit2.Call;
 
 public class CommentPresenter {
@@ -94,7 +96,7 @@ public class CommentPresenter {
                 checkRespNotNull(body);
                 if (body.isSuccess()) {
                     handler.post(() -> callBack.onSendSuccessAndSleep(waitTime));
-                    sleep(waitTime);
+                    new ProgressTimer(waitTime, ProgressBarDialog.DEFAULT_MAX_PROGRESS, (progress, sleepSeg) -> handler.post(() -> callBack.onNewProgress(progress, sleepSeg,waitTime))).start();
                     handler.post(() -> callBack.onResentComment(body.data));
                 } else {
                     handler.post(() -> callBack.onSendFailed(body.code,body.message));
@@ -109,6 +111,8 @@ public class CommentPresenter {
         void onSendFailed(int code, String msg);
         void onSendSuccessAndSleep(long waitTime);
         void onResentComment(CommentAddResult commentAddResult);
+
+        void onNewProgress(int progress, long sleepSeg,long waitTime);
     }
 
     public void checkCommentStatus(CommentArea commentArea, String mainComment, String testComment, long rpid, long parent, long root, boolean hasPictures,CheckCommentStatusCallBack callBack) {

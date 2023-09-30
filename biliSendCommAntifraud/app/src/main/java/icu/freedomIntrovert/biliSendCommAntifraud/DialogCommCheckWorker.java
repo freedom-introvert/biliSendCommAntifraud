@@ -32,6 +32,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.AppealDialogPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.BiliApiCallback;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
 
 public class DialogCommCheckWorker {
     private Context context;
@@ -50,7 +51,7 @@ public class DialogCommCheckWorker {
         this.exitListener = exitListener;
     }
 
-    public void checkComment(CommentArea commentArea, long rpid, long parent, long root, String comment,boolean hasPictures, ProgressDialog dialog) {
+    public void checkComment(CommentArea commentArea, long rpid, long parent, long root, String comment,boolean hasPictures, ProgressBarDialog dialog) {
         if (commentManipulator.cookieAreSet()) {
             commentPresenter.checkCommentStatus(commentArea, comment, commentUtil.getRandomComment(commentArea), rpid, parent, root,hasPictures, new CommentPresenter.CheckCommentStatusCallBack() {
 

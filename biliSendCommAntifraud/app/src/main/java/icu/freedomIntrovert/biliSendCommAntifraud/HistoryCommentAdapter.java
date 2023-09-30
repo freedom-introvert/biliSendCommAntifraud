@@ -27,6 +27,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentReviewPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
 import okhttp3.OkHttpClient;
 
 public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAdapter.ViewHolder> {
@@ -245,28 +246,41 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                     .setView(view)
                     .setNegativeButton("取消",new VoidDialogInterfaceOnClickListener())
                     .setPositiveButton("发送", (dialog, which) -> {
-                        ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, "重发评论", "正在发送...");
-                        progressDialog.show();
+                        ProgressBarDialog progressBarDialog = new ProgressBarDialog.Builder(context)
+                                .setTitle("重发评论")
+                                .setMessage("正在发送...")
+                                .setIndeterminate(true)
+                                .setCancelable(false)
+                                .show();
+
                         commentPresenter.resendComment(historyComment, editText.getText().toString(), new CommentPresenter.ResendCommentCallBack() {
                             @Override
                             public void onSendFailed(int code, String msg) {
-                                progressDialog.dismiss();
+                                progressBarDialog.dismiss();
                                 DialogUtil.dialogMessage(context, "发送失败", "message:"+msg+"\ncode:"+code);
                             }
 
                             @Override
+                            public void onNewProgress(int progress, long sleepSeg,long waitTime) {
+                                progressBarDialog.setMessage("评论已发送，等待("+progress*sleepSeg+"/"+waitTime+")ms后检查状态...");
+                                progressBarDialog.setProgress(progress);
+                            }
+
+                            @Override
                             public void onSendSuccessAndSleep(long waitTime) {
-                                progressDialog.setMessage("评论已发送，等待"+waitTime+"ms后检查状态...");
+                                progressBarDialog.setIndeterminate(false);
+                                progressBarDialog.setMessage("评论已发送，等待(0/"+waitTime+")ms后检查状态...");
                             }
 
                             @Override
                             public void onResentComment(CommentAddResult commentAddResult) {
-                                dialogCommCheckWorker.checkComment(historyComment.commentArea,commentAddResult.rpid,commentAddResult.parent, commentAddResult.root, editText.getText().toString(),false,progressDialog);
+                                progressBarDialog.setIndeterminate(true);
+                                dialogCommCheckWorker.checkComment(historyComment.commentArea,commentAddResult.rpid,commentAddResult.parent, commentAddResult.root, editText.getText().toString(),false,progressBarDialog);
                             }
 
                             @Override
                             public void onNetworkError(Throwable th) {
-                                progressDialog.dismiss();
+                                progressBarDialog.dismiss();
                                 DialogUtil.dialogMessage(context, "网络错误", th.getMessage());
                             }
                         });

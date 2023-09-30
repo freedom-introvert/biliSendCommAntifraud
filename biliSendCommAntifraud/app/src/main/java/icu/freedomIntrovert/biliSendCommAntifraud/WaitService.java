@@ -77,9 +77,6 @@ public class WaitService extends Service {
         }
         checkExtra = intent.getBundleExtra("check_extras");
         System.out.println("检查Extras：" + checkExtra);
-        //manager.notify(0x3, builder.build());
-        //builder.setProgress(100,0,false);
-        //manager.cancel(ID_WAIT_OVER);
         manager.notify(ID_WAIT_PROGRESS, builder.build());
         startTimer();
         return super.onStartCommand(intent, flags, startId);
