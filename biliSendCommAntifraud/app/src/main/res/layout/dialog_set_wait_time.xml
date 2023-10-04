@@ -38,9 +38,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="25dp"
-        android:textColor="@color/dark_font"
+        android:textColor="@color/red"
         android:textSize="15sp"
-        android:text="弹幕发送之后等待"/>
+        android:text="弹幕发送之后等待(已删除该功能)"/>
     <EditText
         android:id="@+id/edit_text_wt_danmaku_sent"
         android:layout_width="match_parent"

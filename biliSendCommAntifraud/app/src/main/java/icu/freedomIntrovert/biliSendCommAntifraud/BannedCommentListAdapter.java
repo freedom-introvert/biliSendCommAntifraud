@@ -249,6 +249,12 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
                             }
 
                             @Override
+                            public void onCodeError(int code, String message) {
+                                progressDialog.dismiss();
+                                DialogUtil.dialogMessage(context,"评论区异常","code="+code+"\nmessage="+message);
+                            }
+
+                            @Override
                             public void onNetworkError(Throwable th) {
                                 progressDialog.dismiss();
                                 DialogUtil.dialogMessage(context,"网络错误",th.getLocalizedMessage());

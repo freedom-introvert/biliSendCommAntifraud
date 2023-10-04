@@ -280,7 +280,7 @@ public class MainActivity extends AppCompatActivity {
                                 long waitTimeByDanmakuSent = Long.parseLong(editTextWTByDanmakuSent.getText().toString());
                                 sp_config.edit().putLong("wait_time", waitTime).putLong("wait_time_by_has_pictures", waitTimeByHasPictures).putLong("wait_time_by_danmaku_sent", waitTimeByDanmakuSent).apply();
                                 commentPresenter.setWaitTime(waitTime);
-                                commentPresenter.setWaitTimeByHasPictrues(waitTimeByHasPictures);
+                                commentPresenter.setWaitTimeByHasPictures(waitTimeByHasPictures);
                                 toastLong("设置成功！");
                             }
                         })
@@ -421,7 +421,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
     private boolean commentSendSuccess(GeneralResponse<CommentAddResult> response, CommentArea commentArea, String comment, DialogInterface dialog) {
         if (response.isSuccess()) {
             if (response.data.success_action == 0) {
@@ -445,7 +444,7 @@ public class MainActivity extends AppCompatActivity {
             }
         } else if (response.code == CommentAddResult.CODE_CONTAIN_SENSITIVE) {//包含敏感词时
             if (enableRecorde) {
-                statisticsDBOpenHelper.insertBannedComment(new BannedCommentBean(commentArea, "st" + System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
+                statisticsDBOpenHelper.insertBannedComment(new BannedCommentBean(commentArea, -System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
             }
             dialog.dismiss();
             toastLong(response.message);

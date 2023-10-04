@@ -76,7 +76,7 @@ public class CommentPresenter {
         });
     }
 
-    public void setWaitTimeByHasPictrues(long waitTimeByHasPictures) {
+    public void setWaitTimeByHasPictures(long waitTimeByHasPictures) {
 
     }
 

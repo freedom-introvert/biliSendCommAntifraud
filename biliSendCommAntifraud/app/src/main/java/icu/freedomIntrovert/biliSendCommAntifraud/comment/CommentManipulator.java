@@ -68,7 +68,7 @@ public class CommentManipulator {
     }
 
     public String bvidToOid(String bvid) throws IOException {
-        Request request = new Request.Builder().url("http://api.bilibili.com/x/web-interface/view?bvid=" + bvid).build();
+        Request request = new Request.Builder().url("https://api.bilibili.com/x/web-interface/view?bvid=" + bvid).build();
         Response response = httpClient.newCall(request).execute();
         String aid = null;
         if (response.code() == 200) {
@@ -82,7 +82,7 @@ public class CommentManipulator {
 
     public CommentArea dvidToCommentArea(String dvid) throws IOException {
         Request request = new Request.Builder()
-                .url("http://api.bilibili.com/x/polymer/web-dynamic/v1/detail?id=" + dvid)
+                .url("https://api.bilibili.com/x/polymer/web-dynamic/v1/detail?id=" + dvid)
                 //设置referer,不然会被拦截请求
                 .addHeader("Referer", "https://t.bilibili.com/").build();
         Response response = httpClient.newCall(request).execute();
@@ -356,7 +356,7 @@ public class CommentManipulator {
         String title = null, up = null;
         GeneralResponse<CommentReply> resp = getCommentReplyHasAccount(commentArea, testCommentRpid, 1).execute().body();
         if (commentArea.areaType == CommentArea.AREA_TYPE_VIDEO) {
-            Request request = new Request.Builder().url("http://api.bilibili.com/x/web-interface/view?bvid=" + commentArea.sourceId).build();
+            Request request = new Request.Builder().url("https://api.bilibili.com/x/web-interface/view?bvid=" + commentArea.sourceId).build();
             Response response = httpClient.newCall(request).execute();
             if (response.code() == 200) {
                 JSONObject respJson = JSON.parseObject(response.body().string());
@@ -386,7 +386,7 @@ public class CommentManipulator {
             }
         } else if (commentArea.areaType == CommentArea.AREA_TYPE_DYNAMIC11 || commentArea.areaType == CommentArea.AREA_TYPE_DYNAMIC17) {
             Request request = new Request.Builder()
-                    .url("http://api.bilibili.com/x/polymer/web-dynamic/v1/detail?id=" + commentArea.sourceId)
+                    .url("https://api.bilibili.com/x/polymer/web-dynamic/v1/detail?id=" + commentArea.sourceId)
                     //设置referer,不然会被拦截请求
                     .addHeader("Referer", "https://t.bilibili.com/").build();
             Response response = httpClient.newCall(request).execute();

@@ -16,7 +16,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.MartialLawCommentArea;
 
 public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
-    public static final int VERSION = 5;
+    public static final int VERSION = 6;
     public static final String DB_NAME = "statistics.db";
     public static final String TABLE_NAME_BANNED_COMMENT = "banned_comment";
     public static final String TABLE_NAME_MARTIAL_LAW_AREA = "martial_law_comment_area";
@@ -44,6 +44,8 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
                 db.execSQL("ALTER TABLE banned_comment RENAME COLUMN bandType TO bannedType");
             case 4:
                 db.execSQL("CREATE TABLE history_comment ( rpid INTEGER PRIMARY KEY UNIQUE NOT NULL, parent INTEGER NOT NULL, root INTEGER NOT NULL, oid INTEGER NOT NULL, area_type INTEGER NOT NULL, source_id TEXT, comment TEXT, [like] INTEGER NOT NULL, reply INTEGER NOT NULL, last_state TEXT, last_check_date INTEGER NOT NULL, date INTEGER NOT NULL );");
+            case 5:
+                db.execSQL("UPDATE "+TABLE_NAME_BANNED_COMMENT+" SET rpid = REPLACE(rpid, 'st', '-') WHERE rpid LIKE 'st%'");
         }
     }
 
