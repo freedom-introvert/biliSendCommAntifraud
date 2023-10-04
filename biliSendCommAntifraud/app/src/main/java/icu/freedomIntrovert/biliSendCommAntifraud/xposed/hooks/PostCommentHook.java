@@ -16,6 +16,7 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.BaseHook;
 
 public class PostCommentHook extends BaseHook {
@@ -274,6 +275,17 @@ public class PostCommentHook extends BaseHook {
                                     XposedBridge.log("bilibili comment add result:" + intent.getExtras().toString());
                                     currentContext.get().startActivity(intent);
                                 }
+                            } else if (XposedHelpers.getIntField(body,"code") == CommentAddResult.CODE_CONTAIN_SENSITIVE){
+                                Intent intent = new Intent();
+                                intent.setComponent(new ComponentName("icu.freedomIntrovert.biliSendCommAntifraud", "icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity"));
+                                intent.putExtra("todo", ByXposedLaunchedActivity.TODO_SAVE_CONTAIN_SENSITIVE_CONTENT);
+                                intent.putExtra("oid", currentOid.get());
+                                intent.putExtra("comment", currentComment.get());
+                                intent.putExtra("message", (String) XposedHelpers.getObjectField(body,"message"));
+                                intent.putExtra("type", currentAreaType.get());
+                                intent.putExtra("id", currentId.get());
+                                XposedBridge.log("bilibili comment add result:" + intent.getExtras().toString());
+                                currentContext.get().startActivity(intent);
                             }
                         }
                     }

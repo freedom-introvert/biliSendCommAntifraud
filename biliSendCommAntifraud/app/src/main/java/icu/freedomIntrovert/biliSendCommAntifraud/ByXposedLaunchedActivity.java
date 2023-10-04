@@ -18,12 +18,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.Date;
 import java.util.Set;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.VideoInfo;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.danmaku.DanmakuManipulator;
@@ -38,6 +40,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
     public static final int TODO_CHECK_COMMENT = 0;
     public static final int TODO_CHECK_DANMAKU = 1;
     public static final int TODO_CONTINUE_CHECK_COMMENT = 2;
+    public static final int TODO_SAVE_CONTAIN_SENSITIVE_CONTENT = 3;
 
     Context context;
     Handler handler;
@@ -93,8 +96,8 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
 
             ProgressBarDialog progressBarDialog = new ProgressBarDialog.Builder(context)
                     .setTitle("等待中")
-                    .setMessage(String.format(proMsg,0))
-                    .setPositiveButton("后台等待",null)
+                    .setMessage(String.format(proMsg, 0))
+                    .setPositiveButton("后台等待", null)
                     .setCancelable(false)
                     .show();
             ProgressTimer progressTimer = new ProgressTimer(totalWaitTime, ProgressBarDialog.DEFAULT_MAX_PROGRESS, new ProgressTimer.ProgressLister() {
@@ -102,7 +105,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                 public void onNewProgress(int progress, long sleepSeg) {
                     runOnUiThread(() -> {
                         progressBarDialog.setProgress(progress);
-                        progressBarDialog.setMessage(String.format(proMsg,progress*sleepSeg));
+                        progressBarDialog.setMessage(String.format(proMsg, progress * sleepSeg));
                     });
                 }
             });
@@ -148,7 +151,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                     }
                 }
             }).start();
-        } else if (todo == TODO_CONTINUE_CHECK_COMMENT){
+        } else if (todo == TODO_CONTINUE_CHECK_COMMENT) {
             ProgressBarDialog progressBarDialog = new ProgressBarDialog.Builder(context)
                     .setTitle("检查中")
                     .setMessage("恢复检查进度……")
@@ -156,22 +159,75 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                     .setCancelable(false)
                     .show();
             Bundle extras = intent.getBundleExtra("check_extras");
-            if (extras != null){
+            if (extras != null) {
                 Set<String> keySet = extras.keySet();
-                for(String key : keySet) {
+                for (String key : keySet) {
                     Object value = extras.get(key);
-                    System.out.println("name:"+key+" value:"+value);
+                    System.out.println("name:" + key + " value:" + value);
                 }
                 System.out.println(extras.getBundle("check_extras"));
             }
-            toCheck(extras,TODO_CHECK_COMMENT,progressBarDialog);
+            toCheck(extras, TODO_CHECK_COMMENT, progressBarDialog);
+        } else if (todo == TODO_SAVE_CONTAIN_SENSITIVE_CONTENT) {
+            ProgressBarDialog progressBarDialog = new ProgressBarDialog.Builder(context)
+                    .setTitle("统计敏感内容警告")
+                    .setMessage("获取评论区bvid……")
+                    .setIndeterminate(true)
+                    .setCancelable(false)
+                    .show();
+
+            String comment = intent.getStringExtra("comment");
+            String message = intent.getStringExtra("message");
+            String s_oid = intent.getStringExtra("oid");
+            String s_type = intent.getStringExtra("type");
+            String id = intent.getStringExtra("id");
+            DialogInterface.OnClickListener onClose = (dialog, which) -> finish();
+            if (comment != null && s_oid != null && s_type != null) {
+                long oid = Long.parseLong(s_oid);
+                int type = Integer.parseInt(s_type);
+                if (type == CommentArea.AREA_TYPE_VIDEO) {
+                    commentManipulator.getVideoInfoByAid(oid).enqueue(new BiliApiCallback<GeneralResponse<VideoInfo>>() {
+                        @Override
+                        public void onError(Throwable th) {
+                            progressBarDialog.dismiss();
+                            DialogUtil.dialogMessage(context, "网络错误", th.getMessage(),onClose);
+                        }
+
+                        @Override
+                        public void onSuccess(GeneralResponse<VideoInfo> videoInfoGeneralResponse) {
+                            progressBarDialog.dismiss();
+                            if (videoInfoGeneralResponse.isSuccess()) {
+                                addSensitiveComment(new BannedCommentBean(new CommentArea(oid, videoInfoGeneralResponse.data.bvid, type), -System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK),message,onClose);
+                            } else {
+                                DialogUtil.dialogMessage(context, "错误", videoInfoGeneralResponse.message,onClose);
+                            }
+                        }
+                    });
+                } else if (type == CommentArea.AREA_TYPE_ARTICLE) {
+                    addSensitiveComment(new BannedCommentBean(new CommentArea(oid, "cv" + oid, type), -System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK),message,onClose);
+                } else if (type == CommentArea.AREA_TYPE_DYNAMIC17) {
+                    addSensitiveComment(new BannedCommentBean(new CommentArea(oid, String.valueOf(oid), type), -System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK),message,onClose);
+                } else {
+                    addSensitiveComment(new BannedCommentBean(new CommentArea(oid,  id != null ? id : "null", type), -System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK),message,onClose);
+                }
+            } else {
+                DialogUtil.dialogMessage(context,"错误","无效的extras！\nextras:"+intent.getExtras(),onClose);
+            }
+        }
+    }
+
+    private void addSensitiveComment(BannedCommentBean bannedCommentBean,String message, DialogInterface.OnClickListener onClose) {
+        if (statisticsDBOpenHelper.insertBannedComment(bannedCommentBean) > 0) {
+            DialogUtil.dialogMessage(context, "包含敏感内容统计", "你的评论发送时提示：“"+message+"”，被ban统计数据库已添加包含敏感词的评论：" + bannedCommentBean.comment,onClose);
+        } else {
+            DialogUtil.dialogMessage(context, "包含敏感内容统计", "添加统计失败，可能条目有重复",onClose);
         }
     }
 
     private void toCheck(@Nullable Bundle extras, int todo, @NonNull ProgressBarDialog progressDialog) {
-        if (extras == null){
+        if (extras == null) {
             progressDialog.dismiss();
-            DialogUtil.dialogMessage(context,"未传入参数异常","参数："+extras);
+            DialogUtil.dialogMessage(context, "未传入参数异常", "参数：" + extras);
             return;
         }
         String message = extras.getString("message");
@@ -230,7 +286,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
             }
             //DialogUtil.dialogMessage(context, null, "oid=" + oid + "\ntype=" + type + "\nmessage=" + message + "\nrpid=" + resultRpid + "\nroot=" + root + "\nparent=" + parent + "\ncomment=" + comment);
         } else {
-            DialogUtil.dialogMessage(context,"缺少参数异常","参数："+extras);
+            DialogUtil.dialogMessage(context, "缺少参数异常", "参数：" + extras);
         }
 
     }
@@ -254,6 +310,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
         }
         return context.createConfigurationContext(configuration);
     }
+
     public static boolean checkNotificationPermission(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -266,6 +323,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
         }
         return false;
     }
+
     public static void requestNotificationPermission(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);

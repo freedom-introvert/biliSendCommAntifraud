@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.NetworkCallBack;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliComment;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentReply;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
@@ -69,8 +70,10 @@ public class CommentReviewPresenter {
                             handler.post(callBack::rootCommentIsShadowBan);
                         }
                     }
-                } else {
+                } else if (resp.code == CommentAddResult.CODE_DELETED){
                     handler.post(callBack::deleted);
+                } else {
+                    handler.post(() -> callBack.onCodeError(resp.code,resp.message));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -95,6 +98,8 @@ public class CommentReviewPresenter {
         void rootCommentIsShadowBan();
 
         void invisible(int like, int replyCount);
+
+        void onCodeError(int code,String message);
     }
 
     //评论区搜遍
