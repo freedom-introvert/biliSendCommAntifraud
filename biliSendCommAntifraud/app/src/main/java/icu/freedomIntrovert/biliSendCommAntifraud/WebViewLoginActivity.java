@@ -2,12 +2,9 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import static android.view.KeyEvent.KEYCODE_BACK;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -18,10 +15,12 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 public class WebViewLoginActivity extends AppCompatActivity {
     WebView webView;
-    Context context;
-    SharedPreferences sp_config;
+    public Context context;
+    Config config;
     ProgressBar progressBar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,7 +28,7 @@ public class WebViewLoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_web_view_login);
         progressBar = findViewById(R.id.progressBar);
         context = this;
-        sp_config = getSharedPreferences("config", Context.MODE_PRIVATE);
+        config = new Config(context);
         webView = findViewById(R.id.web_view);
         webView.loadUrl("https://www.bilibili.com");
         webView.getSettings().setJavaScriptEnabled(true);
@@ -52,7 +51,7 @@ public class WebViewLoginActivity extends AppCompatActivity {
                                 .setPositiveButton("设置并返回", new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
-                                        sp_config.edit().putString("cookie",cookieStr).commit();
+                                        onCookieSet(cookieStr);
                                         finish();
                                     }
                                 })
@@ -81,6 +80,11 @@ public class WebViewLoginActivity extends AppCompatActivity {
             }
         });
     }
+
+    protected void onCookieSet(String cookie){
+        config.setCookie(cookie);
+    }
+
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if ((keyCode == KEYCODE_BACK) && webView.canGoBack()) {
             if (webView.canGoBack()){

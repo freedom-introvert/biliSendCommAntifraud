@@ -49,6 +49,7 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
     public void addData(List<MartialLawCommentArea> areaArrayList){
         Collections.reverse(areaArrayList);
         this.areaArrayList.addAll(0,areaArrayList);
+
         notifyDataSetChanged();
     }
 

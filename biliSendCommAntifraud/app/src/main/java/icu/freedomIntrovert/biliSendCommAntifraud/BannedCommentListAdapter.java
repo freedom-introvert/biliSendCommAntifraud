@@ -7,7 +7,6 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.os.Handler;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,13 +34,14 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
     Context context;
     StatisticsDBOpenHelper statisticsDBOpenHelper;
     CommentReviewPresenter commentReviewPresenter;
+    Config config;
 
     public BannedCommentListAdapter(ArrayList<BannedCommentBean> bandCommentBeanArrayList, Context context) {
         this.bandCommentBeanArrayList = bandCommentBeanArrayList;
         Collections.reverse(this.bandCommentBeanArrayList);
         this.context = context;
-        SharedPreferences sp_config = context.getSharedPreferences("config", Context.MODE_PRIVATE);
-        CommentManipulator commentManipulator = new CommentManipulator(new OkHttpClient(), sp_config.getString("cookie", ""));
+        config = new Config(context);
+        CommentManipulator commentManipulator = new CommentManipulator(new OkHttpClient(), config.getCookie(),config.getDeputyCookie());
         commentReviewPresenter = new CommentReviewPresenter(new Handler(), commentManipulator);
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
     }

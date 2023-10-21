@@ -66,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
     Handler handler;
     DialogCommCheckWorker dialogCommSendWorker;
     public static Activity activity;
+    Config config;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -75,8 +76,9 @@ public class MainActivity extends AppCompatActivity {
         activity = this;
         context = this;
         sp_config = getSharedPreferences("config", Context.MODE_PRIVATE);
+        config = new Config(context);
         commentUtil = new CommentUtil(sp_config);
-        commentManipulator = new CommentManipulator(new OkHttpClient(), sp_config.getString("cookie", ""));
+        commentManipulator = new CommentManipulator(new OkHttpClient(), config.getCookie(),config.getDeputyCookie());
         handler = new Handler();
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
         commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000), sp_config.getLong("wait_time_by_has_pictures", 10000), sp_config.getBoolean("autoRecorde", true), sp_config.getBoolean("recordeHistory", true));
@@ -306,7 +308,7 @@ public class MainActivity extends AppCompatActivity {
                     if (commentArea != null) {
                         dialog.setMessage("发送评论中……");
                         String comment = edt_comment.getText().toString();
-                        commentManipulator.sendComment(comment, 0, 0, commentArea).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
+                        commentManipulator.sendComment(comment, 0, 0, commentArea,false).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
                             @Override
                             public void onError(Throwable th) {
                                 dialog.dismiss();
@@ -366,7 +368,7 @@ public class MainActivity extends AppCompatActivity {
                         if (commentArea != null) {
                             progressDialog.setMessage("发送评论中……");
                             AppealDialogPresenter appealDialogPresenter = new AppealDialogPresenter(context, handler, commentManipulator);
-                            commentManipulator.sendComment(comment, 0, 0, commentArea).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
+                            commentManipulator.sendComment(comment, 0, 0, commentArea,false).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
                                 @Override
                                 public void onError(Throwable th) {
                                     progressDialog.dismiss();
@@ -480,20 +482,32 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.cookie) {
+        if (item.getItemId() == R.id.main_account_cookie){
             View edtView = View.inflate(MainActivity.this, R.layout.edit_text, null);
             EditText editText = edtView.findViewById(R.id.edit_text);
-            editText.setText(sp_config.getString("cookie", ""));
-            new AlertDialog.Builder(MainActivity.this).setTitle("设置cookie").setView(edtView).setPositiveButton("设置", (dialog, which) -> {
+            editText.setText(config.getCookie());
+            new AlertDialog.Builder(MainActivity.this).setTitle("设置cookie（主号）").setView(edtView).setPositiveButton("设置", (dialog, which) -> {
                 String cookie = editText.getText().toString();
-                sp_config.edit().putString("cookie", cookie).apply();
+                config.setCookie(cookie);
                 commentManipulator.setCookie(cookie);
             }).setNegativeButton("取消", new VoidDialogInterfaceOnClickListener()).setNeutralButton("网页登录获取", (dialog, which) -> {
                 startActivity(new Intent(context, WebViewLoginActivity.class));
             }).show();
+        } else if (item.getItemId() == R.id.deputy_account_cookie){
+            View edtView = View.inflate(MainActivity.this, R.layout.edit_text, null);
+            EditText editText = edtView.findViewById(R.id.edit_text);
+            editText.setText(config.getDeputyCookie());
+            new AlertDialog.Builder(MainActivity.this).setTitle("设置cookie（小号）").setView(edtView).setPositiveButton("设置", (dialog, which) -> {
+                String cookie = editText.getText().toString();
+                config.setDeputyCookie(cookie);
+            }).setNegativeButton("取消", new VoidDialogInterfaceOnClickListener()).setNeutralButton("网页登录获取", (dialog, which) -> {
+                startActivity(new Intent(context, WebViewLoginByDeputyActivity.class));
+            }).show();
         }
         return true;
     }
+
+
 
     @Override
     protected void attachBaseContext(Context newBase) {

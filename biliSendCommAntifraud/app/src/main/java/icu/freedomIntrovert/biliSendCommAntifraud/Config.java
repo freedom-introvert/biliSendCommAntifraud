@@ -5,7 +5,7 @@ import android.content.SharedPreferences;
 
 public class Config {
     Context context;
-    SharedPreferences sp_config;
+    public SharedPreferences sp_config;
 
     public Config(Context context) {
         this.context = context;
@@ -26,6 +26,14 @@ public class Config {
 
     public void setCookie(String cookie) {
         sp_config.edit().putString("cookie",cookie).apply();
+    }
+
+    public String getDeputyCookie(){
+        return sp_config.getString("deputy_cookie", "");
+    }
+
+    public void setDeputyCookie(String cookie){
+        sp_config.edit().putString("deputy_cookie", cookie).apply();
     }
 
     public long getWaitTime() {
@@ -59,4 +67,5 @@ public class Config {
     public void setEnableRecordeBannedComments(boolean autoRecorde) {
         sp_config.edit().putBoolean("autoRecorde",autoRecorde).apply();
     }
+
 }

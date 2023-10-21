@@ -131,6 +131,7 @@ public class WaitService extends Service {
                 .setSmallIcon(R.drawable.launcher)
                 .setContentIntent(pendingIntent)
                 .setContentTitle("已完成等待，点击此通知继续检查！")
+                .setContentText(checkExtra.getString("commentText","null"))
                 .setAutoCancel(true);
         String comment = checkExtra.getString("comment");
         if (comment != null) {

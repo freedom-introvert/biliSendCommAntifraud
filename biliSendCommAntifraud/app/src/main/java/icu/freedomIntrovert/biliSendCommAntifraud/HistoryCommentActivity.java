@@ -76,7 +76,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("text/csv");
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.CHINA);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault());
             intent.putExtra(Intent.EXTRA_TITLE, "历史评论记录_"+sdf.format(new Date())+".csv");
             startActivityForResult(intent, REQUEST_CODE_EXPORT);
         } else if (item.getItemId() == R.id.item_import) {

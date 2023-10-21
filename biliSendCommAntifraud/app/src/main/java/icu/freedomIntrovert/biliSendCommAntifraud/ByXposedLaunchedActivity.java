@@ -5,7 +5,6 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,6 +18,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.Date;
+import java.util.Locale;
 import java.util.Set;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
@@ -44,12 +44,12 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
 
     Context context;
     Handler handler;
-    SharedPreferences sp_config;
     CommentManipulator commentManipulator;
     CommentUtil commentUtil;
     StatisticsDBOpenHelper statisticsDBOpenHelper;
     DanmakuManipulator danmakuManipulator;
     boolean toContinueTo = true;
+    Config config;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,18 +61,18 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_by_xposed_launched);
         this.context = this;
+        config = new Config(context);
         handler = new Handler();
-        sp_config = getSharedPreferences("config", Context.MODE_PRIVATE);
         OkHttpClient httpClient = new OkHttpClient();
-        commentManipulator = new CommentManipulator(httpClient, sp_config.getString("cookie", ""));
-        commentUtil = new CommentUtil(sp_config);
+        commentManipulator = new CommentManipulator(httpClient,config.getCookie(),config.getDeputyCookie());
+        commentUtil = new CommentUtil(config.sp_config);
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
         danmakuManipulator = new DanmakuManipulator(httpClient);
         Intent intent = getIntent();
         int todo = intent.getIntExtra("todo", -1);
 
-        long waitTime = sp_config.getLong("wait_time", 5000);
-        long waitTimeByHasPictures = sp_config.getLong("wait_time_by_has_pictures", 10000);
+        long waitTime = config.getWaitTime();
+        long waitTimeByHasPictures = config.getWaitTimeByHasPictures();
 
         if (todo == -1) {
             new AlertDialog.Builder(context)
@@ -248,10 +248,10 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
 
             if (todo == TODO_CHECK_COMMENT) {
                 CommentPresenter commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper,
-                        sp_config.getLong("wait_time", 5000),
-                        sp_config.getLong("wait_time_by_has_pictures", 10000),
-                        sp_config.getBoolean("autoRecorde", true),
-                        sp_config.getBoolean("recordeHistory", true));
+                        config.getWaitTime(),
+                        config.getWaitTimeByHasPictures(),
+                        config.getEnableRecordeBannedComments(),
+                        config.getRecordeHistory());
                 DialogCommCheckWorker worker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, this::finish);
 
                 if (type == CommentArea.AREA_TYPE_VIDEO) {
@@ -264,7 +264,16 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
 
                         @Override
                         public void onSuccess(GeneralResponse<VideoInfo> response) {
-                            worker.checkComment(new CommentArea(oid, response.data.bvid, type), resultRpid, parent, root, comment, hasPictures, progressDialog);
+                            if (response.isSuccess()) {
+                                worker.checkComment(new CommentArea(oid, response.data.bvid, type), resultRpid, parent, root, comment, hasPictures, progressDialog);
+                            } else {
+                                progressDialog.dismiss();
+                                if (response.code == -404){
+                                    DialogUtil.dialogMessage(context, "获取视频信息时发生错误", String.format(Locale.getDefault(), "你疑似在港澳台番剧发布评论，且梯子直连了api.bilibili.com，导致无法获取视频信息，请尝试将代理软件设置为全局模式！\nmessage=%s\ncode=%d", response.message, response.code), (dialog, which) -> finish());
+                                } else {
+                                    DialogUtil.dialogMessage(context, "获取视频信息时发生错误", String.format(Locale.getDefault(), "message=%s\ncode=%d", response.message, response.code), (dialog, which) -> finish());
+                                }
+                            }
                         }
                     });
                 } else {
@@ -277,7 +286,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                     }
                 }
             } else if (todo == TODO_CHECK_DANMAKU) {
-                DialogDanmakuCheckWorker worker = new DialogDanmakuCheckWorker(context, handler, new DanmakuPresenter(handler, danmakuManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time_by_danmaku_sent", 20000), sp_config.getBoolean("autoRecorde", true)), () -> finish());
+                DialogDanmakuCheckWorker worker = new DialogDanmakuCheckWorker(context, handler, new DanmakuPresenter(handler, danmakuManipulator, statisticsDBOpenHelper, config.getWaitTimeByDanmakuSend(), config.getEnableRecordeBannedComments()), () -> finish());
                 long dmid = extras.getLong("dmid", 0);
                 String content = extras.getString("content");
                 String accessKey = extras.getString("accessKey");

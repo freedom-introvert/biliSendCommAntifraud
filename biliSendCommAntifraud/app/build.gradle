@@ -14,9 +14,9 @@ android {
         applicationId "icu.freedomIntrovert.biliSendCommAntifraud"
         minSdk 21
         targetSdk 33
-        versionCode 460
+        versionCode 470
         //versionName "4.6.0_dev_${currentTimeMillis}" //每编译一次改变版本号，以更新模块
-        versionName "4.6.0"
+        versionName "4.7.0"
     }
     buildTypes {
         release {
