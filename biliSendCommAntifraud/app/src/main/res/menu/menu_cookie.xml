@@ -5,5 +5,14 @@
         android:icon="@drawable/ic_cookie"
         android:title="cookie设置"
         android:tint="#ffffff"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom">
+        <menu>
+            <item
+                android:id="@+id/main_account_cookie"
+                android:title="主号cookie"/>
+            <item
+                android:id="@+id/deputy_account_cookie"
+                android:title="小号cookie"/>
+        </menu>
+    </item>
 </menu>

@@ -44,7 +44,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         this.historyCommentList = historyCommentList;
         Config config = new Config(context);
         Handler handler = new Handler();
-        CommentManipulator commentManipulator = new CommentManipulator(new OkHttpClient(), config.getCookie());
+        CommentManipulator commentManipulator = new CommentManipulator(new OkHttpClient(), config.getCookie(),config.getDeputyCookie());
         commentReviewPresenter = new CommentReviewPresenter(handler, commentManipulator);
         commentPresenter = new CommentPresenter(handler,commentManipulator,statisticsDBOpenHelper,config);
         this.dialogCommCheckWorker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, new CommentUtil(config.sp_config), new OnExitListenerByComment() {

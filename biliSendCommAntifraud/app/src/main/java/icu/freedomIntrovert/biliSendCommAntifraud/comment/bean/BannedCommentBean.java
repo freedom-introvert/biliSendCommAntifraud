@@ -65,6 +65,4 @@ public class BannedCommentBean extends Comment{
     }
 
 
-
-
 }

@@ -196,12 +196,32 @@ public class DialogCommCheckWorker {
         resultDialogBuilder.setNegativeButton("更多评论选项", null);
         AlertDialog resultDialog = resultDialogBuilder.show();
         //检查评论区
-        resultDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
-            ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, "检测评论区是否被戒严", "发布测试评论中……");
-            progressDialog.setCancelable(false);
-            progressDialog.show();
-            checkAreaMartialLaw(commentArea, comment, rpid, progressDialog);
-        });
+        resultDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> new AlertDialog.Builder(context)
+                .setTitle("选择模式")
+                .setItems(new String[]{"主号cookie检查", "小号cookie检查"}, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, "检测评论区是否被戒严", "发布测试评论中……");
+                        progressDialog.setCancelable(false);
+                        progressDialog.show();
+                        switch (which) {
+                            case 0:
+                                progressDialog.setMessage("发布测试评论中（使用主号）……");
+                                checkAreaMartialLaw(commentArea, comment, rpid, progressDialog,false);
+                                break;
+                            case 1:
+                                if (commentManipulator.deputyCookieAreSet()) {
+                                    progressDialog.setMessage("发布测试评论中（使用小号）……");
+                                    checkAreaMartialLaw(commentArea, comment, rpid, progressDialog, true);
+                                } else {
+                                    progressDialog.dismiss();
+                                    DialogUtil.dialogMessage(context,"错误","你没有设置小号的cookie，请先设置小号的cookie！");
+                                }
+                                break;
+                        }
+                    }
+                }).show());
+
         //更多评论选项
         resultDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
             new AlertDialog.Builder(context).setTitle("更多选项").setItems(new String[]{"扫描敏感词", "申诉", "删除发布的评论","复制rpid、oid、type"}, new DialogInterface.OnClickListener() {
@@ -274,8 +294,8 @@ public class DialogCommCheckWorker {
         });
     }
 
-    private void checkAreaMartialLaw(CommentArea commentArea, String mainComment, long mainCommRpid, ProgressDialog progressDialog) {
-        commentPresenter.checkCommentAreaMartialLaw(commentArea, mainCommRpid, commentUtil.getRandomComment(commentArea), commentUtil.getRandomComment(commentArea), new CommentPresenter.CheckCommentAreaMartialLawCalBack() {
+    private void checkAreaMartialLaw(CommentArea commentArea, String mainComment, long mainCommRpid, ProgressDialog progressDialog,boolean isDeputyAccount) {
+        commentPresenter.checkCommentAreaMartialLaw(commentArea, mainCommRpid, commentUtil.getRandomComment(commentArea), commentUtil.getRandomComment(commentArea),isDeputyAccount, new CommentPresenter.CheckCommentAreaMartialLawCalBack() {
             @Override
             public void onTestCommentSent(String testComment) {
                 progressDialog.setMessage("已发送测评论：“" + testComment + "”，等待设置好的时间后检查评论……");
@@ -480,7 +500,7 @@ public class DialogCommCheckWorker {
                         tvx_result.setText(spannableStringBuilder);
                         txv_scanning_status.setText("发送评论&等待……");
                     });
-                    GeneralResponse<CommentAddResult> resp = commentManipulator.sendComment(passText + split[0], 0, 0, yourCommentArea).execute().body();
+                    GeneralResponse<CommentAddResult> resp = commentManipulator.sendComment(passText + split[0], 0, 0, yourCommentArea,false).execute().body();
                     long rpid1 = resp.data.rpid;
                     try {
                         Thread.sleep(commentPresenter.waitTime);

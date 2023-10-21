@@ -38,13 +38,17 @@ public class CommentManipulator {
     private OkHttpClient httpClientNoRedirects;
     private BiliApiService biliApiService;
     private String cookie;
+    private String deputyCookie;
 
-    public CommentManipulator(OkHttpClient httpClient, String cookie) {
+    public CommentManipulator(OkHttpClient httpClient, String cookie,String deputyCookie) {
         this.httpClient = httpClient;
         httpClientNoRedirects = new OkHttpClient.Builder().followRedirects(false).build();
         this.biliApiService = ServiceGenerator.createService(BiliApiService.class);
         this.cookie = cookie;
+        this.deputyCookie = deputyCookie;
     }
+
+
 
     public void setCookie(String cookie) {
         this.cookie = cookie;
@@ -58,9 +62,18 @@ public class CommentManipulator {
         return cookie.contains("bili_jct=");
     }
 
+    public boolean deputyCookieAreSet() {
+        return deputyCookie.contains("bili_jct=");
+    }
+
     public String getCsrfFromCookie() {
         int csrfIndex = cookie.indexOf("bili_jct=");
         return cookie.substring(csrfIndex + 9, csrfIndex + 32 + 9);
+    }
+
+    public String getCsrfFromDeputyCookie() {
+        int csrfIndex = deputyCookie.indexOf("bili_jct=");
+        return deputyCookie.substring(csrfIndex + 9, csrfIndex + 32 + 9);
     }
 
     public Call<GeneralResponse<VideoInfo>> getVideoInfoByAid(long aid) {
@@ -134,16 +147,16 @@ public class CommentManipulator {
     }
  */
 
-    public Call<GeneralResponse<CommentAddResult>> sendComment(String comment, long parent, long root, CommentArea commentArea) {
+    public Call<GeneralResponse<CommentAddResult>> sendComment(String comment, long parent, long root, CommentArea commentArea,boolean isDeputyAccount) {
         ArrayMap<String, String> arrayMap = new ArrayMap<>();
-        arrayMap.put("csrf", getCsrfFromCookie());
+        arrayMap.put("csrf", isDeputyAccount ? getCsrfFromDeputyCookie() : getCsrfFromCookie());
         arrayMap.put("message", comment);
         arrayMap.put("oid", String.valueOf(commentArea.oid));
         arrayMap.put("plat", "1");
         arrayMap.put("parent", String.valueOf(parent));
         arrayMap.put("root", String.valueOf(root));
         arrayMap.put("type", String.valueOf(commentArea.areaType));
-        return biliApiService.postComment(getCookie(), arrayMap);
+        return biliApiService.postComment(isDeputyAccount ? deputyCookie : getCookie(), arrayMap);
     }
 
 

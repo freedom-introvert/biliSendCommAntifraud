@@ -92,7 +92,7 @@ public class CommentPresenter {
     public void resendComment(HistoryComment historyComment,String comment, ResendCommentCallBack callBack){
         executor.execute(() -> {
             try {
-                GeneralResponse<CommentAddResult> body = commentManipulator.sendComment(comment, historyComment.parent, historyComment.root, historyComment.commentArea).execute().body();
+                GeneralResponse<CommentAddResult> body = commentManipulator.sendComment(comment, historyComment.parent, historyComment.root, historyComment.commentArea,false).execute().body();
                 checkRespNotNull(body);
                 if (body.isSuccess()) {
                     handler.post(() -> callBack.onSendSuccessAndSleep(waitTime));
@@ -163,7 +163,7 @@ public class CommentPresenter {
                             }
                         } else if (response.code == CommentAddResult.CODE_DELETED) {
                             //再尝试对评论进行回复，看看是否应session过期导致变成了游客视角
-                            GeneralResponse<CommentAddResult> response1 = commentManipulator.sendComment(testComment, rpid, root, commentArea).execute().body();
+                            GeneralResponse<CommentAddResult> response1 = commentManipulator.sendComment(testComment, rpid, root, commentArea,false).execute().body();
                             checkRespNotNull(response1);
                             if (response1.isSuccess()) {
                                 //应该不存在有账号获取评论列表被删除了还能回复的吧:(
@@ -280,12 +280,12 @@ public class CommentPresenter {
         void thenError();
     }
 
-    public void checkCommentAreaMartialLaw(CommentArea commentArea, long mainCommRpid, String testComment, String testComment2, CheckCommentAreaMartialLawCalBack callBack) {
+    public void checkCommentAreaMartialLaw(CommentArea commentArea, long mainCommRpid, String testComment, String testComment2,boolean isDeputyAccount, CheckCommentAreaMartialLawCalBack callBack) {
         executor.execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(testComment, 0, 0, commentArea).execute().body();
+                    GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(testComment, 0, 0, commentArea,isDeputyAccount).execute().body();
                     checkRespNotNull(response);
                     if (response.isSuccess()) {
                         handler.post(() -> callBack.onTestCommentSent(testComment));
@@ -331,7 +331,7 @@ public class CommentPresenter {
             @Override
             public void run() {
                 try {
-                    GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(comment, 0, 0, yourCommentArea).execute().body();
+                    GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(comment, 0, 0, yourCommentArea,false).execute().body();
                     handler.post(() -> callBack.onCommentSent(yourCommentArea.sourceId));
                     checkRespNotNull(response);
                     long rpid = response.data.rpid;
@@ -390,7 +390,7 @@ public class CommentPresenter {
             private void checkAreaIfMartialLaw() {
                 try {
                     handler.post(callBack::onStartCheckAreaMartialLaw);
-                    GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(testComment1, 0, 0, mainCommentArea).execute().body();
+                    GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(testComment1, 0, 0, mainCommentArea,false).execute().body();
                     sleep(waitTime);
                     checkRespNotNull(response);
                     long testCommentRpid = response.data.rpid;
@@ -414,7 +414,7 @@ public class CommentPresenter {
             private void checkIfOnlyBannedInThisArea() {
                 try {
                     handler.post(callBack::onStartCheckIsOnlyBannedInThisArea);
-                    GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(comment, 0, 0, yourCommentArea).execute().body();
+                    GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(comment, 0, 0, yourCommentArea,false).execute().body();
                     sleep(waitTime);
                     checkRespNotNull(response);
                     long testCommentRpid = response.data.rpid;
