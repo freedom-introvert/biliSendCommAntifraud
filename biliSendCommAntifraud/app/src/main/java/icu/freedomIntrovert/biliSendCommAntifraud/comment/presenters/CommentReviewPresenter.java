@@ -29,6 +29,10 @@ public class CommentReviewPresenter {
     public void reviewStatus(CommentArea commentArea, long rpid, ReviewStatusCallBack callBack) {
         executor.execute(() -> {
             try {
+                if (!commentManipulator.checkCookieNotFailed()){
+                    handler.post(callBack::onCookieFiled);
+                    return;
+                }
                 GeneralResponse<CommentReply> resp = commentManipulator.getCommentReplyHasAccount(commentArea, rpid, 1).execute().body();
                 HttpUtil.respNotNull(resp);
                 if (resp.isSuccess()) {
@@ -83,6 +87,7 @@ public class CommentReviewPresenter {
     }
 
     public interface ReviewStatusCallBack extends NetworkCallBack {
+        void onCookieFiled();
         void deleted();
 
         void shadowBanned(int like, int replyCount);

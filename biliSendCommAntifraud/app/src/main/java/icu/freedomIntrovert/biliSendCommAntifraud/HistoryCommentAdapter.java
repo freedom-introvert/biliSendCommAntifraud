@@ -121,6 +121,12 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                             progressDialog.show();
                             commentReviewPresenter.reviewStatus(historyComment.commentArea, historyComment.rpid, new CommentReviewPresenter.ReviewStatusCallBack() {
                                 @Override
+                                public void onCookieFiled() {
+                                    progressDialog.dismiss();
+                                    DialogUtil.dialogMessage(context,"账号错误","您的cookie已过期，请重新获取！");
+                                }
+
+                                @Override
                                 public void deleted() {
                                     progressDialog.dismiss();
                                     HistoryComment historyComment1 = historyCommentList.get(holder.getAdapterPosition());
