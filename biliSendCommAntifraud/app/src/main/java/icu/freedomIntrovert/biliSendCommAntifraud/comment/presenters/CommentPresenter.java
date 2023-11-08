@@ -77,7 +77,7 @@ public class CommentPresenter {
     }
 
     public void setWaitTimeByHasPictures(long waitTimeByHasPictures) {
-
+        this.waitTimeByHasPictures = waitTimeByHasPictures;
     }
 
     public interface MatchToAreaCallBack extends NetworkCallBack {
@@ -122,6 +122,10 @@ public class CommentPresenter {
             }
             try {
                 handler.post(callBack::onStartCheckComment);
+                if (!commentManipulator.checkCookieNotFailed()) {
+                    handler.post(callBack::onCookieFiled);
+                    return;
+                }
                 CommentScanResult commentScanResult = commentManipulator.scanComment(commentArea, rpid, root);
                 if (commentScanResult.isExists) {
                     //判断是否被标记为invisible，使其在前端不可见
@@ -210,6 +214,8 @@ public class CommentPresenter {
 
 
     public interface CheckCommentStatusCallBack extends NetworkCallBack {
+
+        void onCookieFiled();
 
         void onStartCheckComment();
 

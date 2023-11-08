@@ -30,6 +30,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 
 public class CommentManipulator {
@@ -459,6 +460,18 @@ public class CommentManipulator {
 
     public Call<GeneralResponse<CommentReply>> getCommentReplyHasAccount(CommentArea commentArea, long rootRpid, int pn) {
         return biliApiService.getCommentReply(getCookie(), getCsrfFromCookie(), commentArea.oid, pn, 20, rootRpid, commentArea.areaType, 0);
+    }
+
+    public boolean checkCookieNotFailed() throws IOException {
+        Request request = new Request.Builder()
+                .url("https://member.bilibili.com/x2/creative/h5/calendar/event?ts=0")
+                .addHeader("Cookie", cookie)
+                .build();
+        ResponseBody body = httpClient.newCall(request).execute().body();
+        HttpUtil.respNotNull(body);
+        JSONObject userProfileJSON = JSON.parseObject(body.string());
+        JSONObject userProfile = userProfileJSON.getJSONObject("data").getJSONObject("pfs");
+        return userProfile != null;
     }
 
 }

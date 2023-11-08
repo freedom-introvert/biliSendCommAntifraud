@@ -193,6 +193,12 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
                         progressDialog.show();
                         commentReviewPresenter.reviewStatus(bannedCommentBean.commentArea, bannedCommentBean.rpid, new CommentReviewPresenter.ReviewStatusCallBack() {
                             @Override
+                            public void onCookieFiled() {
+                                progressDialog.dismiss();
+                                DialogUtil.dialogMessage(context,"账号错误","您的cookie已过期，请重新获取！");
+                            }
+
+                            @Override
                             public void deleted() {
                                 progressDialog.dismiss();
                                 DialogUtil.dialogMessage(context,"检查结果","评论被删除！");

@@ -56,6 +56,12 @@ public class DialogCommCheckWorker {
             commentPresenter.checkCommentStatus(commentArea, comment, commentUtil.getRandomComment(commentArea), rpid, parent, root,hasPictures, new CommentPresenter.CheckCommentStatusCallBack() {
 
                 @Override
+                public void onCookieFiled() {
+                    dialog.dismiss();
+                    showTokenExpires("您的cookie已过期，请重新获取！");
+                }
+
+                @Override
                 public void onStartCheckComment() {
                     dialog.setMessage("检查评论中……");
                 }
