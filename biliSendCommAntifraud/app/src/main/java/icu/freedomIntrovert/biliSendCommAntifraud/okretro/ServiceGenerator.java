@@ -1,6 +1,5 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.okretro;
 
-import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
 import retrofit2.converter.fastjson.FastJsonConverterFactory;
 
@@ -16,7 +15,7 @@ public class ServiceGenerator {
             retrofit = new Retrofit.Builder()
                     .baseUrl("https://api.bilibili.com")
                     .addConverterFactory(FastJsonConverterFactory.create())
-                    .client(new OkHttpClient())
+                    .client(OkHttpUtil.getHttpClient())
                     .build();
         }
         return retrofit;

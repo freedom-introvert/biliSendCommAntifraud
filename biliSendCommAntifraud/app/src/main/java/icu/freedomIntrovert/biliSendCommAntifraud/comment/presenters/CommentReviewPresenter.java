@@ -13,7 +13,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentReply;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
-import icu.freedomIntrovert.biliSendCommAntifraud.okretro.HttpUtil;
+import icu.freedomIntrovert.biliSendCommAntifraud.okretro.OkHttpUtil;
 
 public class CommentReviewPresenter {
     private Handler handler;
@@ -34,13 +34,13 @@ public class CommentReviewPresenter {
                     return;
                 }
                 GeneralResponse<CommentReply> resp = commentManipulator.getCommentReplyHasAccount(commentArea, rpid, 1).execute().body();
-                HttpUtil.respNotNull(resp);
+                OkHttpUtil.respNotNull(resp);
                 if (resp.isSuccess()) {
                     BiliComment rootComment = resp.data.root;
                     //判断该评论是否为根评论，不是楼中楼回复的评论
                     if (rootComment.rpid == rpid) {
                         GeneralResponse<CommentReply> resp1 = commentManipulator.getCommentReplyNoAccount(commentArea, rpid, 1).execute().body();
-                        HttpUtil.respNotNull(resp1);
+                        OkHttpUtil.respNotNull(resp1);
                         if (resp1.isSuccess()) {
                             if (rootComment.invisible){
                                 handler.post(() -> callBack.invisible(rootComment.like, rootComment.rcount));
@@ -52,7 +52,7 @@ public class CommentReviewPresenter {
                         }
                     } else {
                         GeneralResponse<CommentReply> body = commentManipulator.getCommentReplyNoAccount(commentArea, rpid, 1).execute().body();
-                        HttpUtil.respNotNull(body);
+                        OkHttpUtil.respNotNull(body);
                         //前面评论回复列表是带cookie获取的，如果是你自己发的，shadowBan情况下可以获取成功，但无账号会“已经被删除了”
                         if (body.isSuccess()) {
                             BiliComment foundReply = commentManipulator.findCommentFromCommentReplyArea(commentArea, rpid, rootComment.rpid, false, page -> handler.post(() -> callBack.onPageTurnForNoAccReply(page)));

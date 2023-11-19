@@ -34,7 +34,6 @@ import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.BiliApiCallback;
 import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
 import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressTimer;
-import okhttp3.OkHttpClient;
 
 public class ByXposedLaunchedActivity extends AppCompatActivity {
     public static final int TODO_CHECK_COMMENT = 0;
@@ -63,11 +62,10 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
         this.context = this;
         config = new Config(context);
         handler = new Handler();
-        OkHttpClient httpClient = new OkHttpClient();
-        commentManipulator = new CommentManipulator(httpClient,config.getCookie(),config.getDeputyCookie());
+        commentManipulator = new CommentManipulator(config.getCookie(),config.getDeputyCookie());
         commentUtil = new CommentUtil(config.sp_config);
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
-        danmakuManipulator = new DanmakuManipulator(httpClient);
+        danmakuManipulator = new DanmakuManipulator();
         Intent intent = getIntent();
         int todo = intent.getIntExtra("todo", -1);
 
