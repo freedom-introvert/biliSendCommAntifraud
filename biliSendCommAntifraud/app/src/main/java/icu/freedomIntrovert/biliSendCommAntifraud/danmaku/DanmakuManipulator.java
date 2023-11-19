@@ -14,14 +14,15 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import icu.freedomIntrovert.biliSendCommAntifraud.okretro.OkHttpUtil;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 
 public class DanmakuManipulator {
     OkHttpClient httpClient;
 
-    public DanmakuManipulator(OkHttpClient httpClient) {
-        this.httpClient = httpClient;
+    public DanmakuManipulator() {
+        this.httpClient = OkHttpUtil.getHttpClient();
     }
 
     public boolean findDanmaku(long oid,long dmid, String accessKey) throws IOException, ParserConfigurationException, SAXException {

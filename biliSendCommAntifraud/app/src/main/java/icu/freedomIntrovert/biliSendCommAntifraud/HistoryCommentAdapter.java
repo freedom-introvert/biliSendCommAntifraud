@@ -28,7 +28,6 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentPres
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentReviewPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
-import okhttp3.OkHttpClient;
 
 public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAdapter.ViewHolder> {
     Context context;
@@ -44,7 +43,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         this.historyCommentList = historyCommentList;
         Config config = new Config(context);
         Handler handler = new Handler();
-        CommentManipulator commentManipulator = new CommentManipulator(new OkHttpClient(), config.getCookie(),config.getDeputyCookie());
+        CommentManipulator commentManipulator = new CommentManipulator(config.getCookie(),config.getDeputyCookie());
         commentReviewPresenter = new CommentReviewPresenter(handler, commentManipulator);
         commentPresenter = new CommentPresenter(handler,commentManipulator,statisticsDBOpenHelper,config);
         this.dialogCommCheckWorker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, new CommentUtil(config.sp_config), new OnExitListenerByComment() {

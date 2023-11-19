@@ -12,6 +12,9 @@ import retrofit2.http.POST;
 import retrofit2.http.Query;
 
 public interface BiliApiService {
+    public static final int COMMENT_SORT_BY_TIME = 0;
+    public static final int COMMENT_SORT_BY_LIKE = 1;
+    public static final int COMMENT_SORT_BY_REPLY_COUNT = 2;
     @GET("/x/web-interface/view")
     Call<GeneralResponse<VideoInfo>> getVideoInfoByAid(@Query("aid") long aid);
     @GET("/x/web-interface/view")
@@ -27,8 +30,8 @@ public interface BiliApiService {
     @GET("/x/v2/reply/reply")
     Call<GeneralResponse<CommentReply>> getCommentReply(@Query("oid") long oid,@Query("pn") int pn,@Query("ps") int ps,@Query("root") long root,@Query("type") int type,@Query("sort") int sort);
     @GET("/x/v2/reply")
-    Call<GeneralResponse<CommentPage>> getCommentPageNoAccount(@Query("oid") long oid,@Query("type") int type,@Query("pn") int pn,@Query("sort") int sort,@Query("plat") int plat);
+    Call<GeneralResponse<CommentPage>> getCommentPageNoAccount(@Query("oid") long oid,@Query("type") int type,@Query("pn") int pn,@Query("sort") int sort);
     @GET("/x/v2/reply")
-    Call<GeneralResponse<CommentPage>> getCommentPageHasAccount(@Header ("cookie") String cookie,@Query("csrf")String csrf,@Query("sort") int sort,@Query("oid") long oid,@Query("pn") int pn,@Query("type") int type,@Query("plat") int plat);
+    Call<GeneralResponse<CommentPage>> getCommentPageHasAccount(@Header ("cookie") String cookie,@Query("csrf")String csrf,@Query("sort") int sort,@Query("oid") long oid,@Query("pn") int pn,@Query("type") int type);
 
 }

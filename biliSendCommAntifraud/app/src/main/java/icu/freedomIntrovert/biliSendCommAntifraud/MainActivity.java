@@ -21,6 +21,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
@@ -28,7 +29,15 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.drawerlayout.widget.DrawerLayout;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
@@ -42,9 +51,9 @@ import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.BiliApiCallback;
 import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
 import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressTimer;
-import okhttp3.OkHttpClient;
 
 public class MainActivity extends AppCompatActivity {
+    private static final int RESULT_CODE_SAVE_LOG_ZIP = 1;
     EditText edt_bvid, edt_comment;
     Button btn_send, btn_clean, btn_send_and_appeal, btn_test;
     SharedPreferences sp_config;
@@ -62,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     boolean enableRecordeHistoryComment;
     LinearLayout ll_test_comment_pool;
     LinearLayout ll_you_comment_area;
+    LinearLayout ll_export_logs;
     CommentUtil commentUtil;
     Handler handler;
     DialogCommCheckWorker dialogCommSendWorker;
@@ -78,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
         sp_config = getSharedPreferences("config", Context.MODE_PRIVATE);
         config = new Config(context);
         commentUtil = new CommentUtil(sp_config);
-        commentManipulator = new CommentManipulator(new OkHttpClient(), config.getCookie(),config.getDeputyCookie());
+        commentManipulator = new CommentManipulator(config.getCookie(),config.getDeputyCookie());
         handler = new Handler();
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
         commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000), sp_config.getLong("wait_time_by_has_pictures", 10000), sp_config.getBoolean("autoRecorde", true), sp_config.getBoolean("recordeHistory", true));
@@ -92,11 +102,10 @@ public class MainActivity extends AppCompatActivity {
         initWaitTimeItem();
         initHomePageCommentCheck();
         initToNewActivityItem();
-
+        initExportLogs();
         ll_you_comment_area.setOnClickListener(v -> {
             commentUtil.setYourCommentArea(context, commentPresenter);
         });
-
 
 //        btn_test = findViewById(R.id.btn_test);
 //        btn_test.setOnClickListener(new View.OnClickListener() {
@@ -144,6 +153,134 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (data != null && data.getData() != null){
+            switch (requestCode) {
+                case RESULT_CODE_SAVE_LOG_ZIP:
+                    ProgressBarDialog dialog = new ProgressBarDialog.Builder(context)
+                            .setMessage("导出日志中……")
+                            .setIndeterminate(true)
+                            .show();
+                    new Thread(() -> {
+                        try {
+                            File sourceFolder = new File(getFilesDir(),"logs");
+                            OutputStream outputStream = getContentResolver().openOutputStream(data.getData());
+                            ZipOutputStream zos = new ZipOutputStream(outputStream);
+                            zipDirectory(sourceFolder, sourceFolder, zos);
+                            zos.close();
+                            outputStream.close();
+                            runOnUiThread(() -> {
+                                dialog.dismiss();
+                                Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show();
+                            });
+                        } catch (IOException e) {
+                            runOnUiThread(() -> {
+                                dialog.dismiss();
+                                Toast.makeText(context, "导出失败！\n原因:"+e.getMessage(), Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    }).start();
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+        }
+    }
+
+    private static void zipDirectory(File rootPath, File sourceFolder, ZipOutputStream zos) throws IOException {
+        for (File file : sourceFolder.listFiles()) {
+            if (file.isDirectory()) {
+                zipDirectory(rootPath, file, zos);
+            } else {
+                addToZip(rootPath, file, zos);
+            }
+        }
+    }
+
+    private static void addToZip(File rootPath, File file, ZipOutputStream zos) throws IOException {
+        FileInputStream fis = new FileInputStream(file);
+        String zipFilePath = file.getAbsolutePath().substring(rootPath.getAbsolutePath().length() + 1);
+        ZipEntry zipEntry = new ZipEntry(zipFilePath);
+        zos.putNextEntry(zipEntry);
+
+        byte[] bytes = new byte[1024];
+        int length;
+        while ((length = fis.read(bytes)) >= 0) {
+            zos.write(bytes, 0, length);
+        }
+
+        zos.closeEntry();
+        fis.close();
+    }
+
+    private static long calculateFolderSize(File folder) {
+        long size = 0;
+
+        if (folder.isDirectory()) {
+            File[] files = folder.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        size += file.length();
+                    } else {
+                        size += calculateFolderSize(file);
+                    }
+                }
+            }
+        } else if (folder.isFile()) {
+            size += folder.length();
+        }
+
+        return size;
+    }
+
+    private static boolean deleteFolder(File folder) {
+        if (folder.isDirectory()) {
+            File[] files = folder.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    deleteFolder(file);
+                }
+            }
+        }
+        return folder.delete();
+    }
+
+
+
+    private void initExportLogs() {
+        ll_export_logs.setOnClickListener(v -> {
+            File sourceFolder = new File(getFilesDir(),"logs");
+            if (!sourceFolder.exists()){
+                Toast.makeText(context, "无日志可导出！", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("application/zip");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.CHINA);
+            intent.putExtra(Intent.EXTRA_TITLE,"logs_"+sdf.format(new Date())+".zip");
+            startActivityForResult(intent,RESULT_CODE_SAVE_LOG_ZIP);
+        });
+        ll_export_logs.setOnLongClickListener(v -> {
+            File logsFolder = new File(getFilesDir(),"logs");
+            AlertDialog dialog = new AlertDialog.Builder(context)
+                    .setMessage(String.format("确认删除全部日志吗？(占用空间%.2fMB)\n日志保留100条，100条之前的会自动删除，您可以不用手动清理",(double) calculateFolderSize(logsFolder) / (1024 * 1024),Locale.getDefault()))
+                    .setNegativeButton("取消",new VoidDialogInterfaceOnClickListener())
+                    .setPositiveButton("删除", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            deleteFolder(logsFolder);
+                            Toast.makeText(MainActivity.this, "删除完成！", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .show();
+            return false;
+        });
+    }
+
     private void initView() {
         drawerLayout = findViewById(R.id.drawerLayout);
         //navigation_view = findViewById(R.id.navigation_view);
@@ -159,6 +296,7 @@ public class MainActivity extends AppCompatActivity {
         ll_test_comment_pool = findViewById(R.id.ll_test_comment_pool);
         ll_you_comment_area = findViewById(R.id.ll_your_comment_area);
         ll_wait_time = findViewById(R.id.ll_wait_time);
+        ll_export_logs = findViewById(R.id.ll_export_logs);
         cl_banned_comment_sw = findViewById(R.id.cl_banned_comment_sw);
         cl_recorde_history_comment_sw = findViewById(R.id.cl_recorde_history_comment_sw);
         ll_github_project = findViewById(R.id.ll_github_project);

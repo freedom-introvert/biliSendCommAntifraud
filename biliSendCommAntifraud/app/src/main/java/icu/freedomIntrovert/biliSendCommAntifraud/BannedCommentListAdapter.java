@@ -26,7 +26,6 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentReviewPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
-import okhttp3.OkHttpClient;
 
 public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedCommentListAdapter.ViewHolder> {
 
@@ -41,7 +40,7 @@ public class BannedCommentListAdapter extends RecyclerView.Adapter<BannedComment
         Collections.reverse(this.bandCommentBeanArrayList);
         this.context = context;
         config = new Config(context);
-        CommentManipulator commentManipulator = new CommentManipulator(new OkHttpClient(), config.getCookie(),config.getDeputyCookie());
+        CommentManipulator commentManipulator = new CommentManipulator(config.getCookie(),config.getDeputyCookie());
         commentReviewPresenter = new CommentReviewPresenter(new Handler(), commentManipulator);
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
     }
