@@ -276,7 +276,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                     });
                 } else {
                     if (type == CommentArea.AREA_TYPE_DYNAMIC17) {//动态17的动态ID就是评论区oid
-                        worker.checkComment(new CommentArea(oid, String.valueOf(oid), type), resultRpid, parent, root, comment, hasPictures, progressDialog);
+                        worker.checkComment(new CommentArea(oid, s_oid, type), resultRpid, parent, root, comment, hasPictures, progressDialog);
                     } else if (type == CommentArea.AREA_TYPE_ARTICLE) {
                         worker.checkComment(new CommentArea(oid, "cv" + oid, type), resultRpid, parent, root, comment, hasPictures, progressDialog);
                     } else {//动态11的动态ID在ComposeActivity的Extras里获取

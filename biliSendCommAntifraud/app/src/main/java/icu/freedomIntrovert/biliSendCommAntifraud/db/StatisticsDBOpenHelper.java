@@ -210,7 +210,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
 
         while (cursor.moveToNext()) {
             HistoryComment historyComment = new HistoryComment(
-                    new CommentArea(cursor.getInt("oid"),cursor.getString("source_id"),cursor.getInt("area_type")),
+                    new CommentArea(cursor.getLong("oid"),cursor.getString("source_id"),cursor.getInt("area_type")),
                     cursor.getLong("rpid"),
                     cursor.getLong("parent"),
                     cursor.getLong("root"),
@@ -227,6 +227,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
     }
 
     public long insertHistoryComment(HistoryComment historyComment) {
+        System.out.println(historyComment);
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put("rpid", historyComment.rpid);
@@ -264,7 +265,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         GreatCursor cursor = new GreatCursor(db.rawQuery("select * from "+TABLE_NAME_HISTORY_COMMENT+" where rpid = ?",new String[]{String.valueOf(rpid)}));
         if (cursor.moveToNext()) {
             HistoryComment historyComment = new HistoryComment(
-                    new CommentArea(cursor.getInt("oid"),cursor.getString("source_id"),cursor.getInt("area_type")),
+                    new CommentArea(cursor.getLong("oid"),cursor.getString("source_id"),cursor.getInt("area_type")),
                     cursor.getLong("rpid"),
                     cursor.getLong("parent"),
                     cursor.getLong("root"),
