@@ -1,5 +1,6 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.comment;
 
+import android.os.Build;
 import android.util.ArrayMap;
 import android.util.Log;
 
@@ -96,8 +97,16 @@ public class CommentManipulator {
     public CommentArea dvidToCommentArea(String dvid) throws IOException {
         Request request = new Request.Builder()
                 .url("https://api.bilibili.com/x/polymer/web-dynamic/v1/detail?id=" + dvid)
-                //设置referer,不然会被拦截请求
-                .addHeader("Referer", "https://t.bilibili.com/").build();
+                //设置各种请求头,尤其是Referer和user-agent不然会被拦截请求:(
+                .addHeader("accept","application/json, text/plain, */*")
+                .addHeader("user-agent","Mozilla/5.0 (Linux; Android "+ Build.VERSION.RELEASE+"; "+Build.MODEL+" Build/"+Build.ID+") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.6045.163 Mobile Safari/537.36")
+                .addHeader("sec-ch-ua-platform","\"Android\"")
+                .addHeader("sec-ch-ua","\"Android WebView\";v=\"119\", \"Chromium\";v=\"119\", \"Not?A_Brand\";v=\"24\"")
+                .addHeader("sec-fetch-site","same-site")
+                .addHeader("sec-fetch-mode","cors")
+                .addHeader("sec-fetch-dest","empty")
+                .addHeader("Cookie",cookie)
+                .addHeader("Referer", "https://m.bilibili.com").build();
         Response response = httpClient.newCall(request).execute();
         String aid = null;
         int comment_type = CommentArea.AREA_TYPE_DYNAMIC11;
