@@ -14,13 +14,13 @@ android {
         applicationId "icu.freedomIntrovert.biliSendCommAntifraud"
         minSdk 21
         targetSdk 33
-        versionCode 473
+        versionCode 500
         //versionName "4.7.2_dev_${currentTimeMillis}" //每编译一次改变版本号，以更新模块
-        versionName "4.7.3"
+        versionName "5.0.0"
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -35,7 +35,8 @@ android {
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.cardview:cardview:1.0.0'
     compileOnly files('libs/XposedBridgeApi-54.jar')
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'org.ligboy.retrofit2:converter-fastjson:2.1.0'
