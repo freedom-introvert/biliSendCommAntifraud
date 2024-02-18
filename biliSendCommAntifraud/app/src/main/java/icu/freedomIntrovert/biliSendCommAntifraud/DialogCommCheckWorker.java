@@ -187,7 +187,7 @@ public class DialogCommCheckWorker {
             resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在无账号环境下无法找到，自己账号下获取该评论的回复列表成功，接着又能在无账号下获取回复，疑似审核中，此时你可能无法申诉（回复无可申诉评论），请后续来统计中复查（记得搜遍评论区）！");
         } else if (bannedType.equals(BannedCommentBean.BANNED_TYPE_QUICK_DELETE)) {
             resultDialogBuilder.setIcon(R.drawable.deleted_black);
-            resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在自己账号下获取该评论的回复列表和对该评论发送回复时均收到提示：“" + "已经被删除了" + "”，判定改评论被系统速删，请检查评论内容或者检查评论区是否被戒严");
+            resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在自己账号下获取该评论的回复列表和对该评论发送回复时均收到提示：“" + "已经被删除了" + "”，判定该评论被系统速删，请检查评论内容或者检查评论区是否被戒严");
         } else if (bannedType.equals(BannedCommentBean.BANNED_TYPE_INVISIBLE)){
             resultDialogBuilder.setIcon(R.drawable.ghost_black);
             resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(comment, 100) + "”在无账号环境下成功找到，但是被标记invisible，也就是隐身（在前端被隐藏）！这是非常罕见的情况……通常在评论发送很久时间后才会出现。可以的话把评论信息发给开发者，以分析触发条件");
