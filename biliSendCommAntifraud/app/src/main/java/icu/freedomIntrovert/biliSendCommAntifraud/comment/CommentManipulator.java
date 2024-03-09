@@ -4,24 +4,31 @@ import android.os.Build;
 import android.util.ArrayMap;
 import android.util.Log;
 
-import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import icu.freedomIntrovert.async.TaskManger;
+import icu.freedomIntrovert.biliSendCommAntifraud.async.BiliBiliApiException;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliApiService;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentPage;
-import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentReply;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentReplyPage;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.ForwardDynamicReqObject;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.ForwardDynamicResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.RemoveDynamicReqObject;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.VideoInfo;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentScanResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.MartialLawCommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.OkHttpUtil;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.ServiceGenerator;
@@ -60,21 +67,23 @@ public class CommentManipulator {
     }
 
     public boolean cookieAreSet() {
+        if (cookie == null){
+            return false;
+        }
         return cookie.contains("bili_jct=");
     }
 
     public boolean deputyCookieAreSet() {
+        if (deputyCookie == null){
+            return false;
+        }
         return deputyCookie.contains("bili_jct=");
     }
 
-    public String getCsrfFromCookie() {
+    public String getCsrfFromCookie(boolean isDeputy) {
+        String cookie = isDeputy ? this.deputyCookie : this.cookie;
         int csrfIndex = cookie.indexOf("bili_jct=");
         return cookie.substring(csrfIndex + 9, csrfIndex + 32 + 9);
-    }
-
-    public String getCsrfFromDeputyCookie() {
-        int csrfIndex = deputyCookie.indexOf("bili_jct=");
-        return deputyCookie.substring(csrfIndex + 9, csrfIndex + 32 + 9);
     }
 
     public Call<GeneralResponse<VideoInfo>> getVideoInfoByAid(long aid) {
@@ -158,13 +167,13 @@ public class CommentManipulator {
 
     public Call<GeneralResponse<CommentAddResult>> sendComment(String comment, long parent, long root, CommentArea commentArea,boolean isDeputyAccount) {
         ArrayMap<String, String> arrayMap = new ArrayMap<>();
-        arrayMap.put("csrf", isDeputyAccount ? getCsrfFromDeputyCookie() : getCsrfFromCookie());
+        arrayMap.put("csrf", getCsrfFromCookie(isDeputyAccount));
         arrayMap.put("message", comment);
         arrayMap.put("oid", String.valueOf(commentArea.oid));
         arrayMap.put("plat", "1");
         arrayMap.put("parent", String.valueOf(parent));
         arrayMap.put("root", String.valueOf(root));
-        arrayMap.put("type", String.valueOf(commentArea.areaType));
+        arrayMap.put("type", String.valueOf(commentArea.type));
         return biliApiService.postComment(isDeputyAccount ? deputyCookie : getCookie(), arrayMap);
     }
 
@@ -185,8 +194,8 @@ public class CommentManipulator {
         return jsonObject;
     }*/
 
-    public boolean checkComment(CommentArea commentArea, long rpid) throws IOException {
-        GeneralResponse<CommentPage> body = biliApiService.getCommentPageNoAccount(commentArea.oid, commentArea.areaType, 1, BiliApiService.COMMENT_SORT_BY_TIME).execute().body();
+    /*public boolean checkComment(CommentArea commentArea, long rpid) throws IOException {
+        GeneralResponse<CommentPage> body = biliApiService.getCommentPageNoAccount(commentArea.oid, commentArea.type, 1, BiliApiService.COMMENT_SORT_BY_TIME).execute().body();
         OkHttpUtil.respNotNull(body);
         List<BiliComment> comments = body.data.replies;
         if (comments != null && comments.size() > 0){
@@ -197,111 +206,105 @@ public class CommentManipulator {
             }
         }
         return false;
-    }
+    }*/
 
-    public CommentScanResult scanComment(CommentArea commentArea, long rpid, long root) throws IOException {
+    public BiliComment findComment(CommentArea commentArea, long rpid, long root) throws IOException, BiliBiliApiException {
         List<BiliComment> replies;
         if (root == 0) {
             //获取第一页评论查找就行了
-            GeneralResponse<CommentPage> body = biliApiService.getCommentPageNoAccount(commentArea.oid, commentArea.areaType, 1, BiliApiService.COMMENT_SORT_BY_TIME).execute().body();
+            GeneralResponse<CommentPage> body = biliApiService
+                    .getCommentPageNoAccount(commentArea.oid,
+                            commentArea.type,
+                            1,
+                            BiliApiService.COMMENT_SORT_BY_TIME)
+                    .execute()
+                    .body();
             OkHttpUtil.respNotNull(body);
             replies = body.data.replies;
             if (replies != null && replies.size() > 0) {
                 for (BiliComment reply : replies) {
                     if (reply.rpid == rpid){
-                        return new CommentScanResult(true, reply.invisible);
+                        return reply;
                     }
                 }
             }
-            return new CommentScanResult(false, false);
+            return null;
         } else {
-            BiliComment reply = findCommentFromCommentReplyArea(commentArea, rpid, root, false, null);
-            if (reply != null){
-                return new CommentScanResult(true,reply.invisible);
-            }
-            return new CommentScanResult(false, false);
+            return findCommentFromCommentReplyArea(commentArea, rpid, root, false);
         }
     }
-
-
-    public BiliComment findCommentFromCommentReplyArea(CommentArea commentArea, long rpid, long root, boolean hasAccount, @Nullable PageTurnListener pageTurnListener) throws IOException {
-        int pn = 1;
-        GeneralResponse<CommentReply> body;
-        if (hasAccount) {
-            body = getCommentReplyHasAccount(commentArea, root, pn).execute().body();
+    public BiliComment findCommentFromCommentReplyArea(CommentArea commentArea, long rpid, long root, boolean hasAccount) throws IOException, BiliBiliApiException {
+        GeneralResponse<CommentPage> body;
+        if (hasAccount){
+            body = biliApiService.getCommentMainPageHasAccount(cookie,commentArea.oid,commentArea.type,BiliApiService.COMMENT_SORT_MODE_TIME,0,rpid).execute().body();
         } else {
-            body = getCommentReplyNoAccount(commentArea, root, pn).execute().body();
-        }
-        if (pageTurnListener != null) {
-            pageTurnListener.onPageTurn(pn);
+            body = biliApiService.getCommentMainPageNoAccount(getBuvid3Cookie(),commentArea.oid,commentArea.type,BiliApiService.COMMENT_SORT_MODE_TIME,0,rpid).execute().body();
         }
         OkHttpUtil.respNotNull(body);
-        if (body.isSuccess()) {
-            List<BiliComment> replyComments = body.data.replies;
-            while (replyComments != null && replyComments.size() > 0) {
-                for (BiliComment replyComment : replyComments) {
-                    if (replyComment.rpid == rpid) {
-                        return replyComment;
+        if (!body.isSuccess()){
+            throw new BiliBiliApiException(body,"根评论被删除或ShadowBan，无法获取回复列表");
+        }
+        List<BiliComment> comments = new ArrayList<>(body.data.replies);
+        //有可能被顶置，所以把这个弄一起
+        if (body.data.top_replies != null) {
+            comments.addAll(body.data.top_replies);
+        }
+        //遍历根评论列表
+        for (BiliComment comment : comments) {
+            if (comment.rpid == root){
+                //遍历评论回复预览列表
+                List<BiliComment> replies = comment.replies;
+                if (replies != null){
+                    for (BiliComment reply : replies) {
+                        if (reply.rpid == rpid){
+                            return reply;
+                        }
                     }
                 }
-                pn++;
-                if (hasAccount) {
-                    body = getCommentReplyHasAccount(commentArea, root, pn).execute().body();
-                } else {
-                    body = getCommentReplyNoAccount(commentArea, root, pn).execute().body();
-                }
-                if (pageTurnListener != null) {
-                    pageTurnListener.onPageTurn(pn);
-                }
-                OkHttpUtil.respNotNull(body);
-                replyComments = body.data.replies;
             }
-        } else {
-            throw new RuntimeException("在获取回复评论前未检查根评论状态，发生错误：code=" + body.code + " message=" + body.message);
         }
         return null;
     }
-
-
-    public BiliComment findThisCommentFromEntireCommentArea(CommentArea commentArea, long rpid, boolean hasAccount, @Nullable PageTurnListener pageTurnListener) throws IOException {
-        int pn = 1;
+    public BiliComment findCommentUsingSeekRpid(Comment comment,boolean hasAccount) throws IOException, BiliBiliApiException {
+        CommentArea commentArea = comment.commentArea;
         GeneralResponse<CommentPage> body;
         if (hasAccount) {
-            body = biliApiService.getCommentPageHasAccount(cookie,getCsrfFromCookie(),0, commentArea.oid, pn,commentArea.areaType).execute().body();
+            body = biliApiService.getCommentMainPageHasAccount(cookie,commentArea.oid,
+                            commentArea.type,BiliApiService.COMMENT_SORT_MODE_TIME,
+                            0,comment.rpid)
+                    .execute().body();
         } else {
-            body = biliApiService.getCommentPageNoAccount(commentArea.oid, commentArea.areaType, pn, 0).execute().body();
-        }
-        if (pageTurnListener != null) {
-            pageTurnListener.onPageTurn(pn);
+            body = biliApiService.getCommentMainPageNoAccount(getBuvid3Cookie(),commentArea.oid,
+                            commentArea.type,BiliApiService.COMMENT_SORT_MODE_TIME,
+                            0,comment.rpid)
+                    .execute().body();
         }
         OkHttpUtil.respNotNull(body);
         if (body.isSuccess()) {
-            List<BiliComment> replyComments = body.data.replies;
-            if (body.data.top_replies != null) {
-                replyComments.addAll(body.data.top_replies);
+            List<BiliComment> comments = body.data.replies;
+            if (comments == null || comments.size() == 0){
+                return null;
             }
-            while (!(replyComments == null || replyComments.size() == 0)) {
-                for (BiliComment replyComment : replyComments) {
-                    if (replyComment.rpid == rpid) {
-                        return replyComment;
-                    }
+
+            for (BiliComment gotAComment : comments) {
+                if (gotAComment.rpid == comment.rpid){
+                    return gotAComment;
                 }
-                pn++;
-                if (hasAccount) {
-                    body = biliApiService.getCommentPageHasAccount(cookie,getCsrfFromCookie(),0, commentArea.oid, pn,commentArea.areaType).execute().body();
-                } else {
-                    body = biliApiService.getCommentPageNoAccount(commentArea.oid, commentArea.areaType, pn,0).execute().body();
-                }
-                if (pageTurnListener != null) {
-                    pageTurnListener.onPageTurn(pn);
-                }
-                OkHttpUtil.respNotNull(body);
-                replyComments = body.data.replies;
             }
+            //评论被置顶的情况
+            List<BiliComment> topReplies = body.data.top_replies;
+            if (topReplies == null || topReplies.size() == 0){
+                return null;
+            }
+            for (BiliComment aTopComment : topReplies) {
+                if (aTopComment.rpid == comment.rpid){
+                    return aTopComment;
+                }
+            }
+            return null;
         } else {
-            throw new RuntimeException("在获取回复评论前未检查跟评论状态，发生错误：code=" + body.code + " message=" + body.message);
+            throw new BiliBiliApiException(body,"获取评论列表(/reply/main)时发生错误");
         }
-        return null;
     }
 
     public interface PageTurnListener {
@@ -360,17 +363,40 @@ public class CommentManipulator {
         return null;
     }
 
+    public void matchCommentAreaInUi(String input,MatchCommentAreaCallBack callBack){
+        TaskManger.start(() -> {
+            try {
+                CommentArea commentArea = matchCommentArea(input);
+                TaskManger.postOnUiThread(() -> callBack.onMatchedArea(commentArea));
+            } catch (IOException e) {
+                TaskManger.postOnUiThread(() -> callBack.onNetworkError(e));
+            }
+        });
+    }
+
+    public interface MatchCommentAreaCallBack {
+        void onNetworkError(IOException e);
+        void onMatchedArea(CommentArea commentArea);
+    }
+
     private String subUrl(String url, String text, int length) {
         String subText = url.substring(url.indexOf(text) + text.length(), url.indexOf(text) + text.length() + length);
         System.out.println(subText);
         return subText;
     }
 
-    public MartialLawCommentArea getMartialLawCommentArea(CommentArea commentArea, long testCommentRpid, String randomComment) throws IOException {
+    /**
+     * 获取戒严评论区信息。调用方法前请勿删除测试评论
+     * @param commentArea
+     * @param testCommentRpid
+     * @return
+     * @throws IOException
+     */
+    public MartialLawCommentArea getMartialLawCommentArea(CommentArea commentArea, long testCommentRpid,boolean isDeputyAccount) throws IOException {
         byte[] coverImageData = null;
         String title = null, up = null;
-        GeneralResponse<CommentReply> resp = getCommentReplyHasAccount(commentArea, testCommentRpid, 1).execute().body();
-        if (commentArea.areaType == CommentArea.AREA_TYPE_VIDEO) {
+        GeneralResponse<CommentReplyPage> resp = getCommentReplyHasAccount(commentArea, testCommentRpid, 1,isDeputyAccount);
+        if (commentArea.type == CommentArea.AREA_TYPE_VIDEO) {
             Request request = new Request.Builder().url("https://api.bilibili.com/x/web-interface/view?bvid=" + commentArea.sourceId).build();
             Response response = httpClient.newCall(request).execute();
             if (response.code() == 200) {
@@ -385,7 +411,7 @@ public class CommentManipulator {
                     up = respJson.getJSONObject("data").getJSONObject("owner").getString("name");
                 }
             }
-        } else if (commentArea.areaType == CommentArea.AREA_TYPE_ARTICLE) {
+        } else if (commentArea.type == CommentArea.AREA_TYPE_ARTICLE) {
             Request request = new Request.Builder().url("https://api.bilibili.com/x/article/viewinfo?id=" + commentArea.oid).build();
             Response response = httpClient.newCall(request).execute();
             if (response.code() == 200) {
@@ -399,7 +425,7 @@ public class CommentManipulator {
                     up = respJson.getJSONObject("data").getString("author_name");
                 }
             }
-        } else if (commentArea.areaType == CommentArea.AREA_TYPE_DYNAMIC11 || commentArea.areaType == CommentArea.AREA_TYPE_DYNAMIC17) {
+        } else if (commentArea.type == CommentArea.AREA_TYPE_DYNAMIC11 || commentArea.type == CommentArea.AREA_TYPE_DYNAMIC17) {
             Request request = new Request.Builder()
                     .url("https://api.bilibili.com/x/polymer/web-dynamic/v1/detail?id=" + commentArea.sourceId)
                     //设置referer,不然会被拦截请求
@@ -421,9 +447,9 @@ public class CommentManipulator {
         }
         String defaultDisposalMethod = null;
         if (resp.code == CommentAddResult.CODE_DELETED) {
-            defaultDisposalMethod = BannedCommentBean.BANNED_TYPE_QUICK_DELETE;
+            defaultDisposalMethod = MartialLawCommentArea.DISPOSAL_METHOD_QUICK_DELETE;
         } else {
-            defaultDisposalMethod = BannedCommentBean.BANNED_TYPE_SHADOW_BAN;
+            defaultDisposalMethod = MartialLawCommentArea.DISPOSAL_METHOD_SHADOW_BAN;
         }
         return new MartialLawCommentArea(commentArea, defaultDisposalMethod, title, up, coverImageData);
     }
@@ -435,7 +461,7 @@ public class CommentManipulator {
             idType = "url";
         }
         RequestBody requestBody = new FormBody.Builder()
-                .add("csrf", getCsrfFromCookie())
+                .add("csrf", getCsrfFromCookie(false))
                 .add(idType, id)
                 .add("type", "1")
                 .add("reason", reason)
@@ -451,16 +477,50 @@ public class CommentManipulator {
         return respJson;
     }
 
-    public Call<Void> deleteComment(CommentArea commentArea, long rpid) {
-        return biliApiService.deleteComment(getCookie(), getCsrfFromCookie(), commentArea.oid, commentArea.areaType, rpid);
+    public Call<GeneralResponse<Object>> createDeleteCommentCall(CommentArea commentArea, long rpid) {
+        return biliApiService.deleteComment(getCookie(), getCsrfFromCookie(false), commentArea.oid, commentArea.type, rpid);
     }
 
-    public Call<GeneralResponse<CommentReply>> getCommentReplyNoAccount(CommentArea commentArea, long rootRpid, int pn) {
-        return biliApiService.getCommentReply(commentArea.oid, pn, 20, rootRpid, commentArea.areaType, 0);
+    public GeneralResponse<Object> deleteComment(CommentArea commentArea, long rpid, boolean isDeputyAccount) throws IOException, BiliBiliApiException {
+        GeneralResponse<Object> body = biliApiService.deleteComment(isDeputyAccount ? deputyCookie : getCookie(), getCsrfFromCookie(isDeputyAccount), commentArea.oid, commentArea.type, rpid).execute().body();
+        OkHttpUtil.respNotNull(body);
+        if (!body.isSuccess()){
+            throw new BiliBiliApiException(body,String.format("[rpid=%s][cookie:uid=%s]评论删除失败！",rpid,getDedeUserID(isDeputyAccount)));
+        }
+        return body;
     }
 
-    public Call<GeneralResponse<CommentReply>> getCommentReplyHasAccount(CommentArea commentArea, long rootRpid, int pn) {
-        return biliApiService.getCommentReply(getCookie(), getCsrfFromCookie(), commentArea.oid, pn, 20, rootRpid, commentArea.areaType, 0);
+
+    public GeneralResponse<CommentReplyPage> getCommentReplyNoAccount(CommentArea commentArea, long rootRpid, int pn) throws IOException {
+        return biliApiService.getCommentReply(commentArea.oid, pn, 20, rootRpid, commentArea.type, 0).execute().body();
+    }
+
+    /*public GeneralResponse<CommentReplyPage> getCommentReplyHasAccount(CommentArea commentArea, long rootRpid, int pn) throws IOException {
+        return biliApiService.getCommentReply(getCookie(), getCsrfFromCookie(), commentArea.oid, pn, 20, rootRpid, commentArea.type, 0).execute().body();
+    }*/
+    public GeneralResponse<CommentReplyPage> getCommentReplyHasAccount(CommentArea commentArea, long rootRpid, int pn, boolean isDeputyAccount) throws IOException {
+        return biliApiService.getCommentReply(isDeputyAccount ? deputyCookie : cookie, getCsrfFromCookie(isDeputyAccount), commentArea.oid, pn, 20, rootRpid, commentArea.type, 0).execute().body();
+    }
+
+/*    public GeneralResponse<CommentReplyPage> getCommentReplyMainPageHasAccountUseSeekRpid(CommentArea commentArea, long rootRpid,long seekRpid,int pn, boolean isDeputyAccount) throws IOException {
+        return biliApiService.getCommentReplyMainPageHasHasAccount(isDeputyAccount ? deputyCookie : cookie,commentArea.oid,commentArea.type,BiliApiService.COMMENT_SORT_MODE_TIME,pn,rootRpid,seekRpid).execute().body();
+    }*/
+
+    public ForwardDynamicResult forwardDynamicUsingSubAccount(@NonNull String dynamicId) throws IOException, BiliBiliApiException {
+        GeneralResponse<ForwardDynamicResult> body = biliApiService.forwardDynamic(deputyCookie, "web",getCsrfFromCookie(true),ForwardDynamicReqObject.getInstance(getDedeUserID(true),dynamicId)).execute().body();
+        OkHttpUtil.respNotNull(body);
+        if (!body.isSuccess()){
+            throw new BiliBiliApiException(body,"转发动态失败");
+        }
+        return body.data;
+    }
+
+    public void deleteDynamicUsingSubAccount(@NonNull String dynamicId) throws IOException, BiliBiliApiException {
+        GeneralResponse<Object> response = biliApiService.removeDynamic(deputyCookie, "web", getCsrfFromCookie(true), new RemoveDynamicReqObject(dynamicId)).execute().body();
+        OkHttpUtil.respNotNull(response);
+        if (!response.isSuccess()){
+            throw new BiliBiliApiException(response,"删除动态 "+dynamicId+" 失败");
+        }
     }
 
     public boolean checkCookieNotFailed() throws IOException {
@@ -475,4 +535,20 @@ public class CommentManipulator {
         return userProfile != null;
     }
 
+    public String getBuvid3Cookie() {
+        String patternString = "buvid3=[^;]+";
+        Pattern pattern = Pattern.compile(patternString);
+        Matcher matcher = pattern.matcher(cookie);
+        matcher.find();
+        return matcher.group();
+    }
+
+    public String getDedeUserID(boolean isDeputy){
+        String patternString = "DedeUserID=([^;]+)";
+        Pattern pattern = Pattern.compile(patternString);
+        Matcher matcher = pattern.matcher(isDeputy ? deputyCookie : cookie);
+        matcher.find();
+        return matcher.group(1);
+
+    }
 }

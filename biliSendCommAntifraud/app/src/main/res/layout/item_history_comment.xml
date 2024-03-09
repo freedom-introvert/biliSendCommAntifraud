@@ -21,15 +21,68 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal">
-
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
             <ImageView
                 android:id="@+id/cover_image"
                 android:layout_width="70dp"
-                android:layout_height="70dp"
+                android:layout_height="50dp"
                 android:padding="3dp"
-                android:src="@drawable/ic_baseline_message_24"
+                android:src="@drawable/comment_long"
                 app:layout_constraintDimensionRatio="h,1:1" />
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingLeft="5dp"
+                    android:paddingBottom="2dp">
+
+                    <ImageView
+                        android:layout_width="0dp"
+                        android:layout_height="15dp"
+                        android:layout_gravity="center"
+                        android:layout_weight="1"
+                        android:src="@drawable/like"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/txv_like"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="1dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:text="0"
+                        android:textSize="8dp"
+                        app:layout_constraintStart_toEndOf="@+id/img_band_type" />
+
+
+                    <ImageView
+                        android:id="@+id/img_relpy_count"
+                        android:layout_width="0dp"
+                        android:layout_height="15dp"
+                        android:layout_gravity="center"
+
+                        android:layout_weight="1"
+                        android:src="@drawable/reply_count"/>
+
+                    <TextView
+                        android:id="@+id/txv_reply_count"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="1dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:text="0"
+                        android:textSize="8dp" />
+
+
+                </LinearLayout>
+            </LinearLayout>
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -57,43 +110,22 @@
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent">
-
                     <ImageView
                         android:id="@+id/img_band_type"
                         android:layout_width="19sp"
                         android:layout_height="19sp"
                         android:layout_gravity="center"
-                        android:src="@drawable/like"
+                        android:src="@drawable/hide"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
-                        android:id="@+id/txv_like"
+                        android:id="@+id/txv_band_type"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="1dp"
-                        android:text="114"
+                        android:text="仅自己可见"
                         app:layout_constraintStart_toEndOf="@+id/img_band_type" />
-
-                    <ImageView
-                        android:id="@+id/img_relpy_count"
-                        android:layout_width="19sp"
-                        android:layout_height="19sp"
-                        android:layout_gravity="center"
-                        android:layout_marginStart="3dp"
-                        android:src="@drawable/reply_count"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintStart_toEndOf="@+id/txv_like"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                    <TextView
-                        android:id="@+id/txv_reply_count"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="1dp"
-                        android:text="514"
-                        app:layout_constraintStart_toEndOf="@+id/img_relpy_count" />
 
                     <TextView
                         android:id="@+id/txv_info"
@@ -107,7 +139,8 @@
                         app:layout_constraintBottom_toBottomOf="parent"
 
                         app:layout_constraintEnd_toStartOf="@+id/txv_date"
-                        app:layout_constraintStart_toEndOf="@+id/txv_reply_count" />
+                        app:layout_constraintHorizontal_bias="0.039"
+                        app:layout_constraintStart_toEndOf="@+id/txv_band_type" />
 
                     <TextView
                         android:id="@+id/txv_date"

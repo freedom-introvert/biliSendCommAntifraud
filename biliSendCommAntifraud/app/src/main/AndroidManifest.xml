@@ -13,17 +13,22 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BiliSendCommAntifraud.HasActionBar"
         tools:targetApi="33">
+        <activity
+            android:name=".PendingCheckCommentsActivity"
+            android:label="待检查评论列表"
+            android:exported="false" />
+
         <service
             android:name=".WaitService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
 
         <activity
             android:name=".HistoryCommentActivity"
             android:exported="true"
             android:label="历史评论记录"
-            android:theme="@style/Theme.BiliSendCommAntifraud.HasActionBar"
-            android:parentActivityName=".MainActivity">
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.BiliSendCommAntifraud.HasActionBar">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
@@ -78,20 +83,12 @@
                 android:value="" />
         </activity>
         <activity
-            android:name=".BannedCommentListActivity"
-            android:exported="true"
-            android:label="@string/band_comment_list"
-            android:parentActivityName=".MainActivity">
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="" />
-        </activity>
-        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.BiliSendCommAntifraud">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 

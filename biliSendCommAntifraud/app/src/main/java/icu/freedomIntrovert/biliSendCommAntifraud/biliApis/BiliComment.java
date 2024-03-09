@@ -3,6 +3,8 @@ package icu.freedomIntrovert.biliSendCommAntifraud.biliApis;
 
 import com.alibaba.fastjson.annotation.JSONField;
 
+import java.util.List;
+
 public class BiliComment {
     public long rpid;
     public long oid;
@@ -13,8 +15,10 @@ public class BiliComment {
     public Content content;
     public Member member;
     public int rcount;
+    public List<BiliComment> replies;
     public int like;
     public boolean invisible;
+    public long ctime;
 
 
     public static class Member{
@@ -31,8 +35,8 @@ public class BiliComment {
     }
 
     public static class Content {
-        String message;
-        int max_line;
+        public String message;
+        public int max_line;
     }
 
 

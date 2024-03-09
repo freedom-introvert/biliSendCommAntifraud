@@ -1,5 +1,15 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
-public interface OnExitListener {
-    public void exit();
+public abstract class OnExitListener {
+    public void onNewCommentRpid(long rpid) {
+
+    }
+
+    public void onCommentStatusUpdated(long rpid) {
+
+    }
+
+    public void exit() {
+
+    }
 }

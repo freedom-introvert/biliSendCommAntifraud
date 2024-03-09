@@ -8,8 +8,19 @@ public abstract class BackstageTask<T extends  EventHandler> implements Runnable
 
     @Override
     public void run(){
-        start(handle);
+        try {
+            onStart(handle);
+        } catch (Throwable e) {
+            handle.sendError(e);
+        }
     }
-
-    protected abstract void start(T eventHandler);
+    public void execute(){TaskManger.execute(this);}
+    protected abstract void onStart(T eventHandler) throws Throwable;
+    protected void sleep(long time){
+        try {
+            Thread.sleep(time);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

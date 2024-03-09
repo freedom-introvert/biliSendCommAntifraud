@@ -1,5 +1,6 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -13,25 +14,25 @@ import android.provider.Settings;
 import android.view.Window;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.IOException;
 import java.util.Date;
-import java.util.Locale;
-import java.util.Set;
+import java.util.List;
 
+import icu.freedomIntrovert.async.TaskManger;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.VideoInfo;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentPresenter;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.danmaku.DanmakuManipulator;
-import icu.freedomIntrovert.biliSendCommAntifraud.danmaku.DanmakuPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.BiliApiCallback;
+import icu.freedomIntrovert.biliSendCommAntifraud.picturestorage.PictureStorage;
 import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
 import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressTimer;
 
@@ -40,7 +41,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
     public static final int TODO_CHECK_DANMAKU = 1;
     public static final int TODO_CONTINUE_CHECK_COMMENT = 2;
     public static final int TODO_SAVE_CONTAIN_SENSITIVE_CONTENT = 3;
-
+    public static Activity lastActivity;
     Context context;
     Handler handler;
     CommentManipulator commentManipulator;
@@ -52,9 +53,9 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if (MainActivity.activity != null) {
-            System.out.println("已finish MainActivity，避免离开哔哩哔哩");
-            MainActivity.activity.finish();
+        if (lastActivity != null) {
+            System.out.println("已finish"+lastActivity.getClass().getCanonicalName()+"，避免离开哔哩哔哩");
+            lastActivity.finish();
         }
         super.onCreate(savedInstanceState);
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -62,8 +63,8 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
         this.context = this;
         config = new Config(context);
         handler = new Handler();
-        commentManipulator = new CommentManipulator(config.getCookie(),config.getDeputyCookie());
-        commentUtil = new CommentUtil(config.sp_config);
+        commentManipulator = new CommentManipulator(config.getCookie(), config.getDeputyCookie());
+        commentUtil = new CommentUtil(context);
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
         danmakuManipulator = new DanmakuManipulator();
         Intent intent = getIntent();
@@ -72,16 +73,46 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
         long waitTime = config.getWaitTime();
         long waitTimeByHasPictures = config.getWaitTimeByHasPictures();
 
-        if (todo == -1) {
-            new AlertDialog.Builder(context)
-                    .setTitle("发生错误")
-                    .setMessage("intent参数错误，intentExtras:" + intent.getExtras())
-                    .setNegativeButton("关闭", (dialog, which) -> finish())
-                    .show();
-        } else if (todo == TODO_CHECK_COMMENT || todo == TODO_CHECK_DANMAKU) {
+        Bundle extras = intent.getExtras();
+        if (extras == null) {
+            showExtrasError(null);
+        } else if (todo == TODO_CHECK_COMMENT) {
+            String message = extras.getString("message");
+            String s_oid = extras.getString("oid");
+            String s_type = extras.getString("type");
+            String s_resultRpid = extras.getString("rpid");
+            String s_root = extras.getString("root");
+            String s_parent = extras.getString("parent");
+            String commentText = extras.getString("comment");
+            String dynamicId = extras.getString("dynamic_id");
+            String bvid = extras.getString("bvid");
+            String pictures = extras.getString("pictures");
+            long ctime = extras.getLong("ctime", 0) * 1000;
+            if (message == null || s_oid == null || s_type == null || s_resultRpid == null || s_root == null || s_parent == null || commentText == null) {
+                showExtrasError(extras);
+                return;
+            }
+            long oid = Long.parseLong(s_oid);
+            int type = Integer.parseInt(s_type);
+            long resultRpid = Long.parseLong(s_resultRpid);
+            long root = Long.parseLong(s_root);
+            long parent = Long.parseLong(s_parent);
+            CommentArea commentArea = null;
+            if (type == CommentArea.AREA_TYPE_VIDEO) {
+                commentArea = new CommentArea(oid,bvid,type);
+            } else if (type == CommentArea.AREA_TYPE_DYNAMIC17) {
+                //动态17的动态ID就是评论区oid
+                commentArea = new CommentArea(oid, s_oid, type);
+            } else if (type == CommentArea.AREA_TYPE_ARTICLE) {
+                commentArea = new CommentArea(oid, "cv" + oid, type);
+            } else {
+                //动态11的动态ID在ComposeActivity的Extras里获取
+                commentArea = new CommentArea(oid, dynamicId != null ? dynamicId : "null", type);
+            }
+            Comment comment = new Comment(commentArea, resultRpid, parent, root, commentText, pictures, new Date(ctime));
+            statisticsDBOpenHelper.insertPendingCheckComment(comment);
 
-            boolean hasPictures = intent.getBooleanExtra("hasPictures", false);
-
+            boolean hasPictures = comment.hasPictures();
             long totalWaitTime;
             String proMsg;
             if (hasPictures) {
@@ -98,6 +129,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                     .setPositiveButton("后台等待", null)
                     .setCancelable(false)
                     .show();
+
             ProgressTimer progressTimer = new ProgressTimer(totalWaitTime, ProgressBarDialog.DEFAULT_MAX_PROGRESS, new ProgressTimer.ProgressLister() {
                 @Override
                 public void onNewProgress(int progress, long sleepSeg) {
@@ -116,7 +148,8 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                     } else {
                         intent1.putExtra("wait_time", waitTime - (System.currentTimeMillis() - lastTime));
                     }
-                    intent1.putExtra("check_extras", intent.getExtras());
+                    intent1.putExtra("rpid", resultRpid);
+                    intent1.putExtra("comment",commentText);
                     startService(intent1);
                     toContinueTo = false;
                     finish();
@@ -127,26 +160,14 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
             });
 
             new Thread(() -> {
-                if (!hasPictures) {
-                    progressTimer.start();
-                    if (toContinueTo) {
-                        runOnUiThread(() -> {
-                            progressBarDialog.setIndeterminate(true);
-                            progressBarDialog.setTitle("检查中");
-                            progressBarDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
-                            toCheck(intent.getExtras(), TODO_CHECK_COMMENT, progressBarDialog);
-                        });
-                    }
-                } else {
-                    progressTimer.start();
-                    if (toContinueTo) {
-                        runOnUiThread(() -> {
-                            progressBarDialog.setIndeterminate(true);
-                            progressBarDialog.setTitle("检查中");
-                            progressBarDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
-                            toCheck(intent.getExtras(), TODO_CHECK_COMMENT, progressBarDialog);
-                        });
-                    }
+                progressTimer.start();
+                if (toContinueTo) {
+                    runOnUiThread(() -> {
+                        progressBarDialog.setIndeterminate(true);
+                        progressBarDialog.setTitle("检查中");
+                        progressBarDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+                        toCheckComment(comment,progressBarDialog);
+                    });
                 }
             }).start();
         } else if (todo == TODO_CONTINUE_CHECK_COMMENT) {
@@ -156,16 +177,16 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                     .setIndeterminate(true)
                     .setCancelable(false)
                     .show();
-            Bundle extras = intent.getBundleExtra("check_extras");
-            if (extras != null) {
-                Set<String> keySet = extras.keySet();
-                for (String key : keySet) {
-                    Object value = extras.get(key);
-                    System.out.println("name:" + key + " value:" + value);
-                }
-                System.out.println(extras.getBundle("check_extras"));
+            long rpid = intent.getLongExtra("rpid",-1);
+            Comment comment = statisticsDBOpenHelper.getPendingCheckCommentByRpid(rpid);
+            System.out.println(comment);
+            if (comment == null){
+                dialogMessageAndExit("错误","未找到rpid="+rpid+"的待检查评论，可能你删除了该记录");
+            } else {
+                toCheckComment(comment,progressBarDialog);
             }
-            toCheck(extras, TODO_CHECK_COMMENT, progressBarDialog);
+
+
         } else if (todo == TODO_SAVE_CONTAIN_SENSITIVE_CONTENT) {
             ProgressBarDialog progressBarDialog = new ProgressBarDialog.Builder(context)
                     .setTitle("统计敏感内容警告")
@@ -178,7 +199,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
             String message = intent.getStringExtra("message");
             String s_oid = intent.getStringExtra("oid");
             String s_type = intent.getStringExtra("type");
-            String id = intent.getStringExtra("id");
+            String dynamicId = intent.getStringExtra("dynamic_id");
             DialogInterface.OnClickListener onClose = (dialog, which) -> finish();
             if (comment != null && s_oid != null && s_type != null) {
                 long oid = Long.parseLong(s_oid);
@@ -188,115 +209,88 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                         @Override
                         public void onError(Throwable th) {
                             progressBarDialog.dismiss();
-                            DialogUtil.dialogMessage(context, "网络错误", th.getMessage(),onClose);
+                            DialogUtil.dialogMessage(context, "网络错误", th.getMessage(), onClose);
                         }
 
                         @Override
                         public void onSuccess(GeneralResponse<VideoInfo> videoInfoGeneralResponse) {
                             progressBarDialog.dismiss();
                             if (videoInfoGeneralResponse.isSuccess()) {
-                                addSensitiveComment(new BannedCommentBean(new CommentArea(oid, videoInfoGeneralResponse.data.bvid, type), -System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK),message,onClose);
+                                addSensitiveComment(new CommentArea(oid, videoInfoGeneralResponse.data.bvid, type), comment, message, onClose);
                             } else {
-                                DialogUtil.dialogMessage(context, "错误", videoInfoGeneralResponse.message,onClose);
+                                DialogUtil.dialogMessage(context, "错误", videoInfoGeneralResponse.message, onClose);
                             }
                         }
                     });
                 } else if (type == CommentArea.AREA_TYPE_ARTICLE) {
-                    addSensitiveComment(new BannedCommentBean(new CommentArea(oid, "cv" + oid, type), -System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK),message,onClose);
+                    addSensitiveComment(new CommentArea(oid, "cv" + oid, type), comment, message, onClose);
                 } else if (type == CommentArea.AREA_TYPE_DYNAMIC17) {
-                    addSensitiveComment(new BannedCommentBean(new CommentArea(oid, String.valueOf(oid), type), -System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK),message,onClose);
+                    addSensitiveComment(new CommentArea(oid, String.valueOf(oid), type), comment, message, onClose);
                 } else {
-                    addSensitiveComment(new BannedCommentBean(new CommentArea(oid,  id != null ? id : "null", type), -System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK),message,onClose);
+                    addSensitiveComment(new CommentArea(oid, dynamicId != null ? dynamicId : "null", type), comment, message, onClose);
                 }
             } else {
-                DialogUtil.dialogMessage(context,"错误","无效的extras！\nextras:"+intent.getExtras(),onClose);
+                DialogUtil.dialogMessage(context, "错误", "无效的extras！\nextras:" + intent.getExtras(), onClose);
             }
         }
     }
 
-    private void addSensitiveComment(BannedCommentBean bannedCommentBean,String message, DialogInterface.OnClickListener onClose) {
-        if (statisticsDBOpenHelper.insertBannedComment(bannedCommentBean) > 0) {
-            DialogUtil.dialogMessage(context, "包含敏感内容统计", "你的评论发送时提示：“"+message+"”，被ban统计数据库已添加包含敏感词的评论：" + bannedCommentBean.comment,onClose);
+    private void addSensitiveComment(CommentArea commentArea, String commentText, String message, DialogInterface.OnClickListener onClose) {
+        HistoryComment historyComment = new HistoryComment(new Comment(commentArea, -System.currentTimeMillis(), 0, 0, commentText, null, new Date()));
+        historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_SENSITIVE);
+        if (statisticsDBOpenHelper.insertHistoryComment(historyComment) > 0) {
+            DialogUtil.dialogMessage(context, "包含敏感内容统计", "你的评论发送时提示：“" + message + "”，被ban统计数据库已添加包含敏感词的评论：" + commentText, onClose);
         } else {
-            DialogUtil.dialogMessage(context, "包含敏感内容统计", "添加统计失败，可能条目有重复",onClose);
+            DialogUtil.dialogMessage(context, "包敏感内容统计", "添加统计失败，可能条目有重复", onClose);
         }
     }
+    private void showExtrasError(@Nullable Bundle extras){
+        dialogMessageAndExit("发生错误","intent参数错误，intentExtras:" + extras);
+    }
 
-    private void toCheck(@Nullable Bundle extras, int todo, @NonNull ProgressBarDialog progressDialog) {
-        if (extras == null) {
-            progressDialog.dismiss();
-            DialogUtil.dialogMessage(context, "未传入参数异常", "参数：" + extras);
-            return;
-        }
-        String message = extras.getString("message");
-        String s_oid = extras.getString("oid");
-        String s_type = extras.getString("type");
-        String s_resultRpid = extras.getString("rpid");
-        String s_root = extras.getString("root");
-        String s_parent = extras.getString("parent");
-        String comment = extras.getString("comment");
-        String id = extras.getString("id");
-        boolean hasPictures = extras.getBoolean("hasPictures", false);
-        if (message != null && s_oid != null && s_type != null && s_resultRpid != null && s_root != null && s_parent != null && comment != null) {
-            long oid = Long.parseLong(s_oid);
-            int type = Integer.parseInt(s_type);
-            long resultRpid = Long.parseLong(s_resultRpid);
-            long root = Long.parseLong(s_root);
-            long parent = Long.parseLong(s_parent);
-
-            if (todo == TODO_CHECK_COMMENT) {
-                CommentPresenter commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper,
-                        config.getWaitTime(),
-                        config.getWaitTimeByHasPictures(),
-                        config.getEnableRecordeBannedComments(),
-                        config.getRecordeHistory());
-                DialogCommCheckWorker worker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, this::finish);
-
-                if (type == CommentArea.AREA_TYPE_VIDEO) {
-                    commentManipulator.getVideoInfoByAid(oid).enqueue(new BiliApiCallback<GeneralResponse<VideoInfo>>() {
-                        @Override
-                        public void onError(Throwable th) {
-                            progressDialog.dismiss();
-                            Toast.makeText(context, "网络错误" + th.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-
-                        @Override
-                        public void onSuccess(GeneralResponse<VideoInfo> response) {
-                            if (response.isSuccess()) {
-                                worker.checkComment(new CommentArea(oid, response.data.bvid, type), resultRpid, parent, root, comment, hasPictures, progressDialog);
-                            } else {
-                                progressDialog.dismiss();
-                                if (response.code == -404){
-                                    DialogUtil.dialogMessage(context, "获取视频信息时发生错误", String.format(Locale.getDefault(), "你疑似在港澳台番剧发布评论，且梯子直连了api.bilibili.com，导致无法获取视频信息，请尝试将代理软件设置为全局模式！\nmessage=%s\ncode=%d", response.message, response.code), (dialog, which) -> finish());
-                                } else {
-                                    DialogUtil.dialogMessage(context, "获取视频信息时发生错误", String.format(Locale.getDefault(), "message=%s\ncode=%d", response.message, response.code), (dialog, which) -> finish());
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    if (type == CommentArea.AREA_TYPE_DYNAMIC17) {//动态17的动态ID就是评论区oid
-                        worker.checkComment(new CommentArea(oid, s_oid, type), resultRpid, parent, root, comment, hasPictures, progressDialog);
-                    } else if (type == CommentArea.AREA_TYPE_ARTICLE) {
-                        worker.checkComment(new CommentArea(oid, "cv" + oid, type), resultRpid, parent, root, comment, hasPictures, progressDialog);
-                    } else {//动态11的动态ID在ComposeActivity的Extras里获取
-                        worker.checkComment(new CommentArea(oid, id != null ? id : "null", type), resultRpid, parent, root, comment, hasPictures, progressDialog);
+    private void dialogMessageAndExit(String title,String message){
+        new AlertDialog.Builder(context)
+                .setTitle(title)
+                .setMessage(message)
+                .setNegativeButton("关闭", (dialog, which) -> finish())
+                .show();
+    }
+    private void toCheckComment(Comment comment,ProgressBarDialog progressDialog){
+        DialogCommCheckWorker worker = new DialogCommCheckWorker(context, config, statisticsDBOpenHelper, commentManipulator, commentUtil);
+        worker.setExitListener(new OnExitListener() {
+            @Override
+            public void exit() {
+                finish();
+            }
+        });
+        List<Comment.PictureInfo> pictureInfoList = comment.getPictureInfoList();
+        if (pictureInfoList != null){
+            TaskManger.start(() -> {
+                try {
+                    for (int i = 0; i < pictureInfoList.size(); i++) {
+                        int finalI = i;
+                        runOnUiThread(() -> {
+                            progressDialog.setMessage("正在存档图片["+ (finalI+1) +"/"+pictureInfoList.size()+"]");
+                        });
+                        PictureStorage.save(context, pictureInfoList.get(i).img_src);
                     }
+                    runOnUiThread(() -> {
+                        progressDialog.setMessage("检查中……");
+                        worker.checkComment(comment,progressDialog);
+                    });
+                } catch (IOException e) {
+                    runOnUiThread(() -> {
+                        progressDialog.dismiss();
+                        DialogUtil.dialogMessage(context,"错误","保存图片失败！因为"+e.getMessage());
+                    });
+                    e.printStackTrace();
                 }
-            } else if (todo == TODO_CHECK_DANMAKU) {
-                DialogDanmakuCheckWorker worker = new DialogDanmakuCheckWorker(context, handler, new DanmakuPresenter(handler, danmakuManipulator, statisticsDBOpenHelper, config.getWaitTimeByDanmakuSend(), config.getEnableRecordeBannedComments()), () -> finish());
-                long dmid = extras.getLong("dmid", 0);
-                String content = extras.getString("content");
-                String accessKey = extras.getString("accessKey");
-                long avid = extras.getLong("avid", 0);
-                worker.startCheckDanmaku(oid, dmid, content, accessKey, avid);
-            }
-            //DialogUtil.dialogMessage(context, null, "oid=" + oid + "\ntype=" + type + "\nmessage=" + message + "\nrpid=" + resultRpid + "\nroot=" + root + "\nparent=" + parent + "\ncomment=" + comment);
+            });
         } else {
-            DialogUtil.dialogMessage(context, "缺少参数异常", "参数：" + extras);
+            worker.checkComment(comment, progressDialog);
         }
-
     }
+
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -340,4 +334,5 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
             Toast.makeText(context, "无法自动请求通知权限，请手动设置", Toast.LENGTH_SHORT).show();
         }
     }
+
 }

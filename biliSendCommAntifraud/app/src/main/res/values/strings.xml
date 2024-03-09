@@ -3,9 +3,11 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="drawer_open">drawer open</string>
     <string name="drawer_close">drawer close</string>
-    <string name="band_comment_list">被ban评论列表</string>
+    <string name="pending_check_comment_list">待检查评论列表</string>
     <string name="martial_law_comment_area_list">戒严评论区列表</string>
     <string name="no_need_to_scan_only_ban">经检测，该评论仅在此评论区被ban，因「查重黑名单」机制，仅在某评论区被ban的评论没有扫描的价值！而且扫描敏感词要在你的评论区下进行！不建议去尝试修改评论，原因是查重黑名单机制可能会ban掉与你之前发布大致相同的评论（即使你删除了之前发的），建议你「申诉」该评论。</string>
     <string name="no_need_to_scan_martial_law">该评论区已被戒严，啥评论都发不了的……</string>
     <string name="bv_cv_url_typo">你输入的BV、cv号或URL不正确！</string>
+    <string name="ok">@android:string/ok</string>
+    <string name="cancel">@android:string/cancel</string>
 </resources>

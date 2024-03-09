@@ -50,6 +50,7 @@ public class MartialLawCommentAreaListActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_martial_law_comment_area_list);
+        ByXposedLaunchedActivity.lastActivity = this;
         context = this;
         dbOpenHelper = new StatisticsDBOpenHelper(context);
         martialLawCommentAreaArrayList = dbOpenHelper.queryMartialLawCommentAreas();

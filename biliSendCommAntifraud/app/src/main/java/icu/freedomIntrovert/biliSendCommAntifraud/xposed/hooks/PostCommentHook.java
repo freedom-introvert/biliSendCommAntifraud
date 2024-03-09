@@ -5,8 +5,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -16,24 +16,30 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliApiService;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.VideoInfo;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
+import icu.freedomIntrovert.biliSendCommAntifraud.okretro.OkHttpUtil;
+import icu.freedomIntrovert.biliSendCommAntifraud.okretro.ServiceGenerator;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.BaseHook;
 
 public class PostCommentHook extends BaseHook {
     AtomicReference<Context> currentContext;
     AtomicReference<String> currentOid;
-    AtomicReference<String> currentId;
+    AtomicReference<String> currentDynId;
     AtomicReference<String> currentAreaType;
     AtomicReference<String> currentComment;
-    AtomicReference<Boolean> currentHasPictures;
+    AtomicReference<String> currentPictures;
 
     public PostCommentHook() {
         currentContext = new AtomicReference<>();
         currentOid = new AtomicReference<>();
-        currentId = new AtomicReference<>();
+        currentDynId = new AtomicReference<>();
         currentAreaType = new AtomicReference<>();
         currentComment = new AtomicReference<>();
-        currentHasPictures = new AtomicReference<>();
+        currentPictures = new AtomicReference<>();
     }
 
     @Override
@@ -46,8 +52,8 @@ public class PostCommentHook extends BaseHook {
                 Method getIntentMethod = param.thisObject.getClass().getMethod("getIntent");
                 Intent intent = (Intent) getIntentMethod.invoke(param.thisObject);
                 Bundle fragment_args = intent.getExtras().getBundle("fragment_args");
-                XposedBridge.log(fragment_args.getString("oid"));
-                currentId.set(fragment_args.getString("oid"));
+                XposedBridge.log("动态ID:"+fragment_args.getString("oid"));
+                currentDynId.set(fragment_args.getString("oid"));
             }
 
             @Override
@@ -64,7 +70,7 @@ public class PostCommentHook extends BaseHook {
                     Method getOid = commentContext.getClass().getMethod("getOid");
                     Method getType = commentContext.getClass().getMethod("getType");
                     currentComment.set((String) param.args[5]);
-                    currentHasPictures.set(false);
+                    currentPictures.set(null);
                     currentOid.set(String.valueOf(getOid.invoke(commentContext)));
                     currentAreaType.set(String.valueOf(getType.invoke(commentContext)));
                 }
@@ -96,7 +102,7 @@ public class PostCommentHook extends BaseHook {
                     Method getOid = commentContext.getClass().getMethod("getOid");
                     Method getType = commentContext.getClass().getMethod("getType");
                     currentComment.set((String) param.args[5]);
-                    currentHasPictures.set(!TextUtils.isEmpty((String) param.args[8]));
+                    currentPictures.set((String) param.args[8]);
                     currentOid.set(String.valueOf(getOid.invoke(commentContext)));
                     currentAreaType.set(String.valueOf(getType.invoke(commentContext)));
                 }
@@ -128,7 +134,7 @@ public class PostCommentHook extends BaseHook {
                     Method getOid = commentContext.getClass().getMethod("getOid");
                     Method getType = commentContext.getClass().getMethod("getType");
                     currentComment.set((String) param.args[5]);
-                    currentHasPictures.set(!TextUtils.isEmpty((String) param.args[8]));
+                    currentPictures.set((String) param.args[8]);
                     currentOid.set(String.valueOf(getOid.invoke(commentContext)));
                     currentAreaType.set(String.valueOf(getType.invoke(commentContext)));
                 }
@@ -149,55 +155,6 @@ public class PostCommentHook extends BaseHook {
                 }
             });
         } else {//适配版本7.35.0 - 7.44.0 - ?
-            /*
-            XposedHelpers.findAndHookMethod("com.bilibili.app.comm.comment2.model.b", classLoader, "z", classLoader.loadClass("com.bilibili.app.comm.comment2.CommentContext"), java.lang.String.class, long.class, long.class, long.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, boolean.class, boolean.class, boolean.class, int.class, new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    super.beforeHookedMethod(param);
-                    Object commentContext = param.args[0];
-                    Method getOid = commentContext.getClass().getMethod("getOid");
-                    Method getType = commentContext.getClass().getMethod("getType");
-                    currentComment.set((String) param.args[5]);
-                    currentHasPictures.set(!TextUtils.isEmpty((String) param.args[8]));
-                    currentOid.set(String.valueOf(getOid.invoke(commentContext)));
-                    currentAreaType.set(String.valueOf(getType.invoke(commentContext)));
-                }
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                }
-            });
-            XposedHelpers.findAndHookMethod("com.bilibili.app.comm.comment2.inputv2.CommentPublisher", classLoader, "t", classLoader.loadClass("com.bilibili.app.comm.opus.lightpublish.page.comment.d"), classLoader.loadClass("com.bilibili.okretro.GeneralResponse"), new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    super.beforeHookedMethod(param);
-                }
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    toCheck(param,1);
-                }
-            });
-
-             */
-
-            //感谢另一位大佬提供的代码，支持的版本范围更宽了！
-//            XposedHelpers.findAndHookConstructor("com.bilibili.app.comm.comment2.inputv2.CommentPublisher", classLoader, android.content.Context.class, classLoader.loadClass("com.bilibili.app.comm.comment2.CommentContext"), new XC_MethodHook() {
-//                @Override
-//                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-//                    super.beforeHookedMethod(param);
-//                    Context context = (Context) param.args[0];
-//                    if (context != null) {
-//                        currentContext.set(context);
-//                    }
-//                }
-//                @Override
-//                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-//                    super.afterHookedMethod(param);
-//                }
-//            });
-
-            //直接在Activity启动时获取context，哪位大佬的获取方式不稳，有时候是null，导致startActivity空指针的恶性bug
             XposedHelpers.findAndHookMethod(Activity.class, "onCreate", Bundle.class, new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
@@ -234,7 +191,7 @@ public class PostCommentHook extends BaseHook {
                                         currentComment.set(arrayMap.get("message"));
                                         currentOid.set(arrayMap.get("oid"));
                                         currentAreaType.set(arrayMap.get("type"));
-                                        currentHasPictures.set(!TextUtils.isEmpty(arrayMap.get("pictures")));
+                                        currentPictures.set(arrayMap.get("pictures"));
                                     }
                                 });
                             }
@@ -270,8 +227,14 @@ public class PostCommentHook extends BaseHook {
                                     intent.putExtra("root", String.valueOf((Long) biliCommentAddResultClass.getField("root").get(data)));
                                     intent.putExtra("parent", String.valueOf((Long) biliCommentAddResultClass.getField("parent").get(data)));
                                     intent.putExtra("comment", currentComment.get());
-                                    intent.putExtra("id", currentId.get());
-                                    intent.putExtra("hasPictures",currentHasPictures.get());
+                                    intent.putExtra("dynamic_id", currentDynId.get());
+                                    if (Integer.parseInt(currentAreaType.get()) == CommentArea.AREA_TYPE_VIDEO){
+                                        intent.putExtra("bvid",getBvidFormAvid(Long.parseLong(currentOid.get())));
+                                    }
+                                    intent.putExtra("pictures",currentPictures.get());
+                                    Object reply = biliCommentAddResultClass.getField("reply").get(data);
+                                    long ctime = XposedHelpers.getLongField(reply,"mCtime");
+                                    intent.putExtra("ctime",ctime);
                                     XposedBridge.log("bilibili comment add result:" + intent.getExtras().toString());
                                     currentContext.get().startActivity(intent);
                                 }
@@ -283,7 +246,7 @@ public class PostCommentHook extends BaseHook {
                                 intent.putExtra("comment", currentComment.get());
                                 intent.putExtra("message", (String) XposedHelpers.getObjectField(body,"message"));
                                 intent.putExtra("type", currentAreaType.get());
-                                intent.putExtra("id", currentId.get());
+                                intent.putExtra("dynamic_id", currentDynId.get());
                                 XposedBridge.log("bilibili comment add result:" + intent.getExtras().toString());
                                 currentContext.get().startActivity(intent);
                             }
@@ -294,7 +257,7 @@ public class PostCommentHook extends BaseHook {
         }
     }
 
-    private void toCheck(XC_MethodHook.MethodHookParam param,int generalResponseLocation ) throws NoSuchFieldException, IllegalAccessException {
+    private void toCheck(XC_MethodHook.MethodHookParam param,int generalResponseLocation ) throws NoSuchFieldException, IllegalAccessException, IOException {
         Object generalResponse = param.args[generalResponseLocation];
         Object biliCommentAddResult = generalResponse.getClass().getField("data").get(generalResponse);
         Intent intent = new Intent();
@@ -312,11 +275,23 @@ public class PostCommentHook extends BaseHook {
             intent.putExtra("root", String.valueOf((Long) biliCommentAddResultClass.getField("root").get(biliCommentAddResult)));
             intent.putExtra("parent", String.valueOf((Long) biliCommentAddResultClass.getField("parent").get(biliCommentAddResult)));
             intent.putExtra("comment", currentComment.get());
-            intent.putExtra("id", currentId.get());
-            intent.putExtra("hasPictures",currentHasPictures.get());
+            intent.putExtra("dynamic_id", currentDynId.get());
+            if (Integer.parseInt(currentAreaType.get()) == CommentArea.AREA_TYPE_VIDEO){
+                intent.putExtra("bvid",getBvidFormAvid(Long.parseLong(currentOid.get())));
+            }
+            intent.putExtra("pictures",currentPictures.get());
+            Object reply = XposedHelpers.getObjectField(biliCommentAddResult,"reply");
+            long ctime = XposedHelpers.getLongField(reply,"mCtime");
+            intent.putExtra("ctime",ctime);
             XposedBridge.log("bilibili comment add result:" + intent.getExtras().toString());
             context.startActivity(intent);
         }
     }
-    
+    private String getBvidFormAvid(long avid) throws IOException {
+        BiliApiService biliApiService = ServiceGenerator.getBiliApiService();
+        GeneralResponse<VideoInfo> body = biliApiService.getVideoInfoByAid(avid).execute().body();
+        OkHttpUtil.respNotNull(body);
+        return body.data.bvid;
+    }
+
 }

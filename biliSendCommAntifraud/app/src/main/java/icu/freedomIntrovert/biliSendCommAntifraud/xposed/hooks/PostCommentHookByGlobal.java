@@ -5,8 +5,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -16,6 +16,12 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliApiService;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
+import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.VideoInfo;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
+import icu.freedomIntrovert.biliSendCommAntifraud.okretro.OkHttpUtil;
+import icu.freedomIntrovert.biliSendCommAntifraud.okretro.ServiceGenerator;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.BaseHook;
 
 public class PostCommentHookByGlobal extends BaseHook {
@@ -26,7 +32,7 @@ public class PostCommentHookByGlobal extends BaseHook {
         AtomicReference<String> currentId = new AtomicReference<>();
         AtomicReference<String> currentAreaType = new AtomicReference<>();
         AtomicReference<String> currentComment = new AtomicReference<>();
-        AtomicReference<Boolean> currentHasPictures = new AtomicReference<>();
+        AtomicReference<String> currentPictures = new AtomicReference<>();
 
         XposedHelpers.findAndHookMethod("com.bilibili.lib.ui.ComposeActivity", classLoader, "onCreate", android.os.Bundle.class, new XC_MethodHook() {
             @Override
@@ -35,7 +41,14 @@ public class PostCommentHookByGlobal extends BaseHook {
                 Method getIntentMethod = param.thisObject.getClass().getMethod("getIntent");
                 Intent intent = (Intent) getIntentMethod.invoke(param.thisObject);
                 Bundle fragment_args = intent.getExtras().getBundle("fragment_args");
-                currentId.set(fragment_args.getString("oid"));
+                //新版动态ID获取方法
+                String dynamicId = fragment_args.getString("dynamicId");
+                //若没有获取到动态ID，则说明是旧版，使用旧版获取方式
+                if (dynamicId==null){
+                    dynamicId = fragment_args.getString("oid");
+                }
+                XposedBridge.log("动态ID:"+dynamicId);
+                currentId.set(dynamicId);
             }
 
             @Override
@@ -79,8 +92,13 @@ public class PostCommentHookByGlobal extends BaseHook {
                         intent.putExtra("root", String.valueOf((Long) biliCommentAddResultClass.getField("root").get(biliCommentAddResult)));
                         intent.putExtra("parent", String.valueOf((Long) biliCommentAddResultClass.getField("parent").get(biliCommentAddResult)));
                         intent.putExtra("comment", currentComment.get());
-                        intent.putExtra("id", currentId.get());
-                        intent.putExtra("hasPictures",false);
+                        if (Integer.parseInt(currentAreaType.get()) == CommentArea.AREA_TYPE_VIDEO){
+                            intent.putExtra("bvid",getBvidFormAvid(Long.parseLong(currentOid.get())));
+                        }
+                        Object reply = XposedHelpers.getObjectField(biliCommentAddResult,"reply");
+                        long ctime = XposedHelpers.getLongField(reply,"mCtime");
+                        intent.putExtra("ctime",ctime);
+                        intent.putExtra("dynamic_id", currentId.get());
                         XposedBridge.log("bilibili comment add result:" + intent.getExtras().toString());
                         context.startActivity(intent);
                     }
@@ -124,7 +142,7 @@ public class PostCommentHookByGlobal extends BaseHook {
                                         currentComment.set(arrayMap.get("message"));
                                         currentOid.set(arrayMap.get("oid"));
                                         currentAreaType.set(arrayMap.get("type"));
-                                        currentHasPictures.set(!TextUtils.isEmpty(arrayMap.get("pictures")));
+                                        currentPictures.set(arrayMap.get("pictures"));
                                     }
                                 });
                             }
@@ -156,8 +174,14 @@ public class PostCommentHookByGlobal extends BaseHook {
                                     intent.putExtra("root", String.valueOf((Long) biliCommentAddResultClass.getField("root").get(data)));
                                     intent.putExtra("parent", String.valueOf((Long) biliCommentAddResultClass.getField("parent").get(data)));
                                     intent.putExtra("comment", currentComment.get());
-                                    intent.putExtra("id", currentId.get());
-                                    intent.putExtra("hasPictures",currentHasPictures.get());
+                                    if (Integer.parseInt(currentAreaType.get()) == CommentArea.AREA_TYPE_VIDEO){
+                                        intent.putExtra("bvid",getBvidFormAvid(Long.parseLong(currentOid.get())));
+                                    }
+                                    Object reply = XposedHelpers.getObjectField(data,"reply");
+                                    long ctime = XposedHelpers.getLongField(reply,"mCtime");
+                                    intent.putExtra("ctime",ctime);
+                                    intent.putExtra("dynamic_id", currentId.get());
+                                    intent.putExtra("pictures",currentPictures.get());
                                     XposedBridge.log("bilibili comment add result:" + intent.getExtras().toString());
                                     currentContext.get().startActivity(intent);
                                 }
@@ -181,5 +205,12 @@ public class PostCommentHookByGlobal extends BaseHook {
                 param.setResult(false);
             }
         });
+    }
+
+    private String getBvidFormAvid(long avid) throws IOException {
+        BiliApiService biliApiService = ServiceGenerator.getBiliApiService();
+        GeneralResponse<VideoInfo> body = biliApiService.getVideoInfoByAid(avid).execute().body();
+        OkHttpUtil.respNotNull(body);
+        return body.data.bvid;
     }
 }
