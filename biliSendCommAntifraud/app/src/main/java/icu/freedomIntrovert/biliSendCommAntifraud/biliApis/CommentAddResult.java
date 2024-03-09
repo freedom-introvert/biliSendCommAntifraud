@@ -15,4 +15,5 @@ public class CommentAddResult {
     public int success_action;
     public long root;
     public long parent;
+    public BiliComment reply;
 }

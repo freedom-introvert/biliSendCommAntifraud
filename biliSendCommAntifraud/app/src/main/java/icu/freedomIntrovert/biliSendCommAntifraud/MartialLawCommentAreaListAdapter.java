@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.MartialLawCommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
@@ -59,7 +58,7 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
         MartialLawCommentArea area = areaArrayList.get(position);
         //根据oid从数据库中加载图片
         byte[] coverImageData = statisticsDBOpenHelper.selectMartialLawCommentAreaCoverImage(area.oid);
-        if (area.areaType == CommentArea.AREA_TYPE_DYNAMIC11 || area.areaType == CommentArea.AREA_TYPE_DYNAMIC17) {
+        if (area.type == CommentArea.AREA_TYPE_DYNAMIC11 || area.type == CommentArea.AREA_TYPE_DYNAMIC17) {
             holder.cover_image.setImageDrawable(context.getDrawable(R.drawable.dynmic));
         } else {
             //动态图片我画的，因为动态没有封面
@@ -71,7 +70,7 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
 
 
         String areaType = null;
-        switch (area.areaType) {
+        switch (area.type) {
             case CommentArea.AREA_TYPE_VIDEO:
                 areaType = "视频";
                 holder.img_area_type.setImageDrawable(context.getDrawable(R.drawable.ic_baseline_smart_display_24));
@@ -88,18 +87,18 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
         }
         String defaultDisposalMethod = null;
         switch (area.defaultDisposalMethod) {
-            case BannedCommentBean.BANNED_TYPE_SHADOW_BAN:
+            case MartialLawCommentArea.DISPOSAL_METHOD_SHADOW_BAN:
                 holder.img_band_type.setImageDrawable(context.getDrawable(R.drawable.hide));
                 defaultDisposalMethod = "发评默认仅自己可见";
                 break;
-            case BannedCommentBean.BANNED_TYPE_QUICK_DELETE:
+            case MartialLawCommentArea.DISPOSAL_METHOD_QUICK_DELETE:
                 holder.img_band_type.setImageDrawable(context.getDrawable(R.drawable.deleted));
                 defaultDisposalMethod = "发评立即被系统删除";
                 break;
         }
         holder.txv_default_disposal_method.setText(defaultDisposalMethod);
         String finalDefaultDisposalMethod = defaultDisposalMethod;
-        String finalAreaType = areaType+"(type="+area.areaType+")";
+        String finalAreaType = areaType+"(type="+area.type +")";
         holder.itemView.setOnClickListener(v -> {
             View dialogView = View.inflate(context, R.layout.dialog_martial_law_comment_area_info, null);
             TextView txv_title = dialogView.findViewById(R.id.txv_title);

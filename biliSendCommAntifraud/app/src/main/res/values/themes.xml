@@ -22,6 +22,7 @@
         <item name="titleTextColor">@color/white</item>
         <item name="windowActionBar">true</item>
         <item name="colorAccent">@color/pink</item>
+        <item name="android:textCursorDrawable">@drawable/custom_cursor</item>
     </style>
 
     <style name="dialog_activity" parent="@style/Theme.AppCompat.DayNight.Dialog">

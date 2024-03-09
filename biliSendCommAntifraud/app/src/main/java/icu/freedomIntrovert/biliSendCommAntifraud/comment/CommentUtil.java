@@ -18,7 +18,6 @@ import java.util.Random;
 import icu.freedomIntrovert.biliSendCommAntifraud.R;
 import icu.freedomIntrovert.biliSendCommAntifraud.VoidDialogInterfaceOnClickListener;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentPresenter;
 
 public class CommentUtil {
     private CommentArea yourCommentArea;
@@ -27,8 +26,8 @@ public class CommentUtil {
     private HashMap<CommentArea, LinkedList<String>> usedTestCommentMap;
     SharedPreferences sp_config;
 
-    public CommentUtil(SharedPreferences sp_config) {
-        this.sp_config = sp_config;
+    public CommentUtil(Context context) {
+        sp_config = context.getSharedPreferences("config",Context.MODE_PRIVATE);
         this.sourceRandomComments = sp_config.getString("random_comments", "日照香炉生紫烟\n" +
                 "遥看瀑布挂前川\n" +
                 "飞流直下三千尺\n" +
@@ -64,7 +63,7 @@ public class CommentUtil {
         CommentArea commentArea = commentManipulator.matchCommentArea(sourceAreaText);
         if (commentArea != null) {
             sp_config.edit().putString("your_comment_area_oid", String.valueOf(commentArea.oid))
-                    .putInt("your_comment_area_type", commentArea.areaType)
+                    .putInt("your_comment_area_type", commentArea.type)
                     .putString("your_comment_area_sourceId", commentArea.sourceId)
                     .putString("your_comment_area_sourceText", sourceAreaText)
                     .apply();
@@ -75,7 +74,7 @@ public class CommentUtil {
         }
     }
 
-    public void setYourCommentArea(Context context, CommentPresenter commentPresenter){
+    public void setYourCommentArea(Context context, CommentManipulator commentManipulator){
         View dialogView = View.inflate(context, R.layout.edit_text, null);
         EditText editText = dialogView.findViewById(R.id.edit_text);
         editText.setText(getAreaSourceText());
@@ -83,17 +82,17 @@ public class CommentUtil {
         dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                commentPresenter.matchToArea(editText.getText().toString(), new CommentPresenter.MatchToAreaCallBack() {
+                commentManipulator.matchCommentAreaInUi(editText.getText().toString(), new CommentManipulator.MatchCommentAreaCallBack() {
                     @Override
-                    public void onNetworkError(Throwable th) {
-                        Toast.makeText(context,"网络错误：" + th.getMessage(),Toast.LENGTH_SHORT).show();
+                    public void onNetworkError(IOException e) {
+                        Toast.makeText(context,"网络错误：" + e.getMessage(),Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onMatchedArea(CommentArea commentArea) {
                         if (commentArea != null) {
                             sp_config.edit().putString("your_comment_area_oid", String.valueOf(commentArea.oid))
-                                    .putInt("your_comment_area_type", commentArea.areaType)
+                                    .putInt("your_comment_area_type", commentArea.type)
                                     .putString("your_comment_area_sourceId", commentArea.sourceId)
                                     .putString("your_comment_area_sourceText", editText.getText().toString())
                                     .apply();
@@ -108,6 +107,54 @@ public class CommentUtil {
             }
         });
     }
+
+    public String getForwardDynamicId(){
+        return sp_config.getString("forward_dynamic_id",null);
+    }
+
+    public void setDynamicIdToBeForward(Context context,CommentManipulator commentManipulator){
+        View dialogView = View.inflate(context,R.layout.edit_text,null);
+        EditText editText = dialogView.findViewById(R.id.edit_text);
+        editText.setText(sp_config.getString("forward_dynamic_url",""));
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setTitle("被转发动态")
+                .setMessage("填动态链接，建议填抽奖动态，用于扫描敏感词时让小号转发来创建新评论区，需设置小号cookie")
+                .setView(dialogView)
+                .setNegativeButton("取消", new VoidDialogInterfaceOnClickListener())
+                .setPositiveButton("设置", null).show();
+        dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                commentManipulator.matchCommentAreaInUi(editText.getText().toString(), new CommentManipulator.MatchCommentAreaCallBack() {
+                    @Override
+                    public void onNetworkError(IOException e) {
+                        Toast.makeText(context,"网络错误：" + e.getMessage(),Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onMatchedArea(CommentArea commentArea) {
+                        if (commentArea != null) {
+                            if (commentArea.type == CommentArea.AREA_TYPE_DYNAMIC17
+                                    || commentArea.type == CommentArea.AREA_TYPE_DYNAMIC11) {
+                                sp_config.edit()
+                                        .putString("forward_dynamic_url", editText.getText().toString())
+                                        .putString("forward_dynamic_id", commentArea.sourceId)
+                                        .apply();
+                                yourCommentArea = commentArea;
+                                dialog.dismiss();
+                                Toast.makeText(context, "设置成功！", Toast.LENGTH_SHORT).show();
+                            } else {
+                                editText.setError("这不是动态的链接！");
+                            }
+                        } else {
+                            editText.setError("输入的内容未解析到评论区！");
+                        }
+                    }
+                });
+            }
+        });
+    }
+
 
     public String getRandomComment(CommentArea area) {
         //获取随机测试评论，并且保证同一个评论区不会发布相同的评论
@@ -131,11 +178,11 @@ public class CommentUtil {
 
     public static String sourceIdToUrl(CommentArea area){
         String url = null;
-        if (area.areaType == CommentArea.AREA_TYPE_VIDEO) {
+        if (area.type == CommentArea.AREA_TYPE_VIDEO) {
             url = "https://www.bilibili.com/video/" + area.sourceId;
-        } else if (area.areaType == CommentArea.AREA_TYPE_ARTICLE) {
+        } else if (area.type == CommentArea.AREA_TYPE_ARTICLE) {
             url = "https://www.bilibili.com/read/" + area.sourceId;
-        } else if (area.areaType == CommentArea.AREA_TYPE_DYNAMIC11 || area.areaType == CommentArea.AREA_TYPE_DYNAMIC17) {
+        } else if (area.type == CommentArea.AREA_TYPE_DYNAMIC11 || area.type == CommentArea.AREA_TYPE_DYNAMIC17) {
             url = "https://t.bilibili.com/" + area.sourceId;
         }
         return url;

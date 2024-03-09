@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:paddingEnd="5dp">
+    <ImageView
+        android:id="@+id/picture"
+        android:background="@drawable/shape_gray_square_bg"
+        android:padding="2px"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:scaleType="centerCrop"
+        tools:ignore="PxUsage" />
+
+</LinearLayout>

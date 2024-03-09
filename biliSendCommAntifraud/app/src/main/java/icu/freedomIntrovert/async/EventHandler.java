@@ -2,7 +2,6 @@ package icu.freedomIntrovert.async;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Message;
 
 import androidx.annotation.NonNull;
 
@@ -10,28 +9,29 @@ public abstract class EventHandler extends Handler {
     public EventHandler() {
         super();
     }
+
     public EventHandler(@NonNull Looper looper) {
         super(looper);
     }
 
-    @Override
-    public void handleMessage(@NonNull Message msg) {
-        handleEvent(msg.what,msg.obj);
+    public void sendEventMessage(EventMessage message) {
+        post(() -> handleEvent(message));
     }
 
-    public boolean sendMessage(int what,Object obj){
-        Message m = new Message();
-        m.what = what;
-        m.obj = obj;
-        return sendMessage(m);
+    public void sendEventMessage(int what,Object... objects){
+        post(() -> handleEvent(new EventMessage(what,objects)));
     }
 
-    public abstract void handleEvent(int what,Object data);
+    public void sendEmptyEventMessage(int what){
+        post(() -> handleEvent(new EventMessage(what)));
+    }
 
-    public void postError(Throwable th){
+    public void sendError(Throwable th) {
         post(() -> handleError(th));
     }
 
-    public abstract void handleError(Throwable th);
+    protected abstract void handleEvent(EventMessage message);
+
+    protected abstract void handleError(Throwable th);
 
 }

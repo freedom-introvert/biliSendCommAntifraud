@@ -10,13 +10,10 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 
 import androidx.core.app.NotificationCompat;
-
-import java.util.Set;
 
 public class WaitService extends Service {
     public static final int ID_WAIT_PROGRESS = 1;
@@ -27,7 +24,8 @@ public class WaitService extends Service {
     Handler handler;
     NotificationCompat.Builder builder;
     NotificationManager manager;
-    Bundle checkExtra;
+    long rpid;
+    String comment;
 
     public WaitService() {
     }
@@ -75,8 +73,8 @@ public class WaitService extends Service {
         if (waitTime < 100) {
             waitTime = 100;
         }
-        checkExtra = intent.getBundleExtra("check_extras");
-        System.out.println("检查Extras：" + checkExtra);
+        rpid = intent.getLongExtra("rpid",-114514);
+        comment = intent.getStringExtra("comment");
         manager.notify(ID_WAIT_PROGRESS, builder.build());
         startTimer();
         return super.onStartCommand(intent, flags, startId);
@@ -111,17 +109,9 @@ public class WaitService extends Service {
         NotificationCompat.Builder builder1 = new NotificationCompat.Builder(this, CHANNEL_ID_OVER);
         Intent intent = new Intent(this, ByXposedLaunchedActivity.class);
         intent.putExtra("todo", ByXposedLaunchedActivity.TODO_CONTINUE_CHECK_COMMENT);
-        intent.putExtra("check_extras", checkExtra);
+        intent.putExtra("rpid", rpid);
         intent.setAction(Intent.ACTION_VIEW);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        if (checkExtra != null) {
-            Set<String> keySet = checkExtra.keySet();
-            for (String key : keySet) {
-                Object value = checkExtra.get(key);
-                System.out.println("name:" + key + " value:" + value);
-            }
-            System.out.println(checkExtra.getBundle("check_extras"));
-        }
         SharedPreferences sp_counter = getSharedPreferences("counter",MODE_PRIVATE);
         int id = sp_counter.getInt("notification_id", 0);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, id, intent, PendingIntent.FLAG_MUTABLE);
@@ -131,18 +121,11 @@ public class WaitService extends Service {
                 .setSmallIcon(R.drawable.launcher)
                 .setContentIntent(pendingIntent)
                 .setContentTitle("已完成等待，点击此通知继续检查！")
-                .setContentText(checkExtra.getString("commentText","null"))
+                .setContentText(comment != null ? comment : "null")
                 .setAutoCancel(true);
-        String comment = checkExtra.getString("comment");
-        if (comment != null) {
-            builder1.setContentText(comment);
-        }
-        //NotificationManagerCompat managerCompat = NotificationManagerCompat.from(this);
-        //manager.notify(ID_WAIT_OVER,builder1.build());
         manager.notify(id, builder1.build());
         id++;
         sp_counter.edit().putInt("notification_id",id).apply();
-        //manager.notify(ID_WAIT_OVER,builder1.build());
         stopSelf();
     }
 }

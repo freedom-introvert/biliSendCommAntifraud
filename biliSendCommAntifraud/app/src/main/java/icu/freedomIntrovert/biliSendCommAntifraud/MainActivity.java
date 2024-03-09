@@ -1,13 +1,11 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
@@ -43,10 +41,10 @@ import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.BannedCommentBean;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.AppealDialogPresenter;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.CommentPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.okretro.BiliApiCallback;
 import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
@@ -56,18 +54,16 @@ public class MainActivity extends AppCompatActivity {
     private static final int RESULT_CODE_SAVE_LOG_ZIP = 1;
     EditText edt_bvid, edt_comment;
     Button btn_send, btn_clean, btn_send_and_appeal, btn_test;
-    SharedPreferences sp_config;
     CommentManipulator commentManipulator;
-    CommentPresenter commentPresenter;
     DrawerLayout drawerLayout;
-    SwitchCompat sw_auto_recorde, sw_recorde_history;
-    ConstraintLayout cl_banned_comment_sw, cl_recorde_history_comment_sw;
-    LinearLayout ll_banned_comments, ll_martial_law_comment_area_list, ll_history_comment, ll_wait_time, ll_github_project;
+    SwitchCompat sw_recorde_history;
+    SwitchCompat sw_hook_picture_select;
+    ConstraintLayout cl_recorde_history_comment_sw;
+    LinearLayout ll_pending_check_comments, ll_martial_law_comment_area_list, ll_history_comment, ll_wait_time, ll_github_project;
     //NavigationView navigation_view;
     Toolbar toolbar;
     private Context context;
     StatisticsDBOpenHelper statisticsDBOpenHelper;
-    boolean enableRecorde;
     boolean enableRecordeHistoryComment;
     LinearLayout ll_test_comment_pool;
     LinearLayout ll_you_comment_area;
@@ -75,7 +71,6 @@ public class MainActivity extends AppCompatActivity {
     CommentUtil commentUtil;
     Handler handler;
     DialogCommCheckWorker dialogCommSendWorker;
-    public static Activity activity;
     Config config;
 
     @SuppressLint("MissingInflatedId")
@@ -83,20 +78,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        activity = this;
+        ByXposedLaunchedActivity.lastActivity = this;
         context = this;
-        sp_config = getSharedPreferences("config", Context.MODE_PRIVATE);
         config = new Config(context);
-        commentUtil = new CommentUtil(sp_config);
+        commentUtil = new CommentUtil(context);
         commentManipulator = new CommentManipulator(config.getCookie(),config.getDeputyCookie());
         handler = new Handler();
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
-        commentPresenter = new CommentPresenter(handler, commentManipulator, statisticsDBOpenHelper, sp_config.getLong("wait_time", 5000), sp_config.getLong("wait_time_by_has_pictures", 10000), sp_config.getBoolean("autoRecorde", true), sp_config.getBoolean("recordeHistory", true));
-        dialogCommSendWorker = new DialogCommCheckWorker(context, handler, commentManipulator, commentPresenter, commentUtil, () -> {
-        });
+        dialogCommSendWorker = new DialogCommCheckWorker(context,config,statisticsDBOpenHelper, commentManipulator, commentUtil);
 
         initView();
-        initAutoRecordeBannedCommentSW();
         initRecordeHistoryCommentSW();
         initTestCommentPoolItem();
         initWaitTimeItem();
@@ -104,53 +95,22 @@ public class MainActivity extends AppCompatActivity {
         initToNewActivityItem();
         initExportLogs();
         ll_you_comment_area.setOnClickListener(v -> {
-            commentUtil.setYourCommentArea(context, commentPresenter);
+            commentUtil.setYourCommentArea(context, commentManipulator);
+        });
+        findViewById(R.id.ll_forward_dynamic).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                commentUtil.setDynamicIdToBeForward(context, commentManipulator);
+            }
         });
 
-//        btn_test = findViewById(R.id.btn_test);
-//        btn_test.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                ProgressBarDialog progressBarDialog = new ProgressBarDialog.Builder(context)
-//                        .setTitle("等待中")
-//                        .setMessage("等待(0/1000)ms")
-//                        .setPositiveButton("后台等待", null)
-//                        .setMax(1000)
-//                        .show();
-//                progressBarDialog.getButton(DialogInterface.BUTTON_POSITIVE)
-//                        .setOnClickListener(new View.OnClickListener() {
-//                            @Override
-//                            public void onClick(View v) {
-//                                toastShort("hello");
-//                            }
-//                        });
-//
-//                new Thread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//
-//                        new ProgressTimer(5000, 1000, new ProgressTimer.ProgressLister() {
-//                            @Override
-//                            public void onNewProgress(int progress, long sleepSeg) {
-//                                runOnUiThread(new Runnable() {
-//                                    @Override
-//                                    public void run() {
-//                                        progressBarDialog.setProgress(progress);
-//                                        progressBarDialog.setMessage(String.format(Locale.getDefault(), "等待(%d/5000)ms", progress * sleepSeg));
-//                                    }
-//                                });
-//                            }
-//                        }).start();
-//                        progressBarDialog.setIndeterminate(true);
-//                    }
-//                }).start();
-//                //progressBar.setMax(100);
-//                //progressBar.setProgress(10);
-//
-//
-//            }
-//        });
 
+        /*findViewById(R.id.btn_test).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });*/
     }
 
     @Override
@@ -290,19 +250,19 @@ public class MainActivity extends AppCompatActivity {
         btn_send = findViewById(R.id.btn_send);
         btn_clean = findViewById(R.id.btn_clean);
 
-        ll_banned_comments = findViewById(R.id.ll_banned_comment_list);
+        ll_pending_check_comments = findViewById(R.id.ll_pending_check_comment_list);
         ll_martial_law_comment_area_list = findViewById(R.id.ll_martial_law_comment_area_list);
         ll_history_comment = findViewById(R.id.ll_history_comment);
         ll_test_comment_pool = findViewById(R.id.ll_test_comment_pool);
         ll_you_comment_area = findViewById(R.id.ll_your_comment_area);
         ll_wait_time = findViewById(R.id.ll_wait_time);
         ll_export_logs = findViewById(R.id.ll_export_logs);
-        cl_banned_comment_sw = findViewById(R.id.cl_banned_comment_sw);
         cl_recorde_history_comment_sw = findViewById(R.id.cl_recorde_history_comment_sw);
         ll_github_project = findViewById(R.id.ll_github_project);
 
-        sw_auto_recorde = findViewById(R.id.sw_auto_recorde);
         sw_recorde_history = findViewById(R.id.sw_recorde_history);
+
+
         btn_send_and_appeal = findViewById(R.id.btn_send_and_appeal);
         setSupportActionBar(toolbar);
 
@@ -311,30 +271,8 @@ public class MainActivity extends AppCompatActivity {
         toggle.syncState();
     }
 
-    private void initAutoRecordeBannedCommentSW() {
-        enableRecorde = sp_config.getBoolean("autoRecorde", true);
-        sw_auto_recorde.setChecked(enableRecorde);
-        cl_banned_comment_sw.setOnClickListener(v -> {
-            sw_auto_recorde.setChecked(!enableRecorde);
-        });
-
-        sw_auto_recorde.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                enableRecorde = true;
-                commentPresenter.setEnableStatistics(true);
-                sp_config.edit().putBoolean("autoRecorde", true).apply();
-                Toast.makeText(context, "开启自动记录", Toast.LENGTH_SHORT).show();
-            } else {
-                enableRecorde = false;
-                commentPresenter.setEnableStatistics(false);
-                sp_config.edit().putBoolean("autoRecorde", false).apply();
-                Toast.makeText(context, "关闭自动记录", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
     private void initRecordeHistoryCommentSW() {
-        enableRecordeHistoryComment = sp_config.getBoolean("recordeHistory", true);
+        enableRecordeHistoryComment = config.getRecordeHistory();
         sw_recorde_history.setChecked(enableRecordeHistoryComment);
         cl_recorde_history_comment_sw.setOnClickListener(v -> {
             sw_recorde_history.setChecked(!enableRecordeHistoryComment);
@@ -343,22 +281,30 @@ public class MainActivity extends AppCompatActivity {
         sw_recorde_history.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 enableRecordeHistoryComment = true;
-                commentPresenter.setEnableRecordeHistoryComment(true);
-                sp_config.edit().putBoolean("recordeHistory", true).apply();
+                config.setRecordeHistory(true);
                 Toast.makeText(context, "开启历史评论记录", Toast.LENGTH_SHORT).show();
             } else {
                 enableRecordeHistoryComment = false;
-                commentPresenter.setEnableRecordeHistoryComment(false);
-                sp_config.edit().putBoolean("recordeHistory", false).apply();
+                config.setRecordeHistory(false);
                 Toast.makeText(context, "关闭历史评论记录", Toast.LENGTH_SHORT).show();
             }
         });
+
+       /* sw_hook_picture_select.setChecked(xConfig.getHookPictureSelectIsEnable());
+        findViewById(R.id.cl_hook_picture_select).setOnClickListener(v -> {
+            sw_hook_picture_select.setChecked(!xConfig.getHookPictureSelectIsEnable());
+        });
+        sw_hook_picture_select.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            xConfig.setHookPictureSelectEnable(isChecked);
+        });*/
+
+
     }
 
 
     private void initToNewActivityItem() {
-        ll_banned_comments.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, BannedCommentListActivity.class));
+        ll_pending_check_comments.setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, PendingCheckCommentsActivity.class));
         });
 
         ll_martial_law_comment_area_list.setOnClickListener(v -> {
@@ -405,11 +351,11 @@ public class MainActivity extends AppCompatActivity {
                 EditText editTextWTByHasPictures = dialogView.findViewById(R.id.edit_text_wt_by_has_pictures);
                 EditText editTextWTByDanmakuSent = dialogView.findViewById(R.id.edit_text_wt_danmaku_sent);
                 editTextWTByCommentSent.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
-                editTextWTByCommentSent.setText(String.valueOf(sp_config.getLong("wait_time", 5000)));
+                editTextWTByCommentSent.setText(String.valueOf(config.getWaitTime()));
                 editTextWTByHasPictures.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
-                editTextWTByHasPictures.setText(String.valueOf(sp_config.getLong("wait_time_by_has_pictures", 10000)));
+                editTextWTByHasPictures.setText(String.valueOf(config.getWaitTimeByHasPictures()));
                 editTextWTByDanmakuSent.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
-                editTextWTByDanmakuSent.setText(String.valueOf(sp_config.getLong("wait_time_by_danmaku_sent", 20000)));
+                editTextWTByDanmakuSent.setText(String.valueOf(config.getWaitTimeByDanmakuSend()));
                 new AlertDialog.Builder(context).setTitle("设置发评后等待时间（毫秒/ms）")
                         .setView(dialogView)
                         .setPositiveButton("设置", new DialogInterface.OnClickListener() {
@@ -418,9 +364,9 @@ public class MainActivity extends AppCompatActivity {
                                 long waitTime = Long.parseLong(editTextWTByCommentSent.getText().toString());
                                 long waitTimeByHasPictures = Long.parseLong(editTextWTByHasPictures.getText().toString());
                                 long waitTimeByDanmakuSent = Long.parseLong(editTextWTByDanmakuSent.getText().toString());
-                                sp_config.edit().putLong("wait_time", waitTime).putLong("wait_time_by_has_pictures", waitTimeByHasPictures).putLong("wait_time_by_danmaku_sent", waitTimeByDanmakuSent).apply();
-                                commentPresenter.setWaitTime(waitTime);
-                                commentPresenter.setWaitTimeByHasPictures(waitTimeByHasPictures);
+                                config.setWaitTime(waitTime);
+                                config.setWaitTimeByHasPictures(waitTimeByHasPictures);
+                                config.setWaitTimeByDanmakuSend(waitTimeByDanmakuSent);
                                 toastLong("设置成功！");
                             }
                         })
@@ -439,8 +385,13 @@ public class MainActivity extends AppCompatActivity {
                     .setIndeterminate(true)
                     .setCancelable(false)
                     .show();
+            commentManipulator.matchCommentAreaInUi(edt_bvid.getText().toString(), new CommentManipulator.MatchCommentAreaCallBack() {
+                @Override
+                public void onNetworkError(IOException e) {
+                    dialog.dismiss();
+                    toastNetErr(e.getMessage());
+                }
 
-            commentPresenter.matchToArea(edt_bvid.getText().toString(), new CommentPresenter.MatchToAreaCallBack() {
                 @Override
                 public void onMatchedArea(CommentArea commentArea) {
                     if (commentArea != null) {
@@ -458,16 +409,22 @@ public class MainActivity extends AppCompatActivity {
                                 if (commentSendSuccess(response, commentArea, comment, dialog)) {
                                     dialog.setIndeterminate(false);
                                     new Thread(() -> {
-                                        new ProgressTimer(commentPresenter.waitTime, ProgressBarDialog.DEFAULT_MAX_PROGRESS, new ProgressTimer.ProgressLister() {
+                                        long waitTime = config.getWaitTime();
+                                        new ProgressTimer(waitTime, ProgressBarDialog.DEFAULT_MAX_PROGRESS, new ProgressTimer.ProgressLister() {
                                             @Override
                                             public void onNewProgress(int progress, long sleepSeg) {
                                                 runOnUiThread(() -> {
-                                                    dialog.setMessage("等待("+progress*sleepSeg+"/"+commentPresenter.waitTime+")ms后检查评论");
+                                                    dialog.setMessage("等待("+progress*sleepSeg+"/"+waitTime+")ms后检查评论");
                                                     dialog.setProgress(progress);
                                                 });
                                             }
                                         }).start();
-                                        dialogCommSendWorker.checkComment(commentArea, response.data.rpid, 0, 0, comment, false, dialog);
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                dialogCommSendWorker.checkComment(new Comment(commentArea, response.data.rpid, 0, 0, comment, null,new Date(response.data.reply.ctime*1000)), dialog);
+                                            }
+                                        });
                                     }).start();
 
                                 }
@@ -478,12 +435,6 @@ public class MainActivity extends AppCompatActivity {
                         dialog.dismiss();
                     }
                 }
-
-                @Override
-                public void onNetworkError(Throwable th) {
-                    dialog.dismiss();
-                    toastNetErr(th.getMessage());
-                }
             });
         });
 
@@ -493,12 +444,11 @@ public class MainActivity extends AppCompatActivity {
                 ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, null, "正在获取评论区信息……");
                 progressDialog.show();
                 String comment = edt_comment.getText().toString();
-
-                commentPresenter.matchToArea(edt_bvid.getText().toString(), new CommentPresenter.MatchToAreaCallBack() {
+                commentManipulator.matchCommentAreaInUi(edt_bvid.getText().toString(), new CommentManipulator.MatchCommentAreaCallBack() {
                     @Override
-                    public void onNetworkError(Throwable th) {
+                    public void onNetworkError(IOException e) {
                         progressDialog.dismiss();
-                        toastShort(th.getMessage());
+                        toastShort(e.getMessage());
                     }
 
                     @Override
@@ -521,15 +471,20 @@ public class MainActivity extends AppCompatActivity {
                                         appealDialogPresenter.appeal(edt_bvid.getText().toString(), comment, new AppealDialogPresenter.CallBack() {
                                             @Override
                                             public void onRespInUI(int code, String toastText) {
+                                                HistoryComment historyComment = new HistoryComment(new Comment(commentArea, response.data.rpid, 0, 0, comment, HistoryComment.STATE_UNKNOWN, new Date(response.data.reply.ctime)));
                                                 if (code == 0) {
-                                                    if (enableRecorde) {
-                                                        statisticsDBOpenHelper.insertBannedComment(new BannedCommentBean(commentArea, response.data.rpid, comment, BannedCommentBean.BANNED_TYPE_UNKNOWN, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
-                                                    }
+                                                    historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_UNKNOWN);
                                                     DialogUtil.dialogMessage(context, "评论被ban", toastText);
                                                 } else if (code == 12082) {
+                                                    historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_NORMAL);
                                                     DialogUtil.dialogMessage(context, "评论正常显示！", toastText);
                                                 } else {
+                                                    historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_UNKNOWN);
                                                     DialogUtil.dialogMessage(context, "其他情况", toastText);
+                                                    return;
+                                                }
+                                                if (config.getRecordeHistoryIsEnable()){
+                                                    statisticsDBOpenHelper.insertHistoryComment(historyComment);
                                                 }
                                             }
 
@@ -569,22 +524,28 @@ public class MainActivity extends AppCompatActivity {
                 dialog.dismiss();
                 new AlertDialog.Builder(context).setMessage(response.data.success_toast).setPositiveButton("留着", new VoidDialogInterfaceOnClickListener())
                         .setNegativeButton("删除", (dialog1, which) -> {
-                            commentManipulator.deleteComment(commentArea, response.data.rpid).enqueue(new BiliApiCallback<Void>() {
+                            commentManipulator.createDeleteCommentCall(commentArea, response.data.rpid).enqueue(new BiliApiCallback<GeneralResponse<Object>>() {
                                 @Override
                                 public void onError(Throwable th) {
                                     Toast.makeText(context, "删除失败", Toast.LENGTH_SHORT).show();
                                 }
 
                                 @Override
-                                public void onSuccess(Void unused) {
-                                    Toast.makeText(context, "删除成功", Toast.LENGTH_SHORT).show();
+                                public void onSuccess(GeneralResponse<Object> unused) {
+                                    if (unused.isSuccess()) {
+                                        Toast.makeText(context, "删除成功", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(context, "删除失败", Toast.LENGTH_SHORT).show();
+                                    }
                                 }
                             });
                         }).show();
             }
         } else if (response.code == CommentAddResult.CODE_CONTAIN_SENSITIVE) {//包含敏感词时
-            if (enableRecorde) {
-                statisticsDBOpenHelper.insertBannedComment(new BannedCommentBean(commentArea, -System.currentTimeMillis(), comment, BannedCommentBean.BANNED_TYPE_SENSITIVE, new Date(), BannedCommentBean.CHECKED_NO_CHECK));
+            if (config.getRecordeHistoryIsEnable()){
+                HistoryComment historyComment = new HistoryComment(new Comment(commentArea, -System.currentTimeMillis(),0,0, comment, null, new Date()));
+                historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_SENSITIVE);
+                statisticsDBOpenHelper.insertHistoryComment(historyComment);
             }
             dialog.dismiss();
             toastLong(response.message);
