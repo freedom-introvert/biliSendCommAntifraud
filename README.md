@@ -114,7 +114,7 @@ graph TB
 
 ### DEMO（启用花里胡哨）
 
-![Screenshot_2024-03-05-11-42-14-854_icu.freedomIntrovert.biliSendCommAntifraud](E:\杂项\biliSendCommAntifraud\Screenshot_2024-03-05-11-42-14-854_icu.freedomIntrovert.biliSendCommAntifraud.jpg)
+![](Screenshot_2024-03-05-11-42-14-854_icu.freedomIntrovert.biliSendCommAntifraud.jpg)
 
 ### 评论图片记录
 
