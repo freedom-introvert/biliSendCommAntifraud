@@ -22,8 +22,10 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.SensitiveScanResu
 public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
     public static final int VERSION = 9;
 
-    public static final String ORDER_BY_DESC = "DESC";
-    public static final String ORDER_BY_ASC = "ASC";
+    public static final String ORDER_BY_DATE_DESC = "date DESC";
+    public static final String ORDER_BY_DATE_ASC = "date ASC";
+    public static final String ORDER_BY_LIKE_DESC = "like DESC";
+    public static final String ORDER_BY_REPLY_COUNT_DESC = "reply DESC";
     public static final String DB_NAME = "statistics.db";
     //public static final String TABLE_NAME_BANNED_COMMENT = "banned_comment";
     public static final String TABLE_NAME_MARTIAL_LAW_AREA = "martial_law_comment_area";
@@ -195,6 +197,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
     }
 
 
+
     public List<HistoryComment> getDemoHistoryComments(){
         List<HistoryComment> historyCommentList = new ArrayList<>();
         CommentArea commentArea = new CommentArea(1,"BV1GJ411x7h7",CommentArea.AREA_TYPE_VIDEO);
@@ -228,7 +231,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
     public List<HistoryComment> queryAllHistoryComments(String dateOrderBy) {
         SQLiteDatabase db = getReadableDatabase();
         List<HistoryComment> historyCommentList = new ArrayList<>();
-        GreatCursor cursor = new GreatCursor(db.rawQuery("select * from " + TABLE_NAME_HISTORY_COMMENT + " ORDER BY date " + dateOrderBy, null));
+        GreatCursor cursor = new GreatCursor(db.rawQuery("select * from " + TABLE_NAME_HISTORY_COMMENT + " ORDER BY " + dateOrderBy, null));
         while (cursor.moveToNext()) {
             //System.out.println(cursor.getLong("root"));
             HistoryComment historyComment = new HistoryComment(
@@ -365,7 +368,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
                 null,
                 null,
                 null,
-                null
+                "date DESC"
         );
 
         List<Comment> commentList = new ArrayList<>();

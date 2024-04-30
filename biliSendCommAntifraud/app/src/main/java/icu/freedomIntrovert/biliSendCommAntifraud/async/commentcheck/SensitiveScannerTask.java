@@ -12,13 +12,11 @@ import icu.freedomIntrovert.biliSendCommAntifraud.async.BiliBiliApiRequestHandle
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.ForwardDynamicResult;
-import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.SensitiveScanResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
-import icu.freedomIntrovert.biliSendCommAntifraud.okretro.OkHttpUtil;
 
 public class SensitiveScannerTask extends BackstageTask<SensitiveScannerTask.EventHandler> {
 
@@ -84,11 +82,9 @@ public class SensitiveScannerTask extends BackstageTask<SensitiveScannerTask.Eve
             commentAreaForTest = forwardDynamicToCreateNewCommentArea(eventHandler);
         }
         //发送完整全文，如果全文正常则说明之前的评论区有问题
-        GeneralResponse<CommentAddResult> body = commentManipulator.sendComment(commentText, 0, 0, commentAreaForTest, false).execute().body();
-        OkHttpUtil.respNotNull(body);
         eventHandler.sendEventMessage(EventHandler.WHAT_COMMENT_FULL_TEXT_SENT, waitTime);
         sleepAndSendProgress(waitTime, eventHandler);
-        long fulltextRpid = body.data.rpid;
+        long fulltextRpid = commentManipulator.sendComment(commentText, 0, 0, commentAreaForTest, false).rpid;
         BiliComment foundComment = commentManipulator.findComment(commentAreaForTest, fulltextRpid, 0);
         commentManipulator.deleteComment(commentAreaForTest, fulltextRpid, false);
         if (foundComment != null) {
@@ -113,9 +109,8 @@ public class SensitiveScannerTask extends BackstageTask<SensitiveScannerTask.Eve
             int splitRightPosition = passText.length() + finalSplit[0].length() + finalSplit[1].length();
 
             eventHandler.sendEventMessage(EventHandler.WHAT_ON_SEND_NEXT_COMMENT_AND_WAIT, normalPosition, splitLeftPosition, splitRightPosition, waitTime);
-            GeneralResponse<CommentAddResult> resp = commentManipulator.sendComment(passText + split[0], 0, 0, commentAreaForTest, false).execute().body();
-            OkHttpUtil.respNotNull(resp);
-            long rpid = resp.data.rpid;
+            CommentAddResult commentAddResult = commentManipulator.sendComment(passText + split[0], 0, 0, commentAreaForTest, false);
+            long rpid = commentAddResult.rpid;
             sleepAndSendProgress(waitTime, eventHandler);
             eventHandler.sendEventMessage(EventHandler.WHAT_ON_CHECKING_COMMENT, currProg, max);
             if (commentManipulator.findComment(commentAreaForTest, rpid, 0) != null) {

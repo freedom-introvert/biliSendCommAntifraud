@@ -79,7 +79,7 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
                     }
                 } else if (response.code == CommentAddResult.CODE_DELETED) {
                     //再尝试对评论进行回复，看看是否应session过期导致变成了游客视角
-                    GeneralResponse<CommentAddResult> response1 = commentManipulator.sendComment(testCommentText, comment.rpid, comment.root, commentArea, false).execute().body();
+                    GeneralResponse<CommentAddResult> response1 = commentManipulator.getSendCommentCall(testCommentText, comment.rpid, comment.root, commentArea, false).execute().body();
                     OkHttpUtil.respNotNull(response1);
                     if (response1.isSuccess()) {
                         //应该不存在有账号获取评论列表被删除了还能回复的吧:(

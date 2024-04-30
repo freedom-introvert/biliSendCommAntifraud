@@ -165,7 +165,18 @@ public class CommentManipulator {
     }
  */
 
-    public Call<GeneralResponse<CommentAddResult>> sendComment(String comment, long parent, long root, CommentArea commentArea,boolean isDeputyAccount) {
+    public CommentAddResult sendComment(String comment, long parent, long root, CommentArea commentArea,boolean isDeputyAccount) throws IOException, BiliBiliApiException {
+        Call<GeneralResponse<CommentAddResult>> call = getSendCommentCall(comment, parent, root, commentArea, isDeputyAccount);
+        GeneralResponse<CommentAddResult> body = call.execute().body();
+        OkHttpUtil.respNotNull(body);
+        if (body.isSuccess()){
+            return body.data;
+        } else {
+            throw new BiliBiliApiException(body,"发送评论失败，评论："+comment);
+        }
+    }
+
+    public Call<GeneralResponse<CommentAddResult>> getSendCommentCall(String comment, long parent, long root, CommentArea commentArea, boolean isDeputyAccount) {
         ArrayMap<String, String> arrayMap = new ArrayMap<>();
         arrayMap.put("csrf", getCsrfFromCookie(isDeputyAccount));
         arrayMap.put("message", comment);

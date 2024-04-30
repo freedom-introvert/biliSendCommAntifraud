@@ -39,7 +39,7 @@
             android:value="true" />
         <meta-data
             android:name="xposeddescription"
-            android:value="发送评论自动检测，解放双手" />
+            android:value="发送评论自动检测，解放双手&amp;你的评论记录器" />
         <meta-data
             android:name="xposedminversion"
             android:value="53" />

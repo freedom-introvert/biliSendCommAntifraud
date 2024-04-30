@@ -175,7 +175,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
                 ZipOutputStream zos = new ZipOutputStream(outputStream);
                 byte[] buffer = new byte[1024];
 
-                List<HistoryComment> historyCommentList = statisticsDBOpenHelper.queryAllHistoryComments(StatisticsDBOpenHelper.ORDER_BY_ASC);
+                List<HistoryComment> historyCommentList = statisticsDBOpenHelper.queryAllHistoryComments(StatisticsDBOpenHelper.ORDER_BY_DATE_ASC);
                 ZipEntry csvEntry = new ZipEntry("comments.csv");
                 zos.putNextEntry(csvEntry);
                 CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(zos));
@@ -275,13 +275,17 @@ public class HistoryCommentActivity extends AppCompatActivity {
         } else if (itemId == R.id.item_sort) {
             //这要求sortRuler数字与选项位置一致
             AtomicInteger sortRuler = new AtomicInteger(config.getSortRuler());
-            new AlertDialog.Builder(context).setTitle("按时间").setIcon(R.drawable.baseline_sort_24).setSingleChoiceItems(new String[]{"发送日期(新-旧)", "发送日期(旧-新)"}, sortRuler.get(), (dialog, which) -> {
+            new AlertDialog.Builder(context).setTitle("排序").setIcon(R.drawable.baseline_sort_24).setSingleChoiceItems(new String[]{"发送日期(新-旧)", "发送日期(旧-新)", "点赞数降序", "评论数降序"}, sortRuler.get(), (dialog, which) -> {
                 sortRuler.set(which);
             }).setPositiveButton(android.R.string.ok, (dialog, which) -> {
                 if (sortRuler.get() == 0) {
                     onSortTypeSet(Config.SORT_RULER_DATE_DESC);
                 } else if (sortRuler.get() == 1) {
                     onSortTypeSet(Config.SORT_RULER_DATE_ASC);
+                } else if (sortRuler.get() == 2) {
+                    onSortTypeSet(Config.SORT_RULER_LIKE_DESC);
+                } else if (sortRuler.get() == 3) {
+                    onSortTypeSet(Config.SORT_RULER_REPLY_COUNT_DESC);
                 }
             }).setNegativeButton(android.R.string.cancel, new VoidDialogInterfaceOnClickListener()).show();
         } else if (itemId == R.id.item_filter) {
@@ -289,22 +293,40 @@ public class HistoryCommentActivity extends AppCompatActivity {
             AtomicBoolean enableShadowBan = new AtomicBoolean(config.getFilterRulerEnableShadowBan());
             AtomicBoolean enableDeleted = new AtomicBoolean(config.getFilterRulerEnableDelete());
             AtomicBoolean enableOther = new AtomicBoolean(config.getFilterRulerEnableOther());
-            new AlertDialog.Builder(context).setTitle("过滤").setIcon(R.drawable.baseline_filter_alt_24).setMultiChoiceItems(new String[]{"正常", "ShadowBan", "已删除", "其他"}, new boolean[]{enableNormal.get(), enableShadowBan.get(), enableDeleted.get(), enableOther.get()}, (dialog, which, isChecked) -> {
-                if (which == 0) {
-                    enableNormal.set(isChecked);
-                } else if (which == 1) {
-                    enableShadowBan.set(isChecked);
-                } else if (which == 2) {
-                    enableDeleted.set(isChecked);
-                } else if (which == 3) {
-                    enableOther.set(isChecked);
-                }
-            }).setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    onFilterRulerSet(enableNormal.get(), enableShadowBan.get(), enableDeleted.get(), enableOther.get());
-                }
-            }).setNegativeButton(android.R.string.cancel, new VoidDialogInterfaceOnClickListener()).show();
+            AtomicBoolean enableType1 = new AtomicBoolean(config.getFilterRulerEnableType1());
+            AtomicBoolean enableType12 = new AtomicBoolean(config.getFilterRulerEnableType12());
+            AtomicBoolean enableType11 = new AtomicBoolean(config.getFilterRulerEnableType11());
+            AtomicBoolean enableType17 = new AtomicBoolean(config.getFilterRulerEnableType17());
+            new AlertDialog.Builder(context)
+                    .setTitle("过滤")
+                    .setIcon(R.drawable.baseline_filter_alt_24)
+                    .setMultiChoiceItems(
+                            new String[]{"正常", "ShadowBan", "已删除", "其他", "类型：1(视频)", "类型：12(专栏)","类型：11(动态)","类型：17(动态)"},
+                            new boolean[]{enableNormal.get(), enableShadowBan.get(), enableDeleted.get(), enableOther.get(),enableType1.get(),enableType12.get(),enableType11.get(),enableType17.get()},
+                            (dialog, which, isChecked) -> {
+                                if (which == 0) {
+                                    enableNormal.set(isChecked);
+                                } else if (which == 1) {
+                                    enableShadowBan.set(isChecked);
+                                } else if (which == 2) {
+                                    enableDeleted.set(isChecked);
+                                } else if (which == 3) {
+                                    enableOther.set(isChecked);
+                                } else if (which == 4){
+                                    enableType1.set(isChecked);
+                                } else if (which == 5){
+                                    enableType12.set(isChecked);
+                                } else if (which == 6){
+                                    enableType11.set(isChecked);
+                                } else if (which == 7){
+                                    enableType17.set(isChecked);
+                                }
+                            }).setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            onFilterRulerSet(enableNormal.get(), enableShadowBan.get(), enableDeleted.get(), enableOther.get(),enableType1.get(), enableType12.get(), enableType11.get(), enableType17.get());
+                        }
+                    }).setNegativeButton(android.R.string.cancel, new VoidDialogInterfaceOnClickListener()).show();
         } else if (itemId == R.id.item_export) {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -318,7 +340,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
             intent.setType("*/*");
             intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"text/comma-separated-values", "application/zip"});
             startActivityForResult(intent, REQUEST_CODE_IMPORT);
-        } else if (itemId == R.id.花里胡哨){
+        } else if (itemId == R.id.花里胡哨) {
             boolean enable = !item.isChecked();
             config.set花里胡哨Enable(enable);
             item.setChecked(enable);
@@ -332,16 +354,34 @@ public class HistoryCommentActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                List<HistoryComment> historyCommentList = statisticsDBOpenHelper.queryAllHistoryComments(
-                        config.getSortRuler() == Config.SORT_RULER_DATE_ASC ?
-                                StatisticsDBOpenHelper.ORDER_BY_ASC
-                                : StatisticsDBOpenHelper.ORDER_BY_DESC);
-               // historyCommentList = statisticsDBOpenHelper.getDemoHistoryComments();
+                String sortRuler = null;
+                switch (config.getSortRuler()) {
+                    case Config.SORT_RULER_DATE_ASC:
+                        sortRuler = StatisticsDBOpenHelper.ORDER_BY_DATE_ASC;
+                        break;
+                    case Config.SORT_RULER_DATE_DESC:
+                        sortRuler = StatisticsDBOpenHelper.ORDER_BY_DATE_DESC;
+                        break;
+                    case Config.SORT_RULER_LIKE_DESC:
+                        sortRuler = StatisticsDBOpenHelper.ORDER_BY_LIKE_DESC;
+                        break;
+                    case Config.SORT_RULER_REPLY_COUNT_DESC:
+                        sortRuler = StatisticsDBOpenHelper.ORDER_BY_REPLY_COUNT_DESC;
+                        break;
+                    default:
+                        throw new RuntimeException("sp config error: Unknown sort rule: " + config.getSortRuler());
+                }
+                List<HistoryComment> historyCommentList = statisticsDBOpenHelper.queryAllHistoryComments(sortRuler);
+                // historyCommentList = statisticsDBOpenHelper.getDemoHistoryComments();
                 List<HistoryComment> sortedCommentList = new ArrayList<>(historyCommentList.size());
                 boolean enableNormal = config.getFilterRulerEnableNormal();
                 boolean enableShadowBan = config.getFilterRulerEnableShadowBan();
                 boolean enableDelete = config.getFilterRulerEnableDelete();
                 boolean enableOther = config.getFilterRulerEnableOther();
+                boolean enableType1 = config.getFilterRulerEnableType1();
+                boolean enableType12 = config.getFilterRulerEnableType12();
+                boolean enableType11 = config.getFilterRulerEnableType11();
+                boolean enableType17 = config.getFilterRulerEnableType17();
                 if (!TextUtils.isEmpty(searchText) && searchText.startsWith("[date]:")) {
                     Pattern pattern = Pattern.compile("\\[date]:(\\d{4}\\.\\d{2}\\.\\d{2})-(\\d{4}\\.\\d{2}\\.\\d{2})");
                     // Match the pattern against the text
@@ -375,6 +415,24 @@ public class HistoryCommentActivity extends AppCompatActivity {
                     if (continueToSearching && !(historyComment.comment.contains(searchText) || historyComment.commentArea.sourceId.contains(searchText))) {
                         continue;
                     }
+                    int type = historyComment.commentArea.type;
+                    if (type == CommentArea.AREA_TYPE_VIDEO) {
+                        if (!enableType1){
+                            continue;
+                        }
+                    } else if (type == CommentArea.AREA_TYPE_ARTICLE) {
+                        if (!enableType12){
+                            continue;
+                        }
+                    } else if (type == CommentArea.AREA_TYPE_DYNAMIC11) {
+                        if (!enableType11){
+                            continue;
+                        }
+                    } else if (type == CommentArea.AREA_TYPE_DYNAMIC17){
+                        if (!enableType17){
+                            continue;
+                        }
+                    }
                     if (historyComment.lastState.equals(HistoryComment.STATE_NORMAL)) {
                         if (enableNormal) {
                             sortedCommentList.add(historyComment);
@@ -405,11 +463,16 @@ public class HistoryCommentActivity extends AppCompatActivity {
     }
 
 
-    protected void onFilterRulerSet(boolean enableNormal, boolean enableShadowBan, boolean enableDeleted, boolean enableOther) {
+    protected void onFilterRulerSet(boolean enableNormal, boolean enableShadowBan, boolean enableDeleted, boolean enableOther,
+                                    boolean e1, boolean e12, boolean e11, boolean e17) {
         config.setFilterRulerEnableNormal(enableNormal);
         config.setFilterRulerEnableShadowBan(enableShadowBan);
         config.setFilterRulerEnableDeleted(enableDeleted);
         config.setFilterRulerEnableOther(enableOther);
+        config.setFilterRulerEnableType1(e1);
+        config.setFilterRulerEnableType12(e12);
+        config.setFilterRulerEnableType11(e11);
+        config.setFilterRulerEnableType17(e17);
         reloadData(null);
     }
 
@@ -538,7 +601,11 @@ public class HistoryCommentActivity extends AppCompatActivity {
         List<HistoryComment> historyCommentList = new ArrayList<>();
         String[] data;
         while ((data = csvReader.readNext()) != null) {
-            HistoryComment historyComment = new HistoryComment(Long.parseLong(data[0]), data[1], Integer.parseInt(data[2]), Long.parseLong(data[3]), Long.parseLong(data[4]), Long.parseLong(data[5]), data[6], new Date(Long.parseLong(data[7])), Integer.parseInt(data[8]), Integer.parseInt(data[9]), data[10], new Date(Long.parseLong(data[11])));
+            HistoryComment historyComment = new HistoryComment(Long.parseLong(data[0]),
+                    data[1], Integer.parseInt(data[2]), Long.parseLong(data[3]),
+                    Long.parseLong(data[4]), Long.parseLong(data[5]),
+                    data[6], new Date(Long.parseLong(data[7])), Integer.parseInt(data[8]),
+                    Integer.parseInt(data[9]), data[10], new Date(Long.parseLong(data[11])));
             historyCommentList.add(historyComment);
         }
         return historyCommentList;

@@ -36,7 +36,15 @@ public class BiliComment {
 
     public static class Content {
         public String message;
+        public List<Picture> pictures;
         public int max_line;
+    }
+
+    public static class Picture {
+        public String img_src;
+        public Double img_width;
+        public Double img_height;
+        public Double img_size;
     }
 
 

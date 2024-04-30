@@ -15,6 +15,7 @@
         android:padding="10dp"
         app:cardCornerRadius="2dp"
         app:cardElevation="1dp"
+        android:focusable="true"
         android:foreground="?selectableItemBackground">
 
         <LinearLayout
@@ -43,7 +44,7 @@
                         android:layout_width="0dp"
                         android:layout_height="15dp"
                         android:layout_gravity="center"
-                        android:layout_weight="1"
+                        android:layout_weight="3"
                         android:src="@drawable/like"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -54,7 +55,7 @@
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_marginStart="1dp"
-                        android:layout_weight="1"
+                        android:layout_weight="5"
                         android:gravity="center_vertical"
                         android:text="0"
                         android:textSize="8dp"
@@ -67,7 +68,7 @@
                         android:layout_height="15dp"
                         android:layout_gravity="center"
 
-                        android:layout_weight="1"
+                        android:layout_weight="3"
                         android:src="@drawable/reply_count"/>
 
                     <TextView
@@ -75,7 +76,7 @@
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_marginStart="1dp"
-                        android:layout_weight="1"
+                        android:layout_weight="5"
                         android:gravity="center_vertical"
                         android:text="0"
                         android:textSize="8dp" />

@@ -3,13 +3,11 @@ package icu.freedomIntrovert.biliSendCommAntifraud.async.commentcheck;
 import icu.freedomIntrovert.biliSendCommAntifraud.Config;
 import icu.freedomIntrovert.biliSendCommAntifraud.async.BiliBiliApiRequestHandler;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
-import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
-import icu.freedomIntrovert.biliSendCommAntifraud.okretro.OkHttpUtil;
 
 public class BannedOnlyInThisAreaCheckTask extends CommentOperateTask<BannedOnlyInThisAreaCheckTask.EventHandler>{
 
@@ -23,10 +21,9 @@ public class BannedOnlyInThisAreaCheckTask extends CommentOperateTask<BannedOnly
     @Override
     protected void onStart(EventHandler eventHandler) throws Throwable {
         //在自己评论区发送内容一样的评论
-        GeneralResponse<CommentAddResult> response = commentManipulator.sendComment(comment.comment, 0, 0, yourCommentArea,false).execute().body();
         eventHandler.sendEventMessage(EventHandler.WHAT_ON_COMMENT_SENT_TO_YOUR_AREA,yourCommentArea.sourceId);
-        OkHttpUtil.respNotNull(response);
-        long testCommentRpid = response.data.rpid;
+        CommentAddResult commentAddResult = commentManipulator.sendComment(comment.comment, 0, 0, yourCommentArea, false);
+        long testCommentRpid = commentAddResult.rpid;
         sleep(config.getWaitTime());
         eventHandler.sendEmptyEventMessage(EventHandler.WHAT_ON_START_CHECK);
         //在自己评论区寻找此条测试评论
