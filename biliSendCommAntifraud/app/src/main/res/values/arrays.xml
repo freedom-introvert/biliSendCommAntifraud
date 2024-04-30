@@ -4,4 +4,10 @@
         <item>tv.danmaku.bili</item>
         <item>com.bilibili.app.in</item>
     </string-array>
+    <string-array name="comment_area_type">
+        <item>1(视频)</item>
+        <item>12(专栏)</item>
+        <item>11(动态)</item>
+        <item>17(动态)</item>
+    </string-array>
 </resources>

@@ -28,7 +28,7 @@ public class ResendCommentTask extends BackstageTask<ResendCommentTask.EventHand
 
     @Override
     protected void onStart(EventHandler eventHandler) throws Throwable {
-        GeneralResponse<CommentAddResult> body = commentManipulator.sendComment(newCommentText, historyComment.parent, historyComment.root, historyComment.commentArea,false).execute().body();
+        GeneralResponse<CommentAddResult> body = commentManipulator.getSendCommentCall(newCommentText, historyComment.parent, historyComment.root, historyComment.commentArea,false).execute().body();
         OkHttpUtil.respNotNull(body);
         long waitTime = config.getWaitTime();
         eventHandler.sendEventMessage(EventHandler.WHAT_ON_SEND_SUCCESS_AND_SLEEP,waitTime);
@@ -36,7 +36,11 @@ public class ResendCommentTask extends BackstageTask<ResendCommentTask.EventHand
             new ProgressTimer(waitTime, ProgressBarDialog.DEFAULT_MAX_PROGRESS, (progress, sleepSeg) -> eventHandler.sendEventMessage(EventHandler.WHAT_ON_NEW_PROGRESS,progress, sleepSeg,waitTime)).start();
             eventHandler.sendEventMessage(EventHandler.WHAT_ON_RESENT_COMMENT,body.data);
         } else {
-            eventHandler.sendError(new BiliBiliApiException(body,"发送评论失败！"));
+            if (body.code == 12016){
+                eventHandler.sendEventMessage(EventHandler.WHAT_ON_CONTAIN_SENSITIVE,body.message,newCommentText);
+            } else {
+                eventHandler.sendError(new BiliBiliApiException(body, "发送评论失败！"));
+            }
         }
     }
 
@@ -44,6 +48,7 @@ public class ResendCommentTask extends BackstageTask<ResendCommentTask.EventHand
         public static final int WHAT_ON_SEND_SUCCESS_AND_SLEEP = 1;
         public static final int WHAT_ON_NEW_PROGRESS = 2;
         public static final int WHAT_ON_RESENT_COMMENT = 10;
+        public static final int WHAT_ON_CONTAIN_SENSITIVE = 20;
 
 
         public EventHandler(ErrorHandle errorHandle) {

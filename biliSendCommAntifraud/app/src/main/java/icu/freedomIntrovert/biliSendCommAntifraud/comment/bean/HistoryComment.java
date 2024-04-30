@@ -108,6 +108,8 @@ public class HistoryComment extends Comment {
                 return "评论疑似审核中";
             case STATE_SUSPECTED_NO_PROBLEM:
                 return "评论疑似正常（申诉提示无可申诉评论）";
+            case STATE_SENSITIVE:
+                return "评论包含敏感词";
             case STATE_UNKNOWN:
                 return "未知（发送评论直接去申诉专属）";
             default:

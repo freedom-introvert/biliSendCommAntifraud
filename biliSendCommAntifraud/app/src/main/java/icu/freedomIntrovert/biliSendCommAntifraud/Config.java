@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 public class Config {
     public static final int SORT_RULER_DATE_DESC = 0;
     public static final int SORT_RULER_DATE_ASC = 1;
+    public static final int SORT_RULER_LIKE_DESC = 2;
+    public static final int SORT_RULER_REPLY_COUNT_DESC = 4;
     Context context;
     public SharedPreferences sp_config;
 
@@ -70,10 +72,6 @@ public class Config {
         sp_config.edit().putBoolean("autoRecorde",autoRecorde).apply();
     }
 
-    public void setRecordeHistoryIsEnable(boolean enable){
-        sp_config.edit().putBoolean("recordeHistory", enable).apply();
-    }
-
     public boolean getRecordeHistoryIsEnable(){
         return sp_config.getBoolean("recordeHistory",true);
     }
@@ -118,8 +116,40 @@ public class Config {
         return sp_config.getBoolean("filter_ruler_enable_other",true);
     }
 
+    public boolean getFilterRulerEnableType1(){
+        return sp_config.getBoolean("filter_ruler_enable_type1",true);
+    }
+
+    public void setFilterRulerEnableType1(boolean enable){
+        sp_config.edit().putBoolean("filter_ruler_enable_type1",enable).apply();
+    }
+
+    public boolean getFilterRulerEnableType12(){
+        return sp_config.getBoolean("filter_ruler_enable_type12",true);
+    }
+
+    public void setFilterRulerEnableType12(boolean enable){
+        sp_config.edit().putBoolean("filter_ruler_enable_type12",enable).apply();
+    }
+
+    public void setFilterRulerEnableType11(boolean enable){
+        sp_config.edit().putBoolean("filter_ruler_enable_type11",enable).apply();
+    }
+
+    public boolean getFilterRulerEnableType11(){
+        return sp_config.getBoolean("filter_ruler_enable_type11",true);
+    }
+
+    public void setFilterRulerEnableType17(boolean enable){
+        sp_config.edit().putBoolean("filter_ruler_enable_type17",enable).apply();
+    }
+
+    public boolean getFilterRulerEnableType17(){
+        return sp_config.getBoolean("filter_ruler_enable_type17",true);
+    }
+
     public boolean get花里胡哨Enable(){
-        return sp_config.getBoolean("花里胡哨",false);
+        return sp_config.getBoolean("花里胡哨",true);
     }
 
     public void set花里胡哨Enable(boolean enable){

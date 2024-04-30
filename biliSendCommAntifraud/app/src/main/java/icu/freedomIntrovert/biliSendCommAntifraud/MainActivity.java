@@ -10,6 +10,7 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,6 +18,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -68,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout ll_test_comment_pool;
     LinearLayout ll_you_comment_area;
     LinearLayout ll_export_logs;
+    LinearLayout ll_targeting;
     CommentUtil commentUtil;
     Handler handler;
     DialogCommCheckWorker dialogCommSendWorker;
@@ -82,10 +85,10 @@ public class MainActivity extends AppCompatActivity {
         context = this;
         config = new Config(context);
         commentUtil = new CommentUtil(context);
-        commentManipulator = new CommentManipulator(config.getCookie(),config.getDeputyCookie());
+        commentManipulator = new CommentManipulator(config.getCookie(), config.getDeputyCookie());
         handler = new Handler();
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
-        dialogCommSendWorker = new DialogCommCheckWorker(context,config,statisticsDBOpenHelper, commentManipulator, commentUtil);
+        dialogCommSendWorker = new DialogCommCheckWorker(context, config, statisticsDBOpenHelper, commentManipulator, commentUtil);
 
         initView();
         initRecordeHistoryCommentSW();
@@ -94,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
         initHomePageCommentCheck();
         initToNewActivityItem();
         initExportLogs();
+        initTargetingComment();
         ll_you_comment_area.setOnClickListener(v -> {
             commentUtil.setYourCommentArea(context, commentManipulator);
         });
@@ -104,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
         /*findViewById(R.id.btn_test).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -113,10 +116,49 @@ public class MainActivity extends AppCompatActivity {
         });*/
     }
 
+    private void initTargetingComment() {
+        ll_targeting.setOnClickListener(v -> {
+            View dialogView = View.inflate(context, R.layout.dialog_targeting_comment, null);
+            Spinner spinner = dialogView.findViewById(R.id.spinner_area_type);
+            EditText oid = dialogView.findViewById(R.id.edit_oid);
+            EditText rpid = dialogView.findViewById(R.id.edit_rpid);
+            EditText root = dialogView.findViewById(R.id.edit_root);
+            EditText sourceId = dialogView.findViewById(R.id.edit_source_id);
+            new AlertDialog.Builder(context)
+                    .setTitle("定位评论（XPosed）")
+                    .setView(dialogView)
+                    .setPositiveButton(R.string.ok, (dialog, which) -> {
+                        int type = CommentArea.AREA_TYPE_VIDEO;
+                        switch (spinner.getSelectedItemPosition()) {
+                            case 1:
+                                type = CommentArea.AREA_TYPE_ARTICLE;
+                                break;
+                            case 2:
+                                type = CommentArea.AREA_TYPE_DYNAMIC11;
+                                break;
+                            case 3:
+                                type = CommentArea.AREA_TYPE_DYNAMIC17;
+                                break;
+                            default:
+                                break;
+                        }
+                        CommentLocator.lunch(context, type,
+                                Long.parseLong(oid.getText().toString()),
+                                Long.parseLong(rpid.getText().toString()),
+                                TextUtils.isEmpty(root.getText().toString()) ?
+                                        0 : Long.parseLong(root.getText().toString()),
+                                TextUtils.isEmpty(sourceId.getText().toString()) ?
+                                      oid.getText().toString() : sourceId.getText().toString());
+                    })
+                    .setNegativeButton(R.string.cancel, new VoidDialogInterfaceOnClickListener())
+                    .show();
+        });
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (data != null && data.getData() != null){
+        if (data != null && data.getData() != null) {
             switch (requestCode) {
                 case RESULT_CODE_SAVE_LOG_ZIP:
                     ProgressBarDialog dialog = new ProgressBarDialog.Builder(context)
@@ -125,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
                             .show();
                     new Thread(() -> {
                         try {
-                            File sourceFolder = new File(getFilesDir(),"logs");
+                            File sourceFolder = new File(getFilesDir(), "logs");
                             OutputStream outputStream = getContentResolver().openOutputStream(data.getData());
                             ZipOutputStream zos = new ZipOutputStream(outputStream);
                             zipDirectory(sourceFolder, sourceFolder, zos);
@@ -138,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
                         } catch (IOException e) {
                             runOnUiThread(() -> {
                                 dialog.dismiss();
-                                Toast.makeText(context, "导出失败！\n原因:"+e.getMessage(), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(context, "导出失败！\n原因:" + e.getMessage(), Toast.LENGTH_SHORT).show();
                             });
                         }
                     }).start();
@@ -209,11 +251,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     private void initExportLogs() {
         ll_export_logs.setOnClickListener(v -> {
-            File sourceFolder = new File(getFilesDir(),"logs");
-            if (!sourceFolder.exists()){
+            File sourceFolder = new File(getFilesDir(), "logs");
+            if (!sourceFolder.exists()) {
                 Toast.makeText(context, "无日志可导出！", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -221,14 +262,14 @@ public class MainActivity extends AppCompatActivity {
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("application/zip");
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.CHINA);
-            intent.putExtra(Intent.EXTRA_TITLE,"logs_"+sdf.format(new Date())+".zip");
-            startActivityForResult(intent,RESULT_CODE_SAVE_LOG_ZIP);
+            intent.putExtra(Intent.EXTRA_TITLE, "logs_" + sdf.format(new Date()) + ".zip");
+            startActivityForResult(intent, RESULT_CODE_SAVE_LOG_ZIP);
         });
         ll_export_logs.setOnLongClickListener(v -> {
-            File logsFolder = new File(getFilesDir(),"logs");
+            File logsFolder = new File(getFilesDir(), "logs");
             AlertDialog dialog = new AlertDialog.Builder(context)
-                    .setMessage(String.format("确认删除全部日志吗？(占用空间%.2fMB)\n日志保留100条，100条之前的会自动删除，您可以不用手动清理",(double) calculateFolderSize(logsFolder) / (1024 * 1024),Locale.getDefault()))
-                    .setNegativeButton("取消",new VoidDialogInterfaceOnClickListener())
+                    .setMessage(String.format(Locale.getDefault(), "确认删除全部日志吗？(占用空间%.2fMB)\n日志保留100条，100条之前的会自动删除，您可以不用手动清理", (double) calculateFolderSize(logsFolder) / (1024 * 1024)))
+                    .setNegativeButton("取消", new VoidDialogInterfaceOnClickListener())
                     .setPositiveButton("删除", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -258,6 +299,7 @@ public class MainActivity extends AppCompatActivity {
         ll_wait_time = findViewById(R.id.ll_wait_time);
         ll_export_logs = findViewById(R.id.ll_export_logs);
         cl_recorde_history_comment_sw = findViewById(R.id.cl_recorde_history_comment_sw);
+        ll_targeting = findViewById(R.id.ll_targeting);
         ll_github_project = findViewById(R.id.ll_github_project);
 
         sw_recorde_history = findViewById(R.id.sw_recorde_history);
@@ -397,7 +439,7 @@ public class MainActivity extends AppCompatActivity {
                     if (commentArea != null) {
                         dialog.setMessage("发送评论中……");
                         String comment = edt_comment.getText().toString();
-                        commentManipulator.sendComment(comment, 0, 0, commentArea,false).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
+                        commentManipulator.getSendCommentCall(comment, 0, 0, commentArea, false).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
                             @Override
                             public void onError(Throwable th) {
                                 dialog.dismiss();
@@ -414,7 +456,7 @@ public class MainActivity extends AppCompatActivity {
                                             @Override
                                             public void onNewProgress(int progress, long sleepSeg) {
                                                 runOnUiThread(() -> {
-                                                    dialog.setMessage("等待("+progress*sleepSeg+"/"+waitTime+")ms后检查评论");
+                                                    dialog.setMessage("等待(" + progress * sleepSeg + "/" + waitTime + ")ms后检查评论");
                                                     dialog.setProgress(progress);
                                                 });
                                             }
@@ -422,7 +464,7 @@ public class MainActivity extends AppCompatActivity {
                                         runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {
-                                                dialogCommSendWorker.checkComment(new Comment(commentArea, response.data.rpid, 0, 0, comment, null,new Date(response.data.reply.ctime*1000)), dialog);
+                                                dialogCommSendWorker.checkComment(new Comment(commentArea, response.data.rpid, 0, 0, comment, null, new Date(response.data.reply.ctime * 1000)), dialog);
                                             }
                                         });
                                     }).start();
@@ -456,7 +498,7 @@ public class MainActivity extends AppCompatActivity {
                         if (commentArea != null) {
                             progressDialog.setMessage("发送评论中……");
                             AppealDialogPresenter appealDialogPresenter = new AppealDialogPresenter(context, handler, commentManipulator);
-                            commentManipulator.sendComment(comment, 0, 0, commentArea,false).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
+                            commentManipulator.getSendCommentCall(comment, 0, 0, commentArea, false).enqueue(new BiliApiCallback<GeneralResponse<CommentAddResult>>() {
                                 @Override
                                 public void onError(Throwable th) {
                                     progressDialog.dismiss();
@@ -483,7 +525,7 @@ public class MainActivity extends AppCompatActivity {
                                                     DialogUtil.dialogMessage(context, "其他情况", toastText);
                                                     return;
                                                 }
-                                                if (config.getRecordeHistoryIsEnable()){
+                                                if (config.getRecordeHistoryIsEnable()) {
                                                     statisticsDBOpenHelper.insertHistoryComment(historyComment);
                                                 }
                                             }
@@ -542,8 +584,8 @@ public class MainActivity extends AppCompatActivity {
                         }).show();
             }
         } else if (response.code == CommentAddResult.CODE_CONTAIN_SENSITIVE) {//包含敏感词时
-            if (config.getRecordeHistoryIsEnable()){
-                HistoryComment historyComment = new HistoryComment(new Comment(commentArea, -System.currentTimeMillis(),0,0, comment, null, new Date()));
+            if (config.getRecordeHistoryIsEnable()) {
+                HistoryComment historyComment = new HistoryComment(new Comment(commentArea, -System.currentTimeMillis(), 0, 0, comment, null, new Date()));
                 historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_SENSITIVE);
                 statisticsDBOpenHelper.insertHistoryComment(historyComment);
             }
@@ -581,7 +623,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.main_account_cookie){
+        if (item.getItemId() == R.id.main_account_cookie) {
             View edtView = View.inflate(MainActivity.this, R.layout.edit_text, null);
             EditText editText = edtView.findViewById(R.id.edit_text);
             editText.setText(config.getCookie());
@@ -592,7 +634,7 @@ public class MainActivity extends AppCompatActivity {
             }).setNegativeButton("取消", new VoidDialogInterfaceOnClickListener()).setNeutralButton("网页登录获取", (dialog, which) -> {
                 startActivity(new Intent(context, WebViewLoginActivity.class));
             }).show();
-        } else if (item.getItemId() == R.id.deputy_account_cookie){
+        } else if (item.getItemId() == R.id.deputy_account_cookie) {
             View edtView = View.inflate(MainActivity.this, R.layout.edit_text, null);
             EditText editText = edtView.findViewById(R.id.edit_text);
             editText.setText(config.getDeputyCookie());
@@ -605,7 +647,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     }
-
 
 
     @Override

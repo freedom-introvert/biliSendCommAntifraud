@@ -318,7 +318,12 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
                             .setTitle("评论区检查结果")
                             .setMessage("评论区没有戒严，是否继续检查该评论是否仅在此评论区被ban？")
                             .setPositiveButton("检查", (dialog1, which) -> {
-                                worker.checkIfBannedOnlyInThisArea(comment);
+                                CommentArea yourCommentArea = worker.commentUtil.getYourCommentArea();
+                                if (yourCommentArea == null) {
+                                    worker.commentUtil.setYourCommentArea(worker.context, worker.commentManipulator);
+                                } else {
+                                    worker.checkIfBannedOnlyInThisArea(comment,yourCommentArea);
+                                }
                             })
                             .setNegativeButton("不了", new VoidDialogInterfaceOnClickListener())
                             .show();
@@ -332,17 +337,12 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
     }
 
 
-    private void checkIfBannedOnlyInThisArea(Comment comment) {
+    private void checkIfBannedOnlyInThisArea(Comment comment,CommentArea yourCommentArea) {
         ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, "检测评论是否仅在该评论区被ban", "等待设置好的时间后发送评论到你的评论区进行测试……");
         progressDialog.setCancelable(false);
         progressDialog.show();
-        CommentArea yourCommentArea = commentUtil.getYourCommentArea();
-        if (yourCommentArea != null) {
-            BannedOnlyInThisAreaCheckHandler handler = new BannedOnlyInThisAreaCheckHandler(this, progressDialog);
-            new BannedOnlyInThisAreaCheckTask(handler, commentManipulator, config, statDB, comment, yourCommentArea).execute();
-        } else {
-            commentUtil.setYourCommentArea(context, commentManipulator);
-        }
+        BannedOnlyInThisAreaCheckHandler handler = new BannedOnlyInThisAreaCheckHandler(this, progressDialog);
+        new BannedOnlyInThisAreaCheckTask(handler, commentManipulator, config, statDB, comment, yourCommentArea).execute();
     }
 
     private static class BannedOnlyInThisAreaCheckHandler extends BannedOnlyInThisAreaCheckTask.EventHandler {
@@ -410,18 +410,18 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
                             }
                             break;
                         case 1:
-                            if (!commentManipulator.deputyCookieAreSet()){
-                                DialogUtil.dialogMessage(context,"错误","你没有设置小号cookie！请回主页设置（一起把被转发的动态设置了），关闭弹窗后可从历史评论记录中选择评论扫描");
+                            if (!commentManipulator.deputyCookieAreSet()) {
+                                DialogUtil.dialogMessage(context, "错误", "你没有设置小号cookie！请回主页设置（一起把被转发的动态设置了），关闭弹窗后可从历史评论记录中选择评论扫描");
                                 return;
                             }
                             String dynamicId = commentUtil.getForwardDynamicId();
-                            if (dynamicId != null){
+                            if (dynamicId != null) {
                                 SensitiveScannerHandler scannerHandler = new SensitiveScannerHandler(this, mainComment);
                                 new SensitiveScannerTask(scannerHandler, mainComment, dynamicId,
                                         commentManipulator, config, statDB).execute();
                             } else {
                                 Toast.makeText(context, "你没有设置被转发动态！若关闭弹窗可从历史评论记录中选择评论扫描", Toast.LENGTH_LONG).show();
-                                commentUtil.setDynamicIdToBeForward(context,commentManipulator);
+                                commentUtil.setDynamicIdToBeForward(context, commentManipulator);
                             }
                             break;
                         case 2:

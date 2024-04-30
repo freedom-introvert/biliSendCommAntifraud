@@ -20,6 +20,9 @@ public class TaskManger {
         }
         return mainThreadHandler;
     }
+
+
+
     public static void postOnUiThread(Runnable runnable) {
         getUiThreadHandler().post(runnable);
     }

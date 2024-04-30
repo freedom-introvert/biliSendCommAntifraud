@@ -600,10 +600,44 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
-                        android:text="关于"
+                        android:text="其他"
                         android:textSize="12sp" />
                 </LinearLayout>
 
+                <LinearLayout
+                    android:id="@+id/ll_targeting"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground">
+
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/baseline_my_location_24" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center_vertical"
+                        android:maxLines="2"
+                        android:text="定位评论"
+                        android:textColor="@color/dark_font"
+                        android:textSize="14sp"
+                        app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
+
+                </LinearLayout>
                 <LinearLayout
                     android:id="@+id/ll_github_project"
                     android:layout_width="match_parent"

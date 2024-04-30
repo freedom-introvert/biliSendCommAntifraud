@@ -7,11 +7,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Paint;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Handler;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -30,6 +30,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import icu.freedomIntrovert.async.EventMessage;
 import icu.freedomIntrovert.biliSendCommAntifraud.async.BiliBiliApiRequestHandler;
@@ -40,7 +41,6 @@ import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.SensitiveScanResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.AppealDialogPresenter;
@@ -187,8 +187,12 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         }
         holder.txv_date.setText(historyComment.getFormatDateFor_yMd());
         holder.txv_info.setText(historyComment.commentArea.sourceId);
-        holder.txv_like.setText(String.valueOf(historyComment.like));
-        holder.txv_reply_count.setText(String.valueOf(historyComment.replyCount));
+        holder.txv_like.setText(formatCount(historyComment.like));
+        if (historyComment.like > 1000 || historyComment.replyCount > 1000){
+            holder.txv_like.setTextSize(TypedValue.COMPLEX_UNIT_DIP,7);
+            holder.txv_reply_count.setTextSize(TypedValue.COMPLEX_UNIT_DIP,7);
+        }
+        holder.txv_reply_count.setText(formatCount(historyComment.replyCount));
         holder.itemView.setOnClickListener(v -> {
             showCommentInfoDialog(historyComment,holder);
         });
@@ -434,6 +438,33 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                             c.rpid, c.parent, c.root, c.content.message,
                             null, new Date(c.ctime * 1000)), progressBarDialog);
                     break;
+                case WHAT_ON_CONTAIN_SENSITIVE:
+                    progressBarDialog.dismiss();
+                    String title = message.getObject(0,String.class);
+                    String newComment = message.getObject(1,String.class);
+                    new AlertDialog.Builder(adapter.context)
+                            .setTitle(title)
+                            .setMessage("已收录该评论至历史评论记录："+newComment)
+                            .setOnDismissListener(dialog -> {
+                                HistoryComment sensitiveComment = new HistoryComment(
+                                        historyComment.commentArea,-System.currentTimeMillis(),
+                                        historyComment.parent,
+                                        historyComment.root,
+                                        newComment,
+                                        new Date(),
+                                        0,0,
+                                        HistoryComment.STATE_SENSITIVE,
+                                        new Date(),
+                                        HistoryComment.CHECKED_NO_CHECK,
+                                        HistoryComment.STATE_SENSITIVE,
+                                        null,null
+                                );
+                                adapter.statisticsDBOpenHelper.insertHistoryComment(sensitiveComment);
+                                adapter.historyCommentList.add(0,sensitiveComment);
+                                adapter.notifyItemChanged(0);
+                            })
+                            .setPositiveButton("确定",null).show();
+                    break;
             }
         }
     }
@@ -524,58 +555,9 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         }
         if (!historyComment.lastState.equals(HistoryComment.STATE_SENSITIVE)) {
             popupMenu.getMenu().add("定位评论").setOnMenuItemClickListener(item -> {
-                Intent intent = new Intent();
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
-                int areaType = historyComment.commentArea.type;
-                Bundle extras = new Bundle();
-                if (areaType == CommentArea.AREA_TYPE_VIDEO) {
-                    intent.setClassName("tv.danmaku.bili", "tv.danmaku.bili.MainActivityV2");
-                    intent.putExtra("TransferActivity", "com.bilibili.video.videodetail.VideoDetailsActivity");
-                    extras.putString("id", String.valueOf(historyComment.commentArea.oid));
-
-                    //根评论与评论回复的不同处理方法
-                    if (historyComment.root != 0) {
-                        extras.putString("comment_root_id", String.valueOf(historyComment.root));
-                        extras.putString("comment_secondary_id", String.valueOf(historyComment.rpid));
-                    } else {
-                        extras.putString("comment_root_id", String.valueOf(historyComment.rpid));
-                    }
-                    extras.putString("comment_from_spmid", "im.notify-reply.0.0");
-                    extras.putString("tab_index", "1");
-                    intent.putExtra("transferUri", "bilibili://video/" + historyComment.commentArea.oid);
-                } else if (areaType == CommentArea.AREA_TYPE_DYNAMIC11 || areaType == CommentArea.AREA_TYPE_DYNAMIC17) {
-                    intent.setClassName("tv.danmaku.bili", "tv.danmaku.bili.MainActivityV2");
-                    intent.putExtra("TransferActivity", "com.bilibili.app.comm.comment2.comments.view.CommentDetailActivity");
-                    if (historyComment.root != 0) {
-                        extras.putString("commentId", String.valueOf(historyComment.root));
-                    } else {
-                        extras.putString("commentId", String.valueOf(historyComment.rpid));
-                    }
-                    extras.putString("anchor", String.valueOf(historyComment.rpid));
-                    extras.putString("oid", String.valueOf(historyComment.commentArea.oid));
-                    extras.putString("type", String.valueOf(areaType));
-                    extras.putString("enterUri", "bilibili://following/detail/" + historyComment.commentArea.sourceId);
-                    extras.putString("comment_from_spmid", "im.notify-reply.0.0");
-                    extras.putString("enterName", "查看动态详情");
-                    extras.putString("showEnter", "1");
-                } else if (areaType == CommentArea.AREA_TYPE_ARTICLE) {
-                    intent.setClassName("tv.danmaku.bili", "tv.danmaku.bili.MainActivityV2");
-                    intent.putExtra("TransferActivity", "com.bilibili.app.comm.comment2.comments.view.CommentDetailActivity");
-                    if (historyComment.root != 0) {
-                        extras.putString("commentId", String.valueOf(historyComment.root));
-                    } else {
-                        extras.putString("commentId", String.valueOf(historyComment.rpid));
-                    }
-                    extras.putString("anchor", String.valueOf(historyComment.rpid));
-                    extras.putString("oid", String.valueOf(historyComment.commentArea.oid));
-                    extras.putString("type", String.valueOf(areaType));
-                    extras.putString("enterUri", "bilibili://article/" + historyComment.commentArea.oid);
-                    extras.putString("comment_from_spmid", "im.notify-reply.0.0");
-                    extras.putString("enterName", "查看文章详情");
-                    extras.putString("showEnter", "1");
-                }
-                intent.putExtra("TransferExtras", extras);
-                context.startActivity(intent);
+                CommentLocator.lunch(context,historyComment.commentArea.type,
+                        historyComment.commentArea.oid,historyComment.rpid,
+                        historyComment.root,historyComment.commentArea.sourceId);
                 return false;
             });
         }
@@ -606,6 +588,16 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
     public void set花里胡哨Enable(boolean enable){
         this.花里胡哨 = enable;
         notifyDataSetChanged();
+    }
+
+    public static String formatCount(int count){
+        if (count < 10000){
+            return String.valueOf(count);
+       // } else if (count < 10000){
+        //    return String.format(Locale.getDefault(),"%.1f千", count / 1000.0);
+        } else {
+            return String.format(Locale.getDefault(),"%.1f万", count / 10000.0);
+        }
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
