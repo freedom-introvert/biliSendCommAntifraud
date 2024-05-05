@@ -186,27 +186,8 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
         resultDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> new AlertDialog.Builder(context)
                 .setTitle("选择模式")
                 .setItems(new String[]{"主号cookie检查", "小号cookie检查"}, (dialog, which) -> {
-                    ProgressDialog progressDialog = DialogUtil.newProgressDialog(context,
-                            "检测评论区是否被戒严", "发布测试评论中……");
-                    progressDialog.setCancelable(false);
-                    progressDialog.show();
-                    switch (which) {
-                        case 0:
-                            progressDialog.setMessage("发布测试评论中（使用主号）……");
-                            checkAreaMartialLaw(comment, progressDialog, false);
-                            break;
-                        case 1:
-                            if (commentManipulator.deputyCookieAreSet()) {
-                                progressDialog.setMessage("发布测试评论中（使用小号）……");
-                                checkAreaMartialLaw(comment, progressDialog, true);
-                            } else {
-                                progressDialog.dismiss();
-                                DialogUtil.dialogMessage(context,
-                                        "错误",
-                                        "你没有设置小号的cookie，请先设置小号的cookie！");
-                            }
-                            break;
-                    }
+                    boolean isDeputyAccount = which == 1;
+                    checkAreaMartialLaw(comment, null,isDeputyAccount);
                 }).show());
 
         //更多评论选项
@@ -281,8 +262,23 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
         });
     }
 
-    private void checkAreaMartialLaw(Comment comment, ProgressDialog progressDialog, boolean isDeputyAccount) {
-        AreaCheckHandler handle = new AreaCheckHandler(progressDialog, comment, this);
+    public void checkAreaMartialLaw(Comment comment, DialogInterface.OnDismissListener onDismissListener, boolean isDeputyAccount) {
+        ProgressDialog progressDialog = DialogUtil.newProgressDialog(context,
+                "检测评论区是否被戒严", "发布测试评论中……");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+        if (!isDeputyAccount) {
+            progressDialog.setMessage("发布测试评论中（使用主号）……");
+        } else {
+            if (commentManipulator.deputyCookieAreSet()) {
+                progressDialog.setMessage("发布测试评论中（使用小号）……");
+            } else {
+                progressDialog.dismiss();
+                DialogUtil.dialogMessage(context, "错误",
+                        "你没有设置小号的cookie，请先设置小号的cookie！");
+            }
+        }
+        AreaCheckHandler handle = new AreaCheckHandler(progressDialog,onDismissListener, comment, this);
         new AreaMartialLawCheckTask(handle, commentManipulator, config, statDB,
                 comment, commentUtil, isDeputyAccount).execute();
     }
@@ -293,12 +289,14 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
         ProgressDialog progressDialog;
         Comment comment;
         DialogCommCheckWorker worker;
+        DialogInterface.OnDismissListener onDismissListener;
 
-        public AreaCheckHandler(ProgressDialog progressDialog, Comment comment, DialogCommCheckWorker worker) {
+        public AreaCheckHandler(ProgressDialog progressDialog, DialogInterface.OnDismissListener onDismissListener, Comment comment, DialogCommCheckWorker worker) {
             super(new DialogErrorHandle(progressDialog, worker));
             this.progressDialog = progressDialog;
             this.comment = comment;
             this.worker = worker;
+            this.onDismissListener = onDismissListener;
         }
 
         @Override
@@ -322,37 +320,45 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
                                 if (yourCommentArea == null) {
                                     worker.commentUtil.setYourCommentArea(worker.context, worker.commentManipulator);
                                 } else {
-                                    worker.checkIfBannedOnlyInThisArea(comment,yourCommentArea);
+                                    worker.checkIfBannedOnlyInThisArea(comment,onDismissListener, yourCommentArea);
                                 }
                             })
                             .setNegativeButton("不了", new VoidDialogInterfaceOnClickListener())
+                            .setOnDismissListener(onDismissListener)
                             .show();
                     break;
                 case WHAT_THEN_MARTIAL_LAW:
                     progressDialog.dismiss();
-                    DialogUtil.dialogMessage(worker.context, "检查结果", "评论区被戒严！");
+                    new AlertDialog.Builder(worker.context)
+                            .setTitle("检查结果")
+                            .setMessage("评论区被戒严！")
+                            .setPositiveButton(R.string.ok, new VoidDialogInterfaceOnClickListener())
+                            .setOnDismissListener(onDismissListener)
+                            .show();
                     break;
             }
         }
     }
 
 
-    private void checkIfBannedOnlyInThisArea(Comment comment,CommentArea yourCommentArea) {
+    private void checkIfBannedOnlyInThisArea(Comment comment, DialogInterface.OnDismissListener onDismissListener, CommentArea yourCommentArea) {
         ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, "检测评论是否仅在该评论区被ban", "等待设置好的时间后发送评论到你的评论区进行测试……");
         progressDialog.setCancelable(false);
         progressDialog.show();
-        BannedOnlyInThisAreaCheckHandler handler = new BannedOnlyInThisAreaCheckHandler(this, progressDialog);
+        BannedOnlyInThisAreaCheckHandler handler = new BannedOnlyInThisAreaCheckHandler(this,onDismissListener, progressDialog);
         new BannedOnlyInThisAreaCheckTask(handler, commentManipulator, config, statDB, comment, yourCommentArea).execute();
     }
 
     private static class BannedOnlyInThisAreaCheckHandler extends BannedOnlyInThisAreaCheckTask.EventHandler {
         DialogCommCheckWorker worker;
         ProgressDialog progressDialog;
+        DialogInterface.OnDismissListener onDismissListener;
 
-        public BannedOnlyInThisAreaCheckHandler(DialogCommCheckWorker worker, ProgressDialog progressDialog) {
+        public BannedOnlyInThisAreaCheckHandler(DialogCommCheckWorker worker, DialogInterface.OnDismissListener onDismissListener, ProgressDialog progressDialog) {
             super(new DialogErrorHandle(progressDialog, worker));
             this.worker = worker;
             this.progressDialog = progressDialog;
+            this.onDismissListener = onDismissListener;
         }
 
         @Override
@@ -376,7 +382,12 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
 
         private void showResult(String message) {
             progressDialog.dismiss();
-            DialogUtil.dialogMessage(worker.context, "检查结果", message);
+            new AlertDialog.Builder(worker.context)
+                    .setTitle("检查结果")
+                    .setMessage(message)
+                    .setOnDismissListener(onDismissListener)
+                    .setPositiveButton(R.string.ok, new VoidDialogInterfaceOnClickListener())
+                    .show();
         }
     }
 
