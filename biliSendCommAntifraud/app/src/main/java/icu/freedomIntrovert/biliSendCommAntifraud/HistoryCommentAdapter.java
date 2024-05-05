@@ -533,8 +533,6 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                     return false;
                 }
             });
-        }
-        if (!historyComment.lastState.equals(HistoryComment.STATE_NORMAL) && !historyComment.lastState.equals(HistoryComment.STATE_SENSITIVE)) {
             popupMenu.getMenu().add("扫描敏感词").setOnMenuItemClickListener(item -> {
                 new AlertDialog.Builder(context)
                         .setMessage("确认扫描敏感词吗？")
@@ -552,7 +550,36 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                         }).show();
                 return false;
             });
+            popupMenu.getMenu().add("检查评论区").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                @Override
+                public boolean onMenuItemClick(@NonNull MenuItem item) {
+                    new AlertDialog.Builder(context)
+                            .setTitle("检查评论区")
+                            .setMessage("确认检查评论区吗？")
+                            .setNegativeButton("使用小号", (dialog15, which) -> {
+                                checkArea(true);
+                            })
+                            .setPositiveButton("使用主号", (dialog13, which) -> {
+                                checkArea(false);
+                            })
+                            .setNeutralButton(R.string.cancel,new VoidDialogInterfaceOnClickListener())
+                            .show();
+                    return false;
+                }
+
+                public void checkArea(boolean isDeputyAccount){
+                    dialog.dismiss();
+                    int position = holder.getBindingAdapterPosition();
+                    DialogInterface.OnDismissListener listener = dialog16 -> {
+                        System.out.println(position);
+                        historyCommentList.set(position,statisticsDBOpenHelper.getHistoryComment(historyComment.rpid));
+                        notifyItemChanged(position);
+                    };
+                    dialogCommCheckWorker.checkAreaMartialLaw(historyComment,listener,isDeputyAccount);
+                }
+            });
         }
+
         if (!historyComment.lastState.equals(HistoryComment.STATE_SENSITIVE)) {
             popupMenu.getMenu().add("定位评论").setOnMenuItemClickListener(item -> {
                 CommentLocator.lunch(context,historyComment.commentArea.type,
@@ -560,6 +587,8 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                         historyComment.root,historyComment.commentArea.sourceId);
                 return false;
             });
+
+
         }
         // 显示子菜单
         popupMenu.show();
