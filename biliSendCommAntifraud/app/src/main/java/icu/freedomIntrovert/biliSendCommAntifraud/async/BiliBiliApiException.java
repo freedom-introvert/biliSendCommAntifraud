@@ -18,6 +18,8 @@ public class BiliBiliApiException extends Exception{
     }
 
     public BiliBiliApiException(GeneralResponse<?> response,@Nullable String tipsMessage){
+        super(String.format("Tips:%s\ncode:%s\nmessage:%s",
+                tipsMessage,response.code,response.message));
         this.code = response.code;
         this.message = response.message;
         this.tipsMessage = tipsMessage;

@@ -33,6 +33,14 @@
                 android:id="@+id/item_import"
                 android:icon="@drawable/baseline_download_24"
                 android:title="导入" />
+            <item
+                android:id="@+id/batch_recheck"
+                android:icon="@drawable/baseline_auto_mode_24"
+                android:title="批量复查"/>
+          <!--  <item
+                android:id="@+id/statistics"
+                android:icon="@drawable/statistics"
+                android:title="统计"/>-->
         </menu>
     </item>
 

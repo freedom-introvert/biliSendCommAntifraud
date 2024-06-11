@@ -27,7 +27,6 @@
             android:name=".HistoryCommentActivity"
             android:exported="true"
             android:label="历史评论记录"
-            android:parentActivityName=".MainActivity"
             android:theme="@style/Theme.BiliSendCommAntifraud.HasActionBar">
             <meta-data
                 android:name="android.app.lib_name"

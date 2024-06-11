@@ -106,7 +106,7 @@
                             android:layout_height="20dp"
                             android:gravity="center">
                         <ImageView
-                            android:id="@+id/img_band_type"
+                            android:id="@+id/img_old_status"
                             android:layout_width="20sp"
                             android:layout_height="20sp"
                             />

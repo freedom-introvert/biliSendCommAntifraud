@@ -13,7 +13,6 @@ import android.os.Handler;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
-import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -130,16 +129,8 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
                 .setTitle("检查结果")
                 .setMessage("你的评论：“" + comment + "”正常显示！")
                 .setCancelable(false)
-                .setPositiveButton("关闭", (dialog12, which) -> {
-                    exit();
-                })
-                .setOnKeyListener((dialog1, keyCode, event) -> {
-                    if (keyCode == KeyEvent.KEYCODE_BACK) {
-                        exit();
-                        return true;
-                    }
-                    return false;
-                })
+                .setOnDismissListener(dialog13 -> exit())
+                .setPositiveButton("关闭",null)
                 .show();
     }
 
@@ -161,7 +152,7 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
                 break;
             case BANNED_TYPE_UNDER_REVIEW:
                 resultDialogBuilder.setIcon(R.drawable.i_black);
-                resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(commentText, 100) + "”在无账号环境下无法找到，自己账号下获取该评论的回复列表成功，接着又能在无账号下获取回复，疑似审核中。建议你直接去申诉，因为它很可能回复“无可申诉评论”，请后续几十分钟来历史记录复查（记得搜遍评论区）！");
+                resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(commentText, 100) + "”在无账号环境下无法找到，自己账号下获取该评论的回复列表成功，接着又能在无账号下获取回复，疑似审核中。建议你直接去申诉，因为它很可能回复“无可申诉评论”，请后续几十分钟来历史记录复查！");
                 break;
             case BANNED_TYPE_QUICK_DELETE:
                 resultDialogBuilder.setIcon(R.drawable.deleted_black);
@@ -176,9 +167,8 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
                 resultDialogBuilder.setMessage("您的评论“" + CommentUtil.subComment(commentText, 100) + "”在无账号环境下成功找到，但是被标记invisible，也就是隐身（在前端被隐藏）！这是非常罕见的情况……通常在评论发送很久时间后才会出现。可以的话把评论信息发给开发者，以分析触发条件");
                 break;
         }
-        resultDialogBuilder.setPositiveButton("关闭", (dialog, which) -> {
-            exit();
-        });
+        resultDialogBuilder.setOnDismissListener(dialog -> exit());
+        resultDialogBuilder.setPositiveButton("关闭",new VoidDialogInterfaceOnClickListener());
         resultDialogBuilder.setNeutralButton("检查评论区", null);
         resultDialogBuilder.setNegativeButton("更多评论选项", null);
         AlertDialog resultDialog = resultDialogBuilder.show();
@@ -247,7 +237,6 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
                                     } else {
                                         toastLong("删除失败！");
                                     }
-                                    exit();
                                 }
                             });
                             break;
@@ -604,12 +593,9 @@ public class DialogCommCheckWorker implements BiliBiliApiRequestHandler.DialogEr
         new AlertDialog.Builder(context)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        exit();
-                    }
-                }).show();
+                .setPositiveButton(android.R.string.ok, null)
+                .setOnDismissListener(dialog -> exit())
+                .show();
     }
 
     private void exit() {

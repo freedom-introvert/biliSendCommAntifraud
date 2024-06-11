@@ -10,4 +10,9 @@
         <item>11(动态)</item>
         <item>17(动态)</item>
     </string-array>
+    <string-array name="spinner_before_by_array" >
+        <item>天前</item>
+        <item>小时前</item>
+        <item>条前</item>
+    </string-array>
 </resources>

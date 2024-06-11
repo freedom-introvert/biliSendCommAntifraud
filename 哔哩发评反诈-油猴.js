@@ -1,16 +1,15 @@
 // ==UserScript==
 // @name         哔哩发评反诈
 // @namespace    http://tampermonkey.net/
-// @version      2.0
+// @version      2.5
 // @description  评论发送后自动检测状态，避免被发送成功的谎言所欺骗！
 // @author       freedom-introvert & ChatGPT
 // @match        https://*.bilibili.com/*
 // @run-at       document-idle
 // @grant        none
-// @license      GPL
 // ==/UserScript==
 
-const waitTime = 5000;//评论发送后的等待时间，单位毫秒，可修改此项，不建议低于
+const waitTime = 5000;//评论发送后的等待时间，单位毫秒，可修改此项，不建议低于5秒
 
 const sortByTime = 0;
 const sortModeByTime = 2;
@@ -41,6 +40,33 @@ window.fetch = async function (...args) {
     // Return the original response so that the fetch call continues to work as normal
     return response;
 };
+
+//动态shadowBan检测
+window.onload = function () {
+    const currentURL = window.location.href;
+    const hostname = window.location.hostname;
+    let id = null;
+
+    if (hostname === 't.bilibili.com') {
+        // 提取 t.bilibili.com URL 中的数字部分
+        const urlPath = window.location.pathname;
+        id = urlPath.split('/')[1];
+    } else if (hostname === 'www.bilibili.com') {
+        // 提取 www.bilibili.com/opus URL 中的数字部分
+        const urlPath = window.location.pathname;
+        const pathParts = urlPath.split('/');
+        if (pathParts[1] === 'opus') {
+            id = pathParts[2];
+        }
+    }
+
+    if (id) {
+        console.log('Dynamic ID:', id);
+        handleCheckDynamic(id);
+    }
+
+}
+
 console.log(window.fetch)
 console.log("反诈脚本已加载")
 
@@ -199,6 +225,16 @@ var dialogHTML = `
         #close-button:hover {
             background-color: #F0F0F0;
         }
+
+        .shadowban-scanner-message {
+            --message-background-color: rgb(255, 0, 0, 0.2);
+            color: var(--md-sys-color-on-primary);
+            padding: 1em;
+            border-radius: 0.5em;
+            background: var(--message-background-color);
+            margin: 1em 0px 0px;
+        }
+
         </style>
         <div id="progress-overlay"></div>
         <div id="progress-dialog">
@@ -304,31 +340,58 @@ async function handleAddCommentResponse(url, responseJson) {
                 }
             }
         } else {
-            ProgressDialog.setMessage("无账号定位查找目标评论");
-            var resp = await fetchBilibiliCommentsByMainApiUseSeekRpid(
-                oid, type, rpid, 0, sortModeByTime, false
-            );
+            ProgressDialog.setMessage("无账号查找评论回复页……");
+            
+            for(i = 0;true;i++){
+                ProgressDialog.setMessage(`无账号查找评论回复第${i}页……`);
+                var resp = await fetchBilibiliCommentReplies(oid, type, root, i, sortByTime, false);
+                var replies = resp.data.replies;
+                console.log(resp);
+                if(replies === null || replies.length === 0){
+                    console.log("已翻遍无账号下的评论回复页");
+                    break;
+                }
 
-            var replies = resp.data.replies;
-            var found = findReplyInReplies(replies, rpid);
-            if (found) {
-                showOkResult(reply);
-            } else {
-                ProgressDialog.setMessage("有账号定位查找目标评论");
-                resp = await fetchBilibiliCommentsByMainApiUseSeekRpid(
-                    oid, type, rpid, 0, sortModeByTime, true
-                );
-                found = findReplyInReplies(resp.data.replies, rpid);
-                if (found) {
-                    showShadowBanResult(reply);
-                } else {
-                    showQuickDeleteResult(reply);
+                if(findReplies(replies,rpid)){
+                    showOkResult(reply);
+                    return;
                 }
             }
+
+            for(i = 0;true;i++){
+                ProgressDialog.setMessage(`有账号查找评论回复第${i}页……`);
+                var resp = await fetchBilibiliCommentReplies(oid, type, root, i, sortByTime, true);
+                var replies = resp.data.replies;
+                console.log(resp);
+                if(replies === null || replies.length === 0){
+                    console.log("已翻遍有账号下的评论回复页");
+                    break;
+                }
+
+                if(findReplies(replies,rpid)){
+                    showShadowBanResult(reply);
+                    return;
+                }
+            }
+
+            //若两个条件都没找到评论则是秒删
+            showQuickDeleteResult(reply);
         }
     }
 }
 
+async function handleCheckDynamic(id) {
+    var resp = await fetchDynamic(id, false);
+    console.log(resp);
+    if (resp.code == -352 || resp.code == 4101131) {
+        console.log("检测到动态被shadowBan！");
+        addDynamicShadowBannedHint();
+    } else if (resp.code == 0) {
+        console.log("检查到此动态正常，没被shadowBan");
+    } else {
+        console.log("动态检查出错：未知的响应码", resp);
+    }
+}
 
 function findReplies(replies, rpid) {
     for (var i in replies) {
@@ -383,7 +446,7 @@ async function fetchBilibiliComments(oid, type, pn, sort, hasCookie) {
     url.search = new URLSearchParams(params).toString();
 
     try {
-        const response = await originalFetch(url, hasCookie ? {credentials: 'include'} : { credentials: 'omit' });
+        const response = await originalFetch(url, hasCookie ? { credentials: 'include' } : { credentials: 'omit' });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -405,11 +468,11 @@ async function fetchBilibiliComments(oid, type, pn, sort, hasCookie) {
  */
 async function fetchBilibiliCommentReplies(oid, type, root, pn, sort, hasCookie) {
     const url = new URL('https://api.bilibili.com/x/v2/reply/reply');
-    const params = { oid, type, root ,pn, sort };
+    const params = { oid, type, root, pn, sort };
     url.search = new URLSearchParams(params).toString();
 
     try {
-        const response = await originalFetch(url, hasCookie ? {credentials: 'include'} : { credentials: 'omit' });
+        const response = await originalFetch(url, hasCookie ? { credentials: 'include' } : { credentials: 'omit' });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -420,6 +483,8 @@ async function fetchBilibiliCommentReplies(oid, type, root, pn, sort, hasCookie)
 }
 
 /**
+ * 由于需要残次cookie，浏览器js无法自定义cookie，此方法废弃，需要翻全页
+ * 
  * 使用Main api 结合 seek_rpid 参数定位评论
  * 如果seek_rpid 的评论id是一个回复别人的评论，
  * 那么它会出现在某个根评论的预览评论列表里
@@ -438,6 +503,23 @@ async function fetchBilibiliCommentsByMainApiUseSeekRpid(oid, type, seek_rpid, n
 
     try {
         const response = await originalFetch(url, hasCookie ? {credentials: 'include'} : { credentials: 'omit' });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json(); // Return JSON object
+    } catch (error) {
+        throw error; // Rethrow the error
+    }
+}
+
+
+async function fetchDynamic(id, hasCookie) {
+    const url = new URL('https://api.bilibili.com/x/polymer/web-dynamic/v1/detail');
+    const params = { id };
+    url.search = new URLSearchParams(params).toString();
+
+    try {
+        const response = await originalFetch(url, hasCookie ? { credentials: 'include' } : { credentials: 'omit' });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -482,4 +564,21 @@ function showErrorResult(message) {
     ProgressDialog.setProgress(0);
     ProgressDialog.setTitle("发生错误");
     ProgressDialog.setMessage(message);
+}
+
+//样式抄自X（Twitter）的shadowBan检查器，插件可在Chrome商店搜索
+function addDynamicShadowBannedHint() {
+    const biliDynContent = document.querySelector('.bili-dyn-content');
+
+    if (biliDynContent) {
+        const shadowbanMessage = document.createElement('div');
+        shadowbanMessage.className = 'shadowban-scanner-message';
+        shadowbanMessage.style.setProperty('--md-sys-color-on-primary', 'rgb(15, 20, 25)');
+
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = '检测到此动态被shadowBan，仅自己可见';
+
+        shadowbanMessage.appendChild(messageSpan);
+        biliDynContent.appendChild(shadowbanMessage);
+    }
 }

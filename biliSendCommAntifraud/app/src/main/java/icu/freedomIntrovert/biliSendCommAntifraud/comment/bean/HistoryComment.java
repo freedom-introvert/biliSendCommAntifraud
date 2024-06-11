@@ -6,7 +6,7 @@ import androidx.annotation.NonNull;
 
 import java.util.Date;
 
-public class HistoryComment extends Comment {
+public class HistoryComment extends Comment{
     public static final String STATE_NORMAL = "normal";
     public static final String STATE_SHADOW_BAN = "shadowBan";
     public static final String STATE_DELETED = "deleted";
@@ -14,7 +14,7 @@ public class HistoryComment extends Comment {
     public static final String STATE_INVISIBLE = "invisible";
     //评论shadowBan但可以获取评论列表或你是UP发的评论被shadowBan，疑似审核中，因为回复列表原因，不支持判断回复评论的疑似审核
     public static final String STATE_UNDER_REVIEW = "underReview";
-    //疑似没问题
+    //疑似没问题，因为申诉提示无可申诉
     public static final String STATE_SUSPECTED_NO_PROBLEM = "suspectedNoProblem";
     //直接去申诉所导致的未知状态
     public static final String STATE_UNKNOWN = "unknown";

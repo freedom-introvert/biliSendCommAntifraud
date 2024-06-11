@@ -11,7 +11,11 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.SearchView;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -22,6 +26,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.alibaba.fastjson.JSON;
@@ -40,6 +45,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +59,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import icu.freedomIntrovert.biliSendCommAntifraud.async.commentcheck.BatchReviewCommentStatusTask;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.SensitiveScanResult;
@@ -92,16 +100,21 @@ public class HistoryCommentActivity extends AppCompatActivity {
     private HistoryCommentFragment historyCommentFragment;
     public ActivityResultLauncher<File> savePicFileLauncher;
     public ActivityResultLauncher<Intent> exportLauncher;
+    public CommentManipulator commentManipulator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history_comment);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         ByXposedLaunchedActivity.lastActivity = this;
         context = this;
         config = new Config(context);
+        commentManipulator = new CommentManipulator(config.getCookie(), config.getDeputyCookie());
         statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
-        adapter = new HistoryCommentAdapter(this, statisticsDBOpenHelper);
+        adapter = new HistoryCommentAdapter(this, commentManipulator, statisticsDBOpenHelper);
         loadingHistoryCommentFragment = new LoadingHistoryCommentFragment();
         historyCommentFragment = new HistoryCommentFragment(adapter);
         reloadData(null);
@@ -270,24 +283,27 @@ public class HistoryCommentActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         //工具栏返回上一级按钮
         int itemId = item.getItemId();
-        if (itemId == 16908332) {
+        if (itemId == android.R.id.home) {
             finish();
         } else if (itemId == R.id.item_sort) {
             //这要求sortRuler数字与选项位置一致
             AtomicInteger sortRuler = new AtomicInteger(config.getSortRuler());
-            new AlertDialog.Builder(context).setTitle("排序").setIcon(R.drawable.baseline_sort_24).setSingleChoiceItems(new String[]{"发送日期(新-旧)", "发送日期(旧-新)", "点赞数降序", "评论数降序"}, sortRuler.get(), (dialog, which) -> {
-                sortRuler.set(which);
-            }).setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                if (sortRuler.get() == 0) {
-                    onSortTypeSet(Config.SORT_RULER_DATE_DESC);
-                } else if (sortRuler.get() == 1) {
-                    onSortTypeSet(Config.SORT_RULER_DATE_ASC);
-                } else if (sortRuler.get() == 2) {
-                    onSortTypeSet(Config.SORT_RULER_LIKE_DESC);
-                } else if (sortRuler.get() == 3) {
-                    onSortTypeSet(Config.SORT_RULER_REPLY_COUNT_DESC);
-                }
-            }).setNegativeButton(android.R.string.cancel, new VoidDialogInterfaceOnClickListener()).show();
+            new AlertDialog.Builder(context)
+                    .setTitle("排序")
+                    .setIcon(R.drawable.baseline_sort_24)
+                    .setSingleChoiceItems(new String[]{"发送日期(新-旧)", "发送日期(旧-新)", "点赞数降序", "评论数降序"}, sortRuler.get(), (dialog, which) -> {
+                        sortRuler.set(which);
+                    }).setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                        if (sortRuler.get() == 0) {
+                            onSortTypeSet(Config.SORT_RULER_DATE_DESC);
+                        } else if (sortRuler.get() == 1) {
+                            onSortTypeSet(Config.SORT_RULER_DATE_ASC);
+                        } else if (sortRuler.get() == 2) {
+                            onSortTypeSet(Config.SORT_RULER_LIKE_DESC);
+                        } else if (sortRuler.get() == 3) {
+                            onSortTypeSet(Config.SORT_RULER_REPLY_COUNT_DESC);
+                        }
+                    }).setNegativeButton(android.R.string.cancel, new VoidDialogInterfaceOnClickListener()).show();
         } else if (itemId == R.id.item_filter) {
             AtomicBoolean enableNormal = new AtomicBoolean(config.getFilterRulerEnableNormal());
             AtomicBoolean enableShadowBan = new AtomicBoolean(config.getFilterRulerEnableShadowBan());
@@ -301,8 +317,15 @@ public class HistoryCommentActivity extends AppCompatActivity {
                     .setTitle("过滤")
                     .setIcon(R.drawable.baseline_filter_alt_24)
                     .setMultiChoiceItems(
-                            new String[]{"正常", "ShadowBan", "已删除", "其他", "类型：1(视频)", "类型：12(专栏)","类型：11(动态)","类型：17(动态)"},
-                            new boolean[]{enableNormal.get(), enableShadowBan.get(), enableDeleted.get(), enableOther.get(),enableType1.get(),enableType12.get(),enableType11.get(),enableType17.get()},
+                            new String[]{"正常", "ShadowBan", "已删除", "其他", "类型：1(视频)", "类型：12(专栏)", "类型：11(动态)", "类型：17(动态)"},
+                            new boolean[]{enableNormal.get(),
+                                    enableShadowBan.get(),
+                                    enableDeleted.get(),
+                                    enableOther.get(),
+                                    enableType1.get(),
+                                    enableType12.get(),
+                                    enableType11.get(),
+                                    enableType17.get()},
                             (dialog, which, isChecked) -> {
                                 if (which == 0) {
                                     enableNormal.set(isChecked);
@@ -312,19 +335,26 @@ public class HistoryCommentActivity extends AppCompatActivity {
                                     enableDeleted.set(isChecked);
                                 } else if (which == 3) {
                                     enableOther.set(isChecked);
-                                } else if (which == 4){
+                                } else if (which == 4) {
                                     enableType1.set(isChecked);
-                                } else if (which == 5){
+                                } else if (which == 5) {
                                     enableType12.set(isChecked);
-                                } else if (which == 6){
+                                } else if (which == 6) {
                                     enableType11.set(isChecked);
-                                } else if (which == 7){
+                                } else if (which == 7) {
                                     enableType17.set(isChecked);
                                 }
                             }).setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            onFilterRulerSet(enableNormal.get(), enableShadowBan.get(), enableDeleted.get(), enableOther.get(),enableType1.get(), enableType12.get(), enableType11.get(), enableType17.get());
+                            onFilterRulerSet(enableNormal.get(),
+                                    enableShadowBan.get(),
+                                    enableDeleted.get(),
+                                    enableOther.get(),
+                                    enableType1.get(),
+                                    enableType12.get(),
+                                    enableType11.get(),
+                                    enableType17.get());
                         }
                     }).setNegativeButton(android.R.string.cancel, new VoidDialogInterfaceOnClickListener()).show();
         } else if (itemId == R.id.item_export) {
@@ -345,8 +375,121 @@ public class HistoryCommentActivity extends AppCompatActivity {
             config.set花里胡哨Enable(enable);
             item.setChecked(enable);
             adapter.set花里胡哨Enable(enable);
-        }
+        } else if (itemId == R.id.batch_recheck) {
+            View dialogView = View.inflate(context, R.layout.dialog_batch_recheck_start, null);
+            EditText editText = dialogView.findViewById(R.id.edit_text);
+            Spinner spinner = dialogView.findViewById(R.id.spinner_before_by);
+            spinner.setSelection(0);
+            AlertDialog dialog = new AlertDialog.Builder(this)
+                    .setTitle("批量复查")
+                    .setView(dialogView)
+                    .setMessage("请注意：设置的过滤与排序不会在此起作用")
+                    .setPositiveButton(android.R.string.ok, null)
+                    .setNegativeButton(android.R.string.cancel, new VoidDialogInterfaceOnClickListener())
+                    .show();
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                if (TextUtils.isEmpty(editText.getText().toString())) {
+                    editText.setError("请输入数字");
+                    return;
+                }
+                int inputNumber = Integer.parseInt(editText.getText().toString());
+                switch (spinner.getSelectedItemPosition()) {
+                    case 0:
+                        batchCheck(statisticsDBOpenHelper.queryHistoryCommentsByDateGT(
+                                getPreviousNDaysTimestamp(inputNumber)));
+                        break;
+                    case 1:
+                        batchCheck(statisticsDBOpenHelper.queryHistoryCommentsByDateGT(
+                                System.currentTimeMillis() -
+                                        (long) inputNumber * 60 * 60 * 1000));
+                        break;
+                    case 2:
+                        batchCheck(statisticsDBOpenHelper.queryHistoryCommentsCountLimit(inputNumber));
+                        break;
+                }
+                dialog.dismiss();
+            });
+
+        }/* else if (itemId == R.id.statistics) {
+            *//*new AlertDialog.Builder(this)
+                    .setTitle("统计")
+                    .*//*
+        }*/
         return true;
+    }
+
+    private long getPreviousNDaysTimestamp(int day) {
+        // 创建 Calendar 对象并设置为当前日期
+        Calendar calendar = Calendar.getInstance();
+        // 将日期减去一天
+        calendar.add(Calendar.DAY_OF_MONTH, -day);
+        // 设置时间部分为零点
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        // 获取前一天的日期
+        Date previousDate = calendar.getTime();
+        // 将日期转换为时间戳（以毫秒为单位）
+        return previousDate.getTime();
+    }
+
+    private void batchCheck(List<HistoryComment> pendingCheckComments) {
+        System.out.println(pendingCheckComments);
+        if (pendingCheckComments.isEmpty()) {
+            Toast.makeText(context, "没有要检查的评论", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        View dialogView = View.inflate(context, R.layout.dialog_batch_check, null);
+        RecyclerView recyclerView = dialogView.findViewById(R.id.rv_batch_checking_comments);
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(context);
+        recyclerView.setLayoutManager(layoutManager);
+        BatchCheckAdapter adapter = new BatchCheckAdapter(context);
+        recyclerView.setAdapter(adapter);
+
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setTitle(String.format("检查中[%s/%s]……", 0, pendingCheckComments.size()))
+                .setView(dialogView)
+                .setCancelable(false)
+                .setPositiveButton("取消",null)
+                .show();
+
+        BatchReviewCommentStatusTask task = new BatchReviewCommentStatusTask(commentManipulator, statisticsDBOpenHelper,
+                pendingCheckComments, new BatchReviewCommentStatusTask.EventHandler() {
+            @Override
+            public void onStartCheck(HistoryComment checkingComment) {
+                adapter.setCheckingComment(checkingComment);
+                dialog.setTitle(String.format("检查中[%s/%s]……", adapter.getItemCount(), pendingCheckComments.size()));
+            }
+
+            @Override
+            public void onCheckOver(String newStatus) {
+                adapter.overCheckComment(newStatus);
+                recyclerView.scrollToPosition(adapter.getItemCount());
+            }
+
+            @Override
+            public void onComplete() {
+                dialog.setTitle(pendingCheckComments.size() + "条评论已检查完毕");
+                reloadData(null);
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("关闭");
+            }
+
+            @Override
+            public void onError(Throwable th) {
+                dialog.dismiss();
+                reloadData(null);
+                DialogUtil.dialogMessage(context,"错误", th.toString());
+            }
+        });
+        task.execute();
+
+        Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        button.setOnClickListener(v -> {
+            task.breakRun();
+            dialog.dismiss();
+        });
     }
 
     private void reloadData(String searchText) {
@@ -417,19 +560,19 @@ public class HistoryCommentActivity extends AppCompatActivity {
                     }
                     int type = historyComment.commentArea.type;
                     if (type == CommentArea.AREA_TYPE_VIDEO) {
-                        if (!enableType1){
+                        if (!enableType1) {
                             continue;
                         }
                     } else if (type == CommentArea.AREA_TYPE_ARTICLE) {
-                        if (!enableType12){
+                        if (!enableType12) {
                             continue;
                         }
                     } else if (type == CommentArea.AREA_TYPE_DYNAMIC11) {
-                        if (!enableType11){
+                        if (!enableType11) {
                             continue;
                         }
-                    } else if (type == CommentArea.AREA_TYPE_DYNAMIC17){
-                        if (!enableType17){
+                    } else if (type == CommentArea.AREA_TYPE_DYNAMIC17) {
+                        if (!enableType17) {
                             continue;
                         }
                     }

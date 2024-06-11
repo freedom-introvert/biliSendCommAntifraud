@@ -105,7 +105,7 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
             TextView txv_up = dialogView.findViewById(R.id.txv_up);
             TextView txv_oid = dialogView.findViewById(R.id.txv_oid);
             TextView txv_source_id = dialogView.findViewById(R.id.txv_source_id);
-            TextView txv_band_type = dialogView.findViewById(R.id.txv_band_type);
+            TextView txv_band_type = dialogView.findViewById(R.id.txv_old_status);
             TextView txv_area_type = dialogView.findViewById(R.id.txv_area_type);
             txv_title.setText(area.title);
             txv_up.setText("UP:" + area.up);
@@ -155,7 +155,7 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
             this.itemView = itemView;
             cover_image = itemView.findViewById(R.id.cover_image);
             img_area_type = itemView.findViewById(R.id.img_area_type);
-            img_band_type = itemView.findViewById(R.id.img_band_type);
+            img_band_type = itemView.findViewById(R.id.img_old_status);
             txv_title = itemView.findViewById(R.id.txv_title);
             txv_source_id_ia = itemView.findViewById(R.id.txv_source_id_ia);
             txv_up = itemView.findViewById(R.id.txv_up);

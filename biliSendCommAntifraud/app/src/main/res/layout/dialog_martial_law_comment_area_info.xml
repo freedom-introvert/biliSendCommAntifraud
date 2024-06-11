@@ -40,7 +40,7 @@
                 <TextView
                     android:text="默认控评方式"/>
                 <TextView
-                    android:id="@+id/txv_band_type"
+                    android:id="@+id/txv_old_status"
                     android:layout_marginLeft="10dp"
                     android:textIsSelectable="true"/>
             </TableRow>
