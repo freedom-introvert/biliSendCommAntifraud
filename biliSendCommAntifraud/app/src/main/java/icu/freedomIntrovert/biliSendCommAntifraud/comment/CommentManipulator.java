@@ -108,7 +108,8 @@ public class CommentManipulator {
                 .url("https://api.bilibili.com/x/polymer/web-dynamic/v1/detail?id=" + dvid)
                 //设置各种请求头,尤其是Referer和user-agent不然会被拦截请求:(
                 .addHeader("accept","application/json, text/plain, */*")
-                .addHeader("user-agent","Mozilla/5.0 (Linux; Android "+ Build.VERSION.RELEASE+"; "+Build.MODEL+" Build/"+Build.ID+") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.6045.163 Mobile Safari/537.36")
+                .addHeader("user-agent","Mozilla/5.0 (Linux; Android "+ Build.VERSION.RELEASE+"; "+Build.MODEL+" Build/"+Build.ID+") " +
+                        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.6045.163 Mobile Safari/537.36")
                 .addHeader("sec-ch-ua-platform","\"Android\"")
                 .addHeader("sec-ch-ua","\"Android WebView\";v=\"119\", \"Chromium\";v=\"119\", \"Not?A_Brand\";v=\"24\"")
                 .addHeader("sec-fetch-site","same-site")
@@ -342,14 +343,16 @@ public class CommentManipulator {
             System.out.println(input);
         }
 
-        if (input.startsWith("https://www.bilibili.com/video/BV") || input.startsWith("https://m.bilibili.com/video/BV") || input.startsWith("http://www.bilibili.com/video/BV") || input.startsWith("http://m.bilibili.com/video/BV")) {
+        if (input.startsWith("https://www.bilibili.com/video/BV") || input.startsWith("https://m.bilibili.com/video/BV")
+                || input.startsWith("http://www.bilibili.com/video/BV") || input.startsWith("http://m.bilibili.com/video/BV")) {
             String sourceId = subUrl(input, "/video/", 12);
             if (bvidToOid(sourceId) != null) {
                 return new CommentArea(Long.parseLong(bvidToOid(sourceId)), sourceId, CommentArea.AREA_TYPE_VIDEO);
             } else {
                 return null;
             }
-        } else if (input.startsWith("https://www.bilibili.com/video/av") || input.startsWith("https://m.bilibili.com/video/av") || input.startsWith("http://www.bilibili.com/video/BV") || input.startsWith("http://m.bilibili.com/video/BV")) {
+        } else if (input.startsWith("https://www.bilibili.com/video/av") || input.startsWith("https://m.bilibili.com/video/av")
+                || input.startsWith("http://www.bilibili.com/video/BV") || input.startsWith("http://m.bilibili.com/video/BV")) {
             String text = "/video/";
             String aid = input.substring(input.indexOf(text) + text.length());
             return new CommentArea(Long.parseLong(aid.substring(2)), aid, CommentArea.AREA_TYPE_VIDEO);
@@ -445,8 +448,17 @@ public class CommentManipulator {
             if (response.code() == 200) {
                 JSONObject respJson = JSON.parseObject(response.body().string());
                 if (respJson.getInteger("code") == 0) {
-                    up = respJson.getJSONObject("data").getJSONObject("item").getJSONObject("modules").getJSONObject("module_author").getString("name");
-                    title = respJson.getJSONObject("data").getJSONObject("item").getJSONObject("modules").getJSONObject("module_dynamic").getJSONObject("desc").getString("text");
+                    up = respJson.getJSONObject("data")
+                            .getJSONObject("item")
+                            .getJSONObject("modules")
+                            .getJSONObject("module_author")
+                            .getString("name");
+                    title = respJson.getJSONObject("data")
+                            .getJSONObject("item")
+                            .getJSONObject("modules")
+                            .getJSONObject("module_dynamic")
+                            .getJSONObject("desc")
+                            .getString("text");
                     if (title.length() > 80) {
                         title = title.substring(0, 80);
                         title += "……";

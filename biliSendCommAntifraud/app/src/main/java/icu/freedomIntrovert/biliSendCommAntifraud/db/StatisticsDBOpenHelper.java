@@ -11,7 +11,9 @@ import com.alibaba.fastjson.JSON;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
@@ -201,13 +203,16 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
     public List<HistoryComment> getDemoHistoryComments(){
         List<HistoryComment> historyCommentList = new ArrayList<>();
         CommentArea commentArea = new CommentArea(1,"BV1GJ411x7h7",CommentArea.AREA_TYPE_VIDEO);
-        historyCommentList.add(new HistoryComment(commentArea,count,0,0,"普通且正常的评论",new Date(count),0,0,HistoryComment.STATE_NORMAL,new Date(count),HistoryComment.CHECKED_NO_CHECK,
+        historyCommentList.add(new HistoryComment(commentArea,count,0,0,
+                "普通且正常的评论",new Date(count),0,0,HistoryComment.STATE_NORMAL,new Date(count),HistoryComment.CHECKED_NO_CHECK,
                 HistoryComment.STATE_NORMAL,null,null));
         count++;
-        historyCommentList.add(new HistoryComment(commentArea,count,114,114,"回复别人的评论",new Date(count),0,0,HistoryComment.STATE_NORMAL,new Date(count),HistoryComment.CHECKED_NO_CHECK,
+        historyCommentList.add(new HistoryComment(commentArea,count,114,114,
+                "回复别人的评论",new Date(count),0,0,HistoryComment.STATE_NORMAL,new Date(count),HistoryComment.CHECKED_NO_CHECK,
                 HistoryComment.STATE_NORMAL,null,null));
         count++;
-        historyCommentList.add(new HistoryComment(commentArea,count,0,0,"带图片的评论",new Date(count),0,0,HistoryComment.STATE_NORMAL,new Date(count),HistoryComment.CHECKED_NO_CHECK,
+        historyCommentList.add(new HistoryComment(commentArea,count,0,0,
+                "带图片的评论",new Date(count),0,0,HistoryComment.STATE_NORMAL,new Date(count),HistoryComment.CHECKED_NO_CHECK,
                 HistoryComment.STATE_NORMAL,"[{\"img_height\":800,\"img_size\":114,\"img_src\":\"https://album.biliimg.com/bfs/new_dyn/404.jpg\",\"img_width\":800}]",null));
         count++;
         historyCommentList.add(newDemoComment(HistoryComment.STATE_SHADOW_BAN));
@@ -222,16 +227,32 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
 
     private HistoryComment newDemoComment(String state){
         CommentArea commentArea = new CommentArea(1,"BV1GJ411x7h7",CommentArea.AREA_TYPE_VIDEO);
-        HistoryComment historyComment = new HistoryComment(commentArea,count,0,0, "网络上重拳出击，现实中唯唯诺诺",new Date(count),0,0,state,new Date(count),HistoryComment.CHECKED_NO_CHECK,
+        HistoryComment historyComment = new HistoryComment(commentArea,count,0,0,
+                "网络上重拳出击，现实中唯唯诺诺",new Date(count),0,0,state,new Date(count),HistoryComment.CHECKED_NO_CHECK,
                 state,null,null);
         count++;
         return historyComment;
     }
 
     public List<HistoryComment> queryAllHistoryComments(String dateOrderBy) {
+        return selectHistoryComments("ORDER BY " + dateOrderBy);
+    }
+
+    public List<HistoryComment> queryHistoryCommentsByDateGT(long timestamp) {
+        return selectHistoryComments("WHERE date > " + timestamp+" ORDER BY date DESC");
+    }
+
+
+    public List<HistoryComment> queryHistoryCommentsCountLimit(int limit) {
+        return selectHistoryComments("ORDER BY date DESC LIMIT "+ limit);
+    }
+
+
+
+    private List<HistoryComment> selectHistoryComments(String selectAddition){
         SQLiteDatabase db = getReadableDatabase();
         List<HistoryComment> historyCommentList = new ArrayList<>();
-        GreatCursor cursor = new GreatCursor(db.rawQuery("select * from " + TABLE_NAME_HISTORY_COMMENT + " ORDER BY " + dateOrderBy, null));
+        GreatCursor cursor = new GreatCursor(db.rawQuery("select * from " + TABLE_NAME_HISTORY_COMMENT + " " + selectAddition, null));
         while (cursor.moveToNext()) {
             //System.out.println(cursor.getLong("root"));
             HistoryComment historyComment = new HistoryComment(
@@ -443,5 +464,17 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         ContentValues cv = new ContentValues();
         cv.put("sensitive_scan_result", JSON.toJSONString(result));
         getWritableDatabase().update(TABLE_NAME_HISTORY_COMMENT,cv,"rpid = ?",new String[]{String.valueOf(rpid)});
+    }
+
+    public Map<String,String> countingStatus(){
+        Map<String,String> map = new HashMap<>();
+        Cursor cursor = getReadableDatabase()
+                .rawQuery("select last_state,count(last_state) AS count from history_comment group by last_state order by count desc;",
+                null);
+        while (cursor.moveToNext()) {
+            map.put(cursor.getString(0),cursor.getString(1));
+        }
+        cursor.close();
+        return map;
     }
 }

@@ -41,7 +41,7 @@ public interface BiliApiService {
     /**
      *
      * @param cookie_buvid3 buvid3=xxx 在cookie里任取。若不填会导致-352错误！
-     *                      从cookie获取的不会导致登录状态
+     *                      即使是从cookie获取的不会导致登录状态，因为无账号的cookie也有此参数
      */
     @GET("/x/v2/reply/main")
     Call<GeneralResponse<CommentPage>> getCommentMainPageNoAccount(@Header("cookie") String cookie_buvid3,@Query("oid") long oid,@Query("type") int type,@Query("mode") int mode,@Query("next") int next,@Query("seek_rpid") long seek_rpid);

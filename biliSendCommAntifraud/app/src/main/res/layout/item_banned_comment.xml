@@ -59,7 +59,7 @@
                     app:layout_constraintStart_toStartOf="parent">
 
                     <ImageView
-                        android:id="@+id/img_band_type"
+                        android:id="@+id/img_old_status"
                         android:layout_width="19sp"
                         android:layout_height="19sp"
                         android:layout_gravity="center"
@@ -69,11 +69,11 @@
                         app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
-                        android:id="@+id/txv_band_type"
+                        android:id="@+id/txv_old_status"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:text="仅自己可见"
-                        app:layout_constraintStart_toEndOf="@+id/img_band_type" />
+                        app:layout_constraintStart_toEndOf="@+id/img_old_status" />
 
                     <TextView
                         android:id="@+id/txv_info"
@@ -88,7 +88,7 @@
                         app:layout_constraintBottom_toBottomOf="parent"
 
                         app:layout_constraintEnd_toStartOf="@+id/txv_date"
-                        app:layout_constraintStart_toEndOf="@+id/txv_band_type" />
+                        app:layout_constraintStart_toEndOf="@+id/txv_old_status" />
 
                     <TextView
                         android:id="@+id/txv_date"

@@ -57,12 +57,13 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
     Config config;
     boolean 花里胡哨;
 
-    public HistoryCommentAdapter(HistoryCommentActivity context, StatisticsDBOpenHelper statisticsDBOpenHelper) {
+    public HistoryCommentAdapter(HistoryCommentActivity context,CommentManipulator commentManipulator,
+                                 StatisticsDBOpenHelper statisticsDBOpenHelper) {
         this.context = context;
         config = new Config(context);
         this.statisticsDBOpenHelper = statisticsDBOpenHelper;
         Config config = new Config(context);
-        commentManipulator = new CommentManipulator(config.getCookie(), config.getDeputyCookie());
+        this.commentManipulator = commentManipulator;
         this.dialogCommCheckWorker = new DialogCommCheckWorker(context, config, statisticsDBOpenHelper, commentManipulator, new CommentUtil(context));
         花里胡哨 = config.get花里胡哨Enable();
     }
@@ -642,8 +643,8 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
             txv_info = itemView.findViewById(R.id.txv_info);
             txv_date = itemView.findViewById(R.id.txv_date);
             txv_reply_count = itemView.findViewById(R.id.txv_reply_count);
-            txv_banned_type = itemView.findViewById(R.id.txv_band_type);
-            imgv_banned_type = itemView.findViewById(R.id.img_band_type);
+            txv_banned_type = itemView.findViewById(R.id.txv_old_status);
+            imgv_banned_type = itemView.findViewById(R.id.img_old_status);
             imgv_cover_image = itemView.findViewById(R.id.cover_image);
         }
     }
