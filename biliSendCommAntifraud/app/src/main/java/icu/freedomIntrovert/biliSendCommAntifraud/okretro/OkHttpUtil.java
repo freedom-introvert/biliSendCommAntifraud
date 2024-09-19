@@ -17,11 +17,11 @@ public class OkHttpUtil {
         }
         return okHttpClient;
     }
-    public static void respNotNull(GeneralResponse<?> generalResponse) throws IOException {
+/*    public static void respNotNull(GeneralResponse<?> generalResponse) throws IOException {
         if (generalResponse == null){
             throw new IOException("response is null!");
         }
-    }
+    }*/
     public static void respNotNull(ResponseBody resp) throws IOException {
         if (resp == null){
             throw new IOException("response is null!");

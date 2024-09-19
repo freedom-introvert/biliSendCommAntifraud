@@ -9,9 +9,11 @@ import java.util.Date;
 import java.util.Locale;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.BuildConfig;
+import okhttp3.FormBody;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
@@ -20,7 +22,7 @@ public class LoggerInterceptor implements Interceptor {
 
     public LoggerInterceptor() {
         File logDir = new File("/data/data/" + BuildConfig.APPLICATION_ID + "/files/logs/");
-        if (!logDir.exists()){
+        if (!logDir.exists()) {
             logDir.mkdirs();
         }
         logger = new Logger(logDir);
@@ -39,7 +41,22 @@ public class LoggerInterceptor implements Interceptor {
         logger.log("Request Method: " + request.method());
         // 打印请求头
         logger.log("Request Headers: \n" + request.headers());
-
+        // 打印请求体
+        RequestBody requestBody = request.body();
+        if (requestBody != null) {
+            if (requestBody instanceof FormBody) {
+                FormBody formBody = (FormBody) requestBody;
+                StringBuilder sb = new StringBuilder("Request Body:");
+                for (int i = 0; i < formBody.size() - 1; i++) {
+                    sb.append(formBody.encodedName(i)).append("=").append(formBody.value(i)).append("&");
+                }
+                sb.append(formBody.encodedName(formBody.size() - 1))
+                        .append("=")
+                        .append(formBody.value(formBody.size() - 1));
+                sb.append("\n");
+                logger.log(sb.toString());
+            }
+        }
         // 打印响应信息
         logger.log("Response Code: " + response.code());
         logger.log("Response Message: " + response.message());

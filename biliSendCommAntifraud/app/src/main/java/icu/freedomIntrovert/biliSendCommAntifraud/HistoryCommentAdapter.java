@@ -4,20 +4,15 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Paint;
-import android.net.Uri;
-import android.os.Handler;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -28,25 +23,24 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import icu.freedomIntrovert.async.EventMessage;
+import icu.freedomIntrovert.biliSendCommAntifraud.account.Account;
+import icu.freedomIntrovert.biliSendCommAntifraud.account.AccountManger;
 import icu.freedomIntrovert.biliSendCommAntifraud.async.BiliBiliApiRequestHandler;
-import icu.freedomIntrovert.biliSendCommAntifraud.async.commentcheck.ResendCommentTask;
 import icu.freedomIntrovert.biliSendCommAntifraud.async.commentcheck.ReviewCommentStatusTask;
-import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.BiliComment;
-import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.SensitiveScanResult;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.presenters.AppealDialogPresenter;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.picturestorage.PictureStorage;
-import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.workerdialog.AccountSelectionDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.workerdialog.AppealCommentDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.workerdialog.CheckCommentAreaDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.workerdialog.ScanSensitiveWordDialog;
 
 public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAdapter.ViewHolder> implements BiliBiliApiRequestHandler.DialogErrorHandle.OnDialogMessageListener {
     HistoryCommentActivity context;
@@ -55,17 +49,19 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
     CommentManipulator commentManipulator;
     DialogCommCheckWorker dialogCommCheckWorker;
     Config config;
+    AccountManger accountManger;
     boolean 花里胡哨;
 
-    public HistoryCommentAdapter(HistoryCommentActivity context,CommentManipulator commentManipulator,
+    public HistoryCommentAdapter(HistoryCommentActivity context, CommentManipulator commentManipulator,
                                  StatisticsDBOpenHelper statisticsDBOpenHelper) {
         this.context = context;
-        config = new Config(context);
+        config = Config.getInstance(context);
         this.statisticsDBOpenHelper = statisticsDBOpenHelper;
-        Config config = new Config(context);
+        Config config = Config.getInstance(context);
         this.commentManipulator = commentManipulator;
-        this.dialogCommCheckWorker = new DialogCommCheckWorker(context, config, statisticsDBOpenHelper, commentManipulator, new CommentUtil(context));
         花里胡哨 = config.get花里胡哨Enable();
+        this.accountManger = AccountManger.getInstance(context);
+        this.dialogCommCheckWorker = new DialogCommCheckWorker(context);
     }
 
     @NonNull
@@ -189,15 +185,16 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         holder.txv_date.setText(historyComment.getFormatDateFor_yMd());
         holder.txv_info.setText(historyComment.commentArea.sourceId);
         holder.txv_like.setText(formatCount(historyComment.like));
-        if (historyComment.like > 1000 || historyComment.replyCount > 1000){
-            holder.txv_like.setTextSize(TypedValue.COMPLEX_UNIT_DIP,7);
-            holder.txv_reply_count.setTextSize(TypedValue.COMPLEX_UNIT_DIP,7);
+        if (historyComment.like > 1000 || historyComment.replyCount > 1000) {
+            holder.txv_like.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 7);
+            holder.txv_reply_count.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 7);
         }
         holder.txv_reply_count.setText(formatCount(historyComment.replyCount));
         holder.itemView.setOnClickListener(v -> {
-            showCommentInfoDialog(historyComment,holder);
+            showCommentInfoDialog(historyComment, holder);
         });
-        holder.itemView.setOnLongClickListener(v -> {
+        //重发功能已移除，因为使用率极低，替代方案：定位评论，到哔哩哔哩App发送
+        /*holder.itemView.setOnLongClickListener(v -> {
             View view = View.inflate(context, R.layout.edit_text, null);
             EditText editText = view.findViewById(R.id.edit_text);
             editText.setText(historyComment.comment);
@@ -217,11 +214,11 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                     })
                     .show();
             return false;
-        });
+        });*/
     }
 
-    private void showCommentInfoDialog(HistoryComment historyComment,ViewHolder holder){
-        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_history_comment_info, null, true);//View.inflate(context, R.layout.dialog_history_comment_info, null);
+    private void showCommentInfoDialog(HistoryComment historyComment, ViewHolder holder) {
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_history_comment_info, null, true);
         TextView txv_comment = dialogView.findViewById(R.id.txv_comment_content);
         TextView txv_last_state = dialogView.findViewById(R.id.txv_last_state);
         TextView txv_source_id = dialogView.findViewById(R.id.txv_source_id);
@@ -234,6 +231,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         TextView txv_send_date = dialogView.findViewById(R.id.txv_send_date);
         TextView txv_first_state = dialogView.findViewById(R.id.txv_first_state);
         TextView txv_checked_area = dialogView.findViewById(R.id.txv_checked_area);
+        TextView txv_uid = dialogView.findViewById(R.id.txv_uid);
         SensitiveScanResult scr = historyComment.sensitiveScanResult;
         if (scr != null) {
             ForegroundColorSpan greenSpan = new ForegroundColorSpan(context.getResources().getColor(R.color.green));
@@ -248,7 +246,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
             txv_comment.setText(historyComment.comment);
         }
 
-
+        txv_uid.setText(String.valueOf(historyComment.uid));
         txv_last_state.setText(HistoryComment.getStateDesc(historyComment.lastState));
         txv_first_state.setText(HistoryComment.getStateDesc(historyComment.firstState));
         txv_source_id.setText(historyComment.commentArea.sourceId);
@@ -289,185 +287,31 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                 .setPositiveButton("关闭", new VoidDialogInterfaceOnClickListener());
         //特殊的敏感评论，仅记录并未发送成功，无真正的rpid，所以无更新状态
         if (!HistoryComment.STATE_SENSITIVE.equals(historyComment.firstState)) {
-            builder.setNegativeButton("更新状态", (dialog, which) -> {
-                ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, null, "复查中……");
-                progressDialog.setCancelable(false);
-                progressDialog.show();
-                ReviewCommentStatusHandler handle = new ReviewCommentStatusHandler(this, historyComment, progressDialog, holder);
-                new ReviewCommentStatusTask(handle, commentManipulator, statisticsDBOpenHelper, historyComment).execute();
-            });
+            builder.setNegativeButton("更新状态", null);
         }
+
         AlertDialog infoDialog = builder
                 .setNeutralButton("更多选项", null)
                 .show();
         Button buttonMore = infoDialog.getButton(DialogInterface.BUTTON_NEUTRAL);
         buttonMore.setOnClickListener(v1 -> showSubMenu(buttonMore, infoDialog, holder, historyComment));
-    }
-
-    private static class ReviewCommentStatusHandler extends ReviewCommentStatusTask.EventHandler {
-        private final HistoryCommentAdapter adapter;
-        private final HistoryComment historyComment;
-        private final ProgressDialog progressDialog;
-        private final ViewHolder holder;
-
-        public ReviewCommentStatusHandler(HistoryCommentAdapter adapter, HistoryComment historyComment, ProgressDialog progressDialog, ViewHolder holder) {
-            super(new DialogErrorHandle(progressDialog, adapter));
-            this.adapter = adapter;
-            this.historyComment = historyComment;
-            this.progressDialog = progressDialog;
-            this.holder = holder;
-        }
-
-        @Override
-        protected void handleEvent(EventMessage message) {
-            switch (message.getWhat()) {
-                case WHAT_ON_PAGE_TURN_FOR_NO_ACC_REPLY:
-                    progressDialog.setMessage("正在无账号条件下查找评论回复列表，第" +
-                            message.getObject(0, Integer.class) + "页");
-                    break;
-                case WHAT_ON_PAGE_TURN_FOR_HAS_ACC_REPLY:
-                    progressDialog.setMessage("正在有账号条件下查找评论回复列表，第" +
-                            message.getObject(0, Integer.class) + "页");
-                    break;
-                case WHAT_OK:
-                    progressDialog.dismiss();
-                    updateCommentInfo(message.getObject(0, BiliComment.class),
-                            HistoryComment.STATE_NORMAL);
-                    dialogCheckResult("该评论正常");
-                    break;
-                case WHAT_SHADOW_BANNED:
-                    progressDialog.dismiss();
-                    updateCommentInfo(message.getObject(0, BiliComment.class),
-                            HistoryComment.STATE_SHADOW_BAN);
-                    dialogCheckResult("评论处于shadowBan状态");
-                    break;
-                case WHAT_DELETED:
-                    progressDialog.dismiss();
-                    historyComment.lastCheckDate = new Date();
-                    historyComment.lastState = HistoryComment.STATE_DELETED;
-                    adapter.notifyItemChanged(holder.getBindingAdapterPosition());
-                    dialogCheckResult("评论被删除！");
-                    break;
-                case WHAT_INVISIBLE:
-                    progressDialog.dismiss();
-                    updateCommentInfo(message.getObject(0, BiliComment.class),
-                            HistoryComment.STATE_INVISIBLE);
-                    dialogCheckResult("评论invisible，前端不可见！");
-                    break;
-                case WHAT_UNDER_REVIEW:
-                    progressDialog.dismiss();
-                    updateCommentInfo(message.getObject(0, BiliComment.class),
-                            HistoryComment.STATE_UNDER_REVIEW);
-                    dialogCheckResult("有账号:Y,无账号:Y,无账号seek_rpid:N，评论审核中或ShadowBan+");
-                    break;
-                case WHAT_REPLY_OK:
-                    progressDialog.dismiss();
-                    updateCommentInfo(message.getObject(0, BiliComment.class),
-                            HistoryComment.STATE_NORMAL);
-                    dialogCheckResult("此回复评论正常显示！");
-                    break;
-                case WHAT_ROOT_COMMENT_IS_SHADOW_BAN:
-                    progressDialog.dismiss();
-                    historyComment.lastState = HistoryComment.STATE_SHADOW_BAN;
-                    historyComment.lastCheckDate = new Date();
-                    adapter.notifyItemChanged(holder.getBindingAdapterPosition());
-                    dialogCheckResult("你的根评论后期遭到shadowBan，此条回复评论被连累了！");
-                    break;
+        Button buttonRecheck = infoDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        buttonRecheck.setOnClickListener(v -> {
+            infoDialog.dismiss();
+            if (historyComment.uid != 0) {
+                recheckComment(historyComment, null, holder);
+            } else {
+                //如果没有UID，也就是之前没有记录UID，选择账号检查
+                selectAccountToCheck(historyComment, holder);
             }
-        }
+        });
+        //提供一个可以自由选择的选项，以防账号不正确，但是不建议选择与评论发布者不一样的账号。
+        buttonRecheck.setOnLongClickListener(v -> {
+            infoDialog.dismiss();
+            selectAccountToCheck(historyComment, holder);
+            return true;
+        });
 
-        private void updateCommentInfo(BiliComment resultComment, String newState) {
-            historyComment.lastState = newState;
-            historyComment.like = resultComment.like;
-            historyComment.replyCount = resultComment.rcount;
-            historyComment.lastCheckDate = new Date();
-            adapter.notifyItemChanged(holder.getBindingAdapterPosition());
-        }
-
-        private void dialogCheckResult(String result) {
-            DialogUtil.dialogMessage(adapter.context, "检查结果", result);
-        }
-    }
-
-    private static class ResendCommentHandler extends ResendCommentTask.EventHandler {
-        ProgressBarDialog progressBarDialog;
-        HistoryComment historyComment;
-        HistoryCommentAdapter adapter;
-        DialogCommCheckWorker worker;
-        ViewHolder holder;
-        StatisticsDBOpenHelper helper;
-
-        public ResendCommentHandler(HistoryCommentAdapter adapter,
-                                    ProgressBarDialog progressBarDialog,
-                                    HistoryComment historyComment,
-                                    ViewHolder viewHolder) {
-            super(new DialogErrorHandle(progressBarDialog, adapter));
-            this.progressBarDialog = progressBarDialog;
-            this.historyComment = historyComment;
-            this.adapter = adapter;
-            this.worker = adapter.dialogCommCheckWorker;
-            this.holder = viewHolder;
-            this.helper = adapter.statisticsDBOpenHelper;
-        }
-
-        @Override
-        protected void handleEvent(EventMessage message) {
-            switch (message.getWhat()) {
-                case WHAT_ON_SEND_SUCCESS_AND_SLEEP:
-                    progressBarDialog.setIndeterminate(false);
-                    progressBarDialog.setMessage("评论已发送，等待(0/" + message.getObject(0, Long.class) + ")ms后检查状态...");
-                    break;
-                case WHAT_ON_NEW_PROGRESS:
-                    int progress = message.getObject(0, Integer.class);
-                    progressBarDialog.setMessage("评论已发送，等待(" +
-                            progress * message.getObject(1, Long.class) +
-                            "/" + message.getObject(2, Long.class) + ")ms后检查状态...");
-                    progressBarDialog.setProgress(progress);
-                    break;
-                case WHAT_ON_RESENT_COMMENT:
-                    progressBarDialog.setIndeterminate(true);
-                    BiliComment c = message.getObject(0, CommentAddResult.class).reply;
-                    worker.setExitListener(new OnExitListener() {
-                        @Override
-                        public void onNewCommentRpid(long rpid) {
-                            HistoryComment comment = helper.getHistoryComment(c.rpid);
-                            adapter.historyCommentList.add(0, comment);
-                            adapter.notifyItemInserted(0);
-                        }
-                    });
-                    worker.checkComment(new Comment(historyComment.commentArea,
-                            c.rpid, c.parent, c.root, c.content.message,
-                            null, new Date(c.ctime * 1000)), progressBarDialog);
-                    break;
-                case WHAT_ON_CONTAIN_SENSITIVE:
-                    progressBarDialog.dismiss();
-                    String title = message.getObject(0,String.class);
-                    String newComment = message.getObject(1,String.class);
-                    new AlertDialog.Builder(adapter.context)
-                            .setTitle(title)
-                            .setMessage("已收录该评论至历史评论记录："+newComment)
-                            .setOnDismissListener(dialog -> {
-                                HistoryComment sensitiveComment = new HistoryComment(
-                                        historyComment.commentArea,-System.currentTimeMillis(),
-                                        historyComment.parent,
-                                        historyComment.root,
-                                        newComment,
-                                        new Date(),
-                                        0,0,
-                                        HistoryComment.STATE_SENSITIVE,
-                                        new Date(),
-                                        HistoryComment.CHECKED_NO_CHECK,
-                                        HistoryComment.STATE_SENSITIVE,
-                                        null,null
-                                );
-                                adapter.statisticsDBOpenHelper.insertHistoryComment(sensitiveComment);
-                                adapter.historyCommentList.add(0,sensitiveComment);
-                                adapter.notifyItemChanged(0);
-                            })
-                            .setPositiveButton("确定",null).show();
-                    break;
-            }
-        }
     }
 
     private void showSubMenu(Button button, DialogInterface dialog, ViewHolder holder, HistoryComment historyComment) {
@@ -493,108 +337,120 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                             Toast.makeText(context, "删除失败", Toast.LENGTH_SHORT).show();
                         }
                     }).show();
-            return false;
+            return true;
         });
+        /*popupMenu.getMenu().add("删除评论与历史记录").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(@NonNull MenuItem item) {
+                return false;
+            }
+        });*/
         if (!historyComment.lastState.equals(HistoryComment.STATE_NORMAL) && !historyComment.lastState.equals(HistoryComment.STATE_SENSITIVE)) {
-            popupMenu.getMenu().add("尝试申诉").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(@NonNull MenuItem item) {
-                    AlertDialog dialog1 = new AlertDialog.Builder(context)
-                            .setTitle("警告")
-                            .setMessage("申诉评论不能指定要申诉的评论ID，只能指定评论区链接。审核[机/人]会阅读你在此评论区所有被ban评论，将没问题恢复，即使你删除了被ban评论！\n" +
-                                    "测试评论区戒严会发送一个再删除、以及你删除重发，删除掉的就可能会被恢复，请留意将他们删除！")
-                            .setNegativeButton("还是算了", new VoidDialogInterfaceOnClickListener())
-                            .setNeutralButton("官方申诉网址", (dialog23, which1) -> {
-                                Uri uri = Uri.parse("https://www.bilibili.com/h5/comment/appeal");
-                                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                                context.startActivity(intent);
-                            })
-                            .setPositiveButton("去申诉", (dialog24, which1) -> {
-                                AppealDialogPresenter appealDialogPresenter = new AppealDialogPresenter(context, new Handler(), commentManipulator);
-                                appealDialogPresenter.appeal(CommentUtil.sourceIdToUrl(historyComment.commentArea), historyComment.comment, new AppealDialogPresenter.CallBack() {
-
-                                    @Override
-                                    public void onRespInUI(int code, String toastText) {
-                                        //如果这个时候还出现“无可申述评论”那么可能把评论状态误判了或者在某种审核中
-                                        if (code == 12082) {
-                                            statisticsDBOpenHelper.updateHistoryCommentLastState(historyComment.rpid, HistoryComment.STATE_SUSPECTED_NO_PROBLEM);
-                                            DialogUtil.dialogMessage(context, "申诉结果", toastText + "\n可能因为检查评论时误判了或评论在某种处理或审核状态，等待一段时间后应该可以显示");
-                                        } else {
-                                            DialogUtil.dialogMessage(context, "申诉结果", toastText);
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onNetErrInUI(String msg) {
-                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
-                                    }
-                                });
-                            })
-                            .show();
-                    return false;
-                }
+            popupMenu.getMenu().add("尝试申诉").setOnMenuItemClickListener(item -> {
+                System.out.println("尝试申诉");
+                AppealCommentDialog.show(context, historyComment, new AppealCommentDialog.ResultCallback(context) {
+                    @Override
+                    public void onNoCommentToAppeal(String successToast) {
+                        super.onNoCommentToAppeal(successToast);
+                        statisticsDBOpenHelper.updateHistoryCommentLastState(historyComment.rpid, HistoryComment.STATE_SUSPECTED_NO_PROBLEM);
+                        notifyItemChanged(holder.getBindingAdapterPosition());
+                    }
+                });
+                return true;
             });
             popupMenu.getMenu().add("扫描敏感词").setOnMenuItemClickListener(item -> {
-                new AlertDialog.Builder(context)
-                        .setMessage("确认扫描敏感词吗？")
-                        .setNegativeButton(android.R.string.cancel, new VoidDialogInterfaceOnClickListener())
-                        .setPositiveButton(android.R.string.ok, (dialog12, which) -> {
-                            dialogCommCheckWorker.setExitListener(new OnExitListener() {
-                                @Override
-                                public void onCommentStatusUpdated(long rpid) {
-                                    historyCommentList.set(holder.getBindingAdapterPosition(),statisticsDBOpenHelper.getHistoryComment(rpid));
-                                    notifyItemChanged(holder.getBindingAdapterPosition());
-                                }
-                            });
-                            dialog.dismiss();
-                            dialogCommCheckWorker.scanSensitiveWord(historyComment);
-                        }).show();
-                return false;
+                dialog.dismiss();
+                ScanSensitiveWordDialog.show(context, historyComment, comment -> {
+                    //检查结果返回更新列表
+                    historyCommentList.set(holder.getBindingAdapterPosition(),statisticsDBOpenHelper.getHistoryComment(comment.rpid));
+                    notifyItemChanged(holder.getBindingAdapterPosition());
+                });
+                return true;
             });
-            popupMenu.getMenu().add("检查评论区").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(@NonNull MenuItem item) {
-                    new AlertDialog.Builder(context)
-                            .setTitle("检查评论区")
-                            .setMessage("确认检查评论区吗？")
-                            .setNegativeButton("使用小号", (dialog15, which) -> {
-                                checkArea(true);
-                            })
-                            .setPositiveButton("使用主号", (dialog13, which) -> {
-                                checkArea(false);
-                            })
-                            .setNeutralButton(R.string.cancel,new VoidDialogInterfaceOnClickListener())
-                            .show();
-                    return false;
-                }
-
-                public void checkArea(boolean isDeputyAccount){
-                    dialog.dismiss();
-                    int position = holder.getBindingAdapterPosition();
-                    DialogInterface.OnDismissListener listener = dialog16 -> {
-                        System.out.println(position);
-                        historyCommentList.set(position,statisticsDBOpenHelper.getHistoryComment(historyComment.rpid));
-                        notifyItemChanged(position);
-                    };
-                    dialogCommCheckWorker.checkAreaMartialLaw(historyComment,listener,isDeputyAccount);
-                }
+            popupMenu.getMenu().add("检查评论区").setOnMenuItemClickListener(item -> {
+                new CheckCommentAreaDialog(context).show(historyComment);
+                return true;
+            });
+        }
+        if (historyComment.lastState.equals(HistoryComment.STATE_UNDER_REVIEW)){
+            popupMenu.getMenu().add("监控评论").setOnMenuItemClickListener(item -> {
+                CommentUtil.toMonitoringURComment(context,historyComment);
+                return true;
             });
         }
 
         if (!historyComment.lastState.equals(HistoryComment.STATE_SENSITIVE)) {
             popupMenu.getMenu().add("定位评论").setOnMenuItemClickListener(item -> {
-                CommentLocator.lunch(context,historyComment.commentArea.type,
-                        historyComment.commentArea.oid,historyComment.rpid,
-                        historyComment.root,historyComment.commentArea.sourceId);
-                return false;
+                CommentLocator.lunch(context, historyComment.commentArea.type,
+                        historyComment.commentArea.oid, historyComment.rpid,
+                        historyComment.root, historyComment.commentArea.sourceId);
+                return true;
             });
-
-
         }
         // 显示子菜单
         popupMenu.show();
     }
 
+    private void selectAccountToCheck(HistoryComment comment, ViewHolder holder) {
+        AccountSelectionDialog.show(context, "选择账号（请与评论发送者一致）",null, account -> {
+            recheckComment(comment, account, holder);
+        });
+    }
+
+    private void recheckComment(HistoryComment comment, Account account, ViewHolder holder) {
+        ProgressDialog progressDialog = DialogUtil.newProgressDialog(context, null, "复查中……");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+        new ReviewCommentStatusTask(context, new HistoryComment[]{comment}, account, new ReviewCommentStatusTask.EventHandler() {
+            @Override
+            public void onCookieFailed(Account account) {
+                progressDialog.dismiss();
+                dialogMessage("检查失败", String.format("用户：%s(%s)的cookie已失效", account.uname, account.uid));
+            }
+
+            @Override
+            public void onNoAccount(long uid) {
+                progressDialog.dismiss();
+                dialogMessage("检查失败", "未找到用户，UID：" + uid);
+            }
+
+            @Override
+            public void onAreaDead(HistoryComment historyComment, int index) {
+                progressDialog.dismiss();
+                dialogMessage("检查失败", "评论区已关闭，暂未更新评论状态");
+            }
+
+            @Override
+            public void onRootCommentFailed(HistoryComment historyComment, int index) {
+                progressDialog.dismiss();
+                dialogMessage("检查失败", "根评论遭到删除或ShadowBan，暂未更新评论状态，根评论id:" + historyComment.root);
+            }
+
+            @Override
+            public void onCheckResult(HistoryComment historyComment, int index) {
+                progressDialog.dismiss();
+                String resultMessage;
+                switch (historyComment.lastState) {
+                    case HistoryComment.STATE_SUSPECTED_NO_PROBLEM:
+                        resultMessage =  "评论疑似审核中，但你之前申诉说没有可申诉的，请等待十分钟左右再来复查";
+                        break;
+                    case HistoryComment.STATE_UNDER_REVIEW:
+                        resultMessage = "有账号:Y,无账号:Y,无账号seek_rpid:N，评论审核中或ShadowBan+";
+                        break;
+                    default:
+                        resultMessage = HistoryComment.getStateDesc(historyComment.lastState);
+                }
+                notifyItemChanged(holder.getBindingAdapterPosition());
+                dialogMessage("检查结果",resultMessage);
+            }
+
+            @Override
+            public void onError(Throwable th) {
+                progressDialog.dismiss();
+                DialogUtil.dialogError(context,th);
+            }
+        }).execute();
+    }
 
     @Override
     public int getItemCount() {
@@ -615,18 +471,18 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public void set花里胡哨Enable(boolean enable){
+    public void set花里胡哨Enable(boolean enable) {
         this.花里胡哨 = enable;
         notifyDataSetChanged();
     }
 
-    public static String formatCount(int count){
-        if (count < 10000){
+    public static String formatCount(int count) {
+        if (count < 10000) {
             return String.valueOf(count);
-       // } else if (count < 10000){
-        //    return String.format(Locale.getDefault(),"%.1f千", count / 1000.0);
+            // } else if (count < 10000){
+            //    return String.format(Locale.getDefault(),"%.1f千", count / 1000.0);
         } else {
-            return String.format(Locale.getDefault(),"%.1f万", count / 10000.0);
+            return String.format(Locale.getDefault(), "%.1f万", count / 10000.0);
         }
     }
 

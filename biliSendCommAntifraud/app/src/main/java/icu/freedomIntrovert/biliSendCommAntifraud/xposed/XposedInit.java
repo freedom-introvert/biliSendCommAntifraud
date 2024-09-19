@@ -9,7 +9,7 @@ import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.IntentTransferStationHook;
-import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostCommentHook;
+import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostCommentHookByMaster;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostCommentHookByGlobal;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostPictureHook;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.ShowInvisibleCommentHook;
@@ -23,7 +23,7 @@ public class XposedInit implements IXposedHookLoadPackage {
             int appVersionCode = systemContext().getPackageManager().getPackageInfo(loadPackageParam.packageName, 0).versionCode;
             XposedBridge.log("bilibili version code:" + appVersionCode);
             HookStater hookStater = new HookStater(appVersionCode,classLoader);
-            hookStater.startHook(new PostCommentHook());
+            hookStater.startHook(new PostCommentHookByMaster());
             //暂时放弃弹幕检查
             //hookStater.startHook(new PostDanmakuHook());
             hookStater.startHook(new ShowInvisibleCommentHook());
@@ -34,6 +34,7 @@ public class XposedInit implements IXposedHookLoadPackage {
             int appVersionCode = systemContext().getPackageManager().getPackageInfo(loadPackageParam.packageName, 0).versionCode;
             XposedBridge.log("global bilibili version code:" + appVersionCode);
             HookStater hookStater = new HookStater(appVersionCode,classLoader);
+            hookStater.startHook(new IntentTransferStationHook());
             hookStater.startHook(new PostCommentHookByGlobal());
         }
     }

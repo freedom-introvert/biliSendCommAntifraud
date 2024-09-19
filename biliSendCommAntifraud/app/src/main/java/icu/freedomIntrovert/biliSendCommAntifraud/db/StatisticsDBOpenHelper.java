@@ -22,8 +22,8 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.MartialLawComment
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.SensitiveScanResult;
 
 public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
-    public static final int VERSION = 9;
-
+    private static StatisticsDBOpenHelper instance;
+    public static final int VERSION = 10;
     public static final String ORDER_BY_DATE_DESC = "date DESC";
     public static final String ORDER_BY_DATE_ASC = "date ASC";
     public static final String ORDER_BY_LIKE_DESC = "like DESC";
@@ -35,8 +35,15 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
 
     long count = 0;
 
-    public StatisticsDBOpenHelper(Context context) {
+    private StatisticsDBOpenHelper(Context context) {
         super(context, DB_NAME, null, VERSION);
+    }
+
+    public synchronized static StatisticsDBOpenHelper getInstance(Context context) {
+        if (instance == null){
+            instance = new StatisticsDBOpenHelper(context.getApplicationContext());
+        }
+        return instance;
     }
 
     @Override
@@ -62,19 +69,23 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
                 "                                  DEFAULT 0,\n" +
                 "    first_state           TEXT,\n" +
                 "    pictures              TEXT,\n" +
-                "    sensitive_scan_result TEXT\n" +
-                ")");
+                "    sensitive_scan_result TEXT,\n" +
+                "    uid                   INTEGER NOT NULL\n" +
+                "                                  DEFAULT 0\n" +
+                ");");
         db.execSQL("CREATE TABLE pending_check_comments (\n" +
-                "    rpid INTEGER PRIMARY KEY,\n" +
-                "    parent INTEGER NOT NULL,\n" +
-                "    root INTEGER NOT NULL,\n" +
-                "    comment TEXT NOT NULL,\n" +
-                "    pictures TEXT,\n" +
-                "    date INTEGER NOT NULL,\n" +
-                "    area_oid INTEGER NOT NULL,\n" +
-                "    area_source_id TEXT NOT NULL,\n" +
-                "    area_type INTEGER NOT NULL\n" +
-                ");\n");
+                "    rpid           INTEGER PRIMARY KEY,\n" +
+                "    parent         INTEGER NOT NULL,\n" +
+                "    root           INTEGER NOT NULL,\n" +
+                "    comment        TEXT    NOT NULL,\n" +
+                "    pictures       TEXT,\n" +
+                "    date           INTEGER NOT NULL,\n" +
+                "    area_oid       INTEGER NOT NULL,\n" +
+                "    area_source_id TEXT    NOT NULL,\n" +
+                "    area_type      INTEGER NOT NULL,\n" +
+                "    uid            INTEGER NOT NULL\n" +
+                "                           DEFAULT 0\n" +
+                ");");
     }
 
     @Override
@@ -139,6 +150,11 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
                         ");\n");
             case 8:
                 db.execSQL("ALTER TABLE history_comment ADD COLUMN sensitive_scan_result TEXT;");
+            case 9:
+                db.execSQL("ALTER TABLE history_comment ADD COLUMN uid INTEGER NOT NULL DEFAULT 0;");
+                db.execSQL("DELETE FROM pending_check_comments");//由于未记录UID，旧版还未检查的评论将被移除！
+                db.execSQL("ALTER TABLE pending_check_comments ADD COLUMN uid INTEGER NOT NULL DEFAULT 0;");
+
         }
     }
 
@@ -198,80 +214,38 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         return db.update(TABLE_NAME_HISTORY_COMMENT, values, "rpid = ?", new String[]{String.valueOf(rpid)});
     }
 
-
-
-    public List<HistoryComment> getDemoHistoryComments(){
-        List<HistoryComment> historyCommentList = new ArrayList<>();
-        CommentArea commentArea = new CommentArea(1,"BV1GJ411x7h7",CommentArea.AREA_TYPE_VIDEO);
-        historyCommentList.add(new HistoryComment(commentArea,count,0,0,
-                "普通且正常的评论",new Date(count),0,0,HistoryComment.STATE_NORMAL,new Date(count),HistoryComment.CHECKED_NO_CHECK,
-                HistoryComment.STATE_NORMAL,null,null));
-        count++;
-        historyCommentList.add(new HistoryComment(commentArea,count,114,114,
-                "回复别人的评论",new Date(count),0,0,HistoryComment.STATE_NORMAL,new Date(count),HistoryComment.CHECKED_NO_CHECK,
-                HistoryComment.STATE_NORMAL,null,null));
-        count++;
-        historyCommentList.add(new HistoryComment(commentArea,count,0,0,
-                "带图片的评论",new Date(count),0,0,HistoryComment.STATE_NORMAL,new Date(count),HistoryComment.CHECKED_NO_CHECK,
-                HistoryComment.STATE_NORMAL,"[{\"img_height\":800,\"img_size\":114,\"img_src\":\"https://album.biliimg.com/bfs/new_dyn/404.jpg\",\"img_width\":800}]",null));
-        count++;
-        historyCommentList.add(newDemoComment(HistoryComment.STATE_SHADOW_BAN));
-        historyCommentList.add(newDemoComment(HistoryComment.STATE_DELETED));
-        historyCommentList.add(newDemoComment(HistoryComment.STATE_SENSITIVE));
-        historyCommentList.add(newDemoComment(HistoryComment.STATE_INVISIBLE));
-        historyCommentList.add(newDemoComment(HistoryComment.STATE_UNDER_REVIEW));
-        historyCommentList.add(newDemoComment(HistoryComment.STATE_SUSPECTED_NO_PROBLEM));
-        historyCommentList.add(newDemoComment(HistoryComment.STATE_UNKNOWN));
-        return historyCommentList;
-    }
-
-    private HistoryComment newDemoComment(String state){
-        CommentArea commentArea = new CommentArea(1,"BV1GJ411x7h7",CommentArea.AREA_TYPE_VIDEO);
-        HistoryComment historyComment = new HistoryComment(commentArea,count,0,0,
-                "网络上重拳出击，现实中唯唯诺诺",new Date(count),0,0,state,new Date(count),HistoryComment.CHECKED_NO_CHECK,
-                state,null,null);
-        count++;
-        return historyComment;
-    }
-
     public List<HistoryComment> queryAllHistoryComments(String dateOrderBy) {
         return selectHistoryComments("ORDER BY " + dateOrderBy);
     }
 
     public List<HistoryComment> queryHistoryCommentsByDateGT(long timestamp) {
-        return selectHistoryComments("WHERE date > " + timestamp+" ORDER BY date DESC");
+        return selectHistoryComments("WHERE date > " + timestamp + " ORDER BY date DESC");
     }
 
 
     public List<HistoryComment> queryHistoryCommentsCountLimit(int limit) {
-        return selectHistoryComments("ORDER BY date DESC LIMIT "+ limit);
+        return selectHistoryComments("ORDER BY date DESC LIMIT " + limit);
     }
 
+    public HistoryComment getHistoryComment(long rpid) {
+        SQLiteDatabase db = getReadableDatabase();
+        GreatCursor cursor = new GreatCursor(db.rawQuery("select * from " + TABLE_NAME_HISTORY_COMMENT + " where rpid = ?", new String[]{String.valueOf(rpid)}));
+        if (cursor.moveToNext()) {
+            HistoryComment historyComment = loadHistoryComment(cursor);
+            cursor.close();
+            return historyComment;
+        } else {
+            cursor.close();
+            return null;
+        }
+    }
 
-
-    private List<HistoryComment> selectHistoryComments(String selectAddition){
+    private List<HistoryComment> selectHistoryComments(String selectAddition) {
         SQLiteDatabase db = getReadableDatabase();
         List<HistoryComment> historyCommentList = new ArrayList<>();
         GreatCursor cursor = new GreatCursor(db.rawQuery("select * from " + TABLE_NAME_HISTORY_COMMENT + " " + selectAddition, null));
         while (cursor.moveToNext()) {
-            //System.out.println(cursor.getLong("root"));
-            HistoryComment historyComment = new HistoryComment(
-                    new CommentArea(cursor.getLong("oid"), cursor.getString("source_id"), cursor.getInt("area_type")),
-                    cursor.getLong("rpid"),
-                    cursor.getLong("parent"),
-                    cursor.getLong("root"),
-                    cursor.getString("comment"),
-                    new Date(cursor.getLong("date")),
-                    cursor.getInt("like"),
-                    cursor.getInt("reply"),
-                    cursor.getString("last_state"),
-                    new Date(cursor.getLong("last_check_date")),
-                    cursor.getInt("checked_area"),
-                    cursor.getString("first_state"),
-                    cursor.getString("pictures"),
-                    JSON.parseObject(cursor.getString("sensitive_scan_result"),SensitiveScanResult.class));
-            //System.out.println(historyComment.root);
-            historyCommentList.add(historyComment);
+            historyCommentList.add(loadHistoryComment(cursor));
         }
         cursor.close();
         return historyCommentList;
@@ -297,8 +271,9 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         cv.put("checked_area", historyComment.checkedArea);
         cv.put("first_state", historyComment.firstState);
         cv.put("pictures", historyComment.pictures);
-        if (historyComment.sensitiveScanResult != null){
-            cv.put("sensitive_scan_result",JSON.toJSONString(historyComment.sensitiveScanResult));
+        cv.put("uid", historyComment.uid);
+        if (historyComment.sensitiveScanResult != null) {
+            cv.put("sensitive_scan_result", JSON.toJSONString(historyComment.sensitiveScanResult));
         }
         return db.insert(TABLE_NAME_HISTORY_COMMENT, null, cv);
     }
@@ -311,13 +286,13 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         return db.update(TABLE_NAME_HISTORY_COMMENT, cv, "rpid = ?", new String[]{String.valueOf(rpid)});
     }
 
-    public int updateHistoryCommentStates(long rpid, String state, int like, int replyCount, Date last_check_date) {
+    public int updateHistoryCommentStates(long rpid, String lastState, int like, int replyCount, Date lastCheckDate) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put("last_state", state);
+        cv.put("last_state", lastState);
         cv.put("like", like);
         cv.put("reply", replyCount);
-        cv.put("last_check_date", last_check_date.getTime());
+        cv.put("last_check_date", lastCheckDate.getTime());
         return db.update(TABLE_NAME_HISTORY_COMMENT, cv, "rpid = ?", new String[]{String.valueOf(rpid)});
     }
 
@@ -326,31 +301,23 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         return db.delete(TABLE_NAME_HISTORY_COMMENT, "rpid = ?", new String[]{String.valueOf(rpid)});
     }
 
-    public HistoryComment getHistoryComment(long rpid) {
-        SQLiteDatabase db = getReadableDatabase();
-        GreatCursor cursor = new GreatCursor(db.rawQuery("select * from " + TABLE_NAME_HISTORY_COMMENT + " where rpid = ?", new String[]{String.valueOf(rpid)}));
-        if (cursor.moveToNext()) {
-            HistoryComment historyComment = new HistoryComment(
-                    new CommentArea(cursor.getLong("oid"), cursor.getString("source_id"), cursor.getInt("area_type")),
-                    cursor.getLong("rpid"),
-                    cursor.getLong("parent"),
-                    cursor.getLong("root"),
-                    cursor.getString("comment"),
-                    new Date(cursor.getLong("date")),
-                    cursor.getInt("like"),
-                    cursor.getInt("reply"),
-                    cursor.getString("last_state"),
-                    new Date(cursor.getLong("last_check_date")),
-                    cursor.getInt("checked_area"),
-                    cursor.getString("first_state"),
-                    cursor.getString("pictures"),
-                    JSON.parseObject(cursor.getString("sensitive_scan_result"),SensitiveScanResult.class));
-            cursor.close();
-            return historyComment;
-        } else {
-            cursor.close();
-            return null;
-        }
+    private HistoryComment loadHistoryComment(GreatCursor cursor) {
+        return new HistoryComment(
+                new CommentArea(cursor.getLong("oid"), cursor.getString("source_id"), cursor.getInt("area_type")),
+                cursor.getLong("rpid"),
+                cursor.getLong("parent"),
+                cursor.getLong("root"),
+                cursor.getString("comment"),
+                new Date(cursor.getLong("date")),
+                cursor.getInt("like"),
+                cursor.getInt("reply"),
+                cursor.getString("last_state"),
+                new Date(cursor.getLong("last_check_date")),
+                cursor.getInt("checked_area"),
+                cursor.getString("first_state"),
+                cursor.getString("pictures"),
+                JSON.parseObject(cursor.getString("sensitive_scan_result"), SensitiveScanResult.class),
+                cursor.getLong("uid"));
     }
 
     public void insertPendingCheckComment(Comment comment) {
@@ -364,115 +331,70 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         values.put("area_oid", comment.commentArea.oid);
         values.put("area_source_id", comment.commentArea.sourceId);
         values.put("area_type", comment.commentArea.type);
-
+        values.put("uid",comment.uid);
         long newRowId = getWritableDatabase().insert("pending_check_comments", null, values);
         Log.d("INSERT", "New Row ID: " + newRowId);
     }
 
     public List<Comment> getAllPendingCheckComments() {
-        String[] projection = {
-                "rpid",
-                "parent",
-                "root",
-                "comment",
-                "pictures",
-                "date",
-                "area_oid",
-                "area_source_id",
-                "area_type"
-        };
+        String query = "SELECT * FROM pending_check_comments ORDER BY date DESC";
 
-        Cursor cursor = getReadableDatabase().query(
-                "pending_check_comments",
-                projection,
-                null,
-                null,
-                null,
-                null,
-                "date DESC"
-        );
+        Cursor cursor = getReadableDatabase().rawQuery(query, null);
 
         List<Comment> commentList = new ArrayList<>();
         while (cursor.moveToNext()) {
-            long rpid = cursor.getLong(cursor.getColumnIndexOrThrow("rpid"));
-            long parent = cursor.getLong(cursor.getColumnIndexOrThrow("parent"));
-            long root = cursor.getLong(cursor.getColumnIndexOrThrow("root"));
-            String commentText = cursor.getString(cursor.getColumnIndexOrThrow("comment"));
-            String pictures = cursor.getString(cursor.getColumnIndexOrThrow("pictures"));
-            long dateMillis = cursor.getLong(cursor.getColumnIndexOrThrow("date"));
-            Date date = new Date(dateMillis);
-            long areaOid = cursor.getLong(cursor.getColumnIndexOrThrow("area_oid"));
-            String areaSourceId = cursor.getString(cursor.getColumnIndexOrThrow("area_source_id"));
-            int areaType = cursor.getInt(cursor.getColumnIndexOrThrow("area_type"));
-
-            CommentArea area = new CommentArea(areaOid, areaSourceId, areaType);
-            Comment comment = new Comment(area, rpid, parent, root, commentText, pictures, date);
-            commentList.add(comment);
+            commentList.add(loadPendingCheckComment(cursor));
         }
         cursor.close();
         return commentList;
     }
 
+
     public Comment getPendingCheckCommentByRpid(long rpid) {
-        String[] projection = {
-                "parent",
-                "root",
-                "comment",
-                "pictures",
-                "date",
-                "area_oid",
-                "area_source_id",
-                "area_type"
-        };
-
-        String selection = "rpid = ?";
-        String[] selectionArgs = { String.valueOf(rpid) };
-
-        Cursor cursor = getReadableDatabase().query(
-                "pending_check_comments",
-                projection,
-                selection,
-                selectionArgs,
-                null,
-                null,
-                null
-        );
+        String query = "SELECT * FROM pending_check_comments WHERE rpid = ?";
+        Cursor cursor = getReadableDatabase().rawQuery(query, new String[]{String.valueOf(rpid)});
 
         Comment comment = null;
         if (cursor.moveToFirst()) {
-            long parent = cursor.getLong(cursor.getColumnIndexOrThrow("parent"));
-            long root = cursor.getLong(cursor.getColumnIndexOrThrow("root"));
-            String commentText = cursor.getString(cursor.getColumnIndexOrThrow("comment"));
-            String pictures = cursor.getString(cursor.getColumnIndexOrThrow("pictures"));
-            long dateMillis = cursor.getLong(cursor.getColumnIndexOrThrow("date"));
-            Date date = new Date(dateMillis);
-            long areaOid = cursor.getLong(cursor.getColumnIndexOrThrow("area_oid"));
-            String areaSourceId = cursor.getString(cursor.getColumnIndexOrThrow("area_source_id"));
-            int areaType = cursor.getInt(cursor.getColumnIndexOrThrow("area_type"));
-            CommentArea area = new CommentArea(areaOid, areaSourceId, areaType);
-            comment = new Comment(area, rpid, parent, root, commentText, pictures, date);
+            comment = loadPendingCheckComment(cursor);
         }
         cursor.close();
         return comment;
+    }
+
+    private Comment loadPendingCheckComment(Cursor cursor){
+        long rpid = cursor.getLong(cursor.getColumnIndexOrThrow("rpid"));
+        long parent = cursor.getLong(cursor.getColumnIndexOrThrow("parent"));
+        long root = cursor.getLong(cursor.getColumnIndexOrThrow("root"));
+        String commentText = cursor.getString(cursor.getColumnIndexOrThrow("comment"));
+        String pictures = cursor.getString(cursor.getColumnIndexOrThrow("pictures"));
+        long dateMillis = cursor.getLong(cursor.getColumnIndexOrThrow("date"));
+        Date date = new Date(dateMillis);
+        long areaOid = cursor.getLong(cursor.getColumnIndexOrThrow("area_oid"));
+        String areaSourceId = cursor.getString(cursor.getColumnIndexOrThrow("area_source_id"));
+        int areaType = cursor.getInt(cursor.getColumnIndexOrThrow("area_type"));
+        long uid = cursor.getLong(cursor.getColumnIndexOrThrow("uid"));
+        CommentArea area = new CommentArea(areaOid, areaSourceId, areaType);
+        return new Comment(area, rpid, parent, root, commentText, pictures, date, uid);
     }
 
     public void deletePendingCheckComment(long rpid) {
         getWritableDatabase().delete("pending_check_comments", "rpid = ?", new String[]{String.valueOf(rpid)});
     }
 
-    public void addSensitiveScanResultToHistoryComment(long rpid, SensitiveScanResult result){
+    public void addSensitiveScanResultToHistoryComment(long rpid, SensitiveScanResult result) {
         ContentValues cv = new ContentValues();
         cv.put("sensitive_scan_result", JSON.toJSONString(result));
-        getWritableDatabase().update(TABLE_NAME_HISTORY_COMMENT,cv,"rpid = ?",new String[]{String.valueOf(rpid)});
+        getWritableDatabase().update(TABLE_NAME_HISTORY_COMMENT, cv, "rpid = ?", new String[]{String.valueOf(rpid)});
     }
 
-    public Map<String,String> countingStatus(){
-        Map<String,String> map = new HashMap<>();
+    public Map<String, String> countingStatus() {
+        Map<String, String> map = new HashMap<>();
         Cursor cursor = getReadableDatabase()
                 .rawQuery("select last_state,count(last_state) AS count from history_comment group by last_state order by count desc;",
-                null);
+                        null);
         while (cursor.moveToNext()) {
-            map.put(cursor.getString(0),cursor.getString(1));
+            map.put(cursor.getString(0), cursor.getString(1));
         }
         cursor.close();
         return map;

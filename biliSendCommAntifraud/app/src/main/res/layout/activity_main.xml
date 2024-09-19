@@ -70,33 +70,66 @@
                 android:layout_height="wrap_content"
                 android:text="清空输入内容" />
 
-           <!--<Button
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="10dp">
+
+                        <ImageView
+                            android:layout_width="0dp"
+                            android:layout_height="1sp"
+                            android:layout_weight="1"
+                            android:background="@android:color/darker_gray" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_marginLeft="10dp"
+                            android:layout_marginRight="10dp"
+                            android:text="使用声明"
+                            android:textColor="@color/dark_font"
+                            android:textSize="18sp" />
+
+                        <ImageView
+                            android:layout_width="0dp"
+                            android:layout_height="1sp"
+                            android:layout_weight="1"
+                            android:background="@android:color/darker_gray" />
+                    </LinearLayout>
+
+                    <!-- Content TextView -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="14dp"
+                        android:layout_marginBottom="10dp"
+                        android:text="严禁在b站公开区域宣传与展示本软件，尤其是视频、动态、文章！"
+                        android:textSize="16sp" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!--<Button
                 android:id="@+id/btn_test"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="测试" />-->
 
-
-            <!-- 作为LSPosed模块，奇葩的问题，只改了java代码，软件再安装没有更新到，改了UI代码才会更新
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-
-                <TextView
-                    android:id="@+id/txv_select_reply"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:text="Test:152"
-                    android:textColor="@color/dark_font" />
-
-            </LinearLayout>
--->
         </LinearLayout>
 
     </LinearLayout>
@@ -250,6 +283,51 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/cl_use_client_cookie"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground">
+
+                    <FrameLayout
+                        android:id="@+id/frameLayout"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_cookie_drawer" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/textView3"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:maxLines="2"
+                        android:text="使用B站客户端cookie"
+                        android:textColor="@color/dark_font"
+                        android:textSize="14sp"
+                        app:layout_constraintEnd_toStartOf="@+id/sw_use_client_cookie"
+                        app:layout_constraintStart_toEndOf="@+id/frameLayout" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/sw_use_client_cookie"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="15dp"
+                        android:focusable="true"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <LinearLayout
                     android:id="@+id/ll_pending_check_comment_list"
@@ -355,7 +433,7 @@
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/ll_test_comment_pool"
+                    android:id="@+id/ll_random_test_comment_pool"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:clickable="true"
@@ -392,43 +470,6 @@
 
                 </LinearLayout>
 
-                <LinearLayout
-                    android:id="@+id/ll_your_comment_area"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?selectableItemBackground">
-
-                    <FrameLayout
-
-                        android:id="@+id/frameLayout3"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent">
-
-                        <ImageView
-                            android:layout_width="25dp"
-                            android:layout_height="25dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/comment_area" />
-                    </FrameLayout>
-
-                    <TextView
-                        android:id="@+id/textView4"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="5dp"
-                        android:gravity="center_vertical"
-                        android:maxLines="2"
-                        android:text="配置你的评论区"
-                        android:textColor="@color/dark_font"
-                        android:textSize="14sp"
-                        app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
-
-                </LinearLayout>
                 <LinearLayout
                     android:id="@+id/ll_forward_dynamic"
                     android:layout_width="match_parent"

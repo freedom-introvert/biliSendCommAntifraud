@@ -69,7 +69,7 @@ public class PostDanmakuHook extends BaseHook {
                     long dmid = (long) dmidMethod.invoke(danmakuSendResponse);
                     Intent intent = new Intent();
                     intent.setComponent(new ComponentName("icu.freedomIntrovert.biliSendCommAntifraud", "icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity"));
-                    intent.putExtra("todo", ByXposedLaunchedActivity.TODO_CHECK_DANMAKU);
+                    intent.putExtra("action", ByXposedLaunchedActivity.ACTION_CHECK_DANMAKU);
                     intent.putExtra("oid",currentOid.get());
                     intent.putExtra("dmid",dmid);
                     intent.putExtra("content",currentContent.get());

@@ -13,6 +13,7 @@
         android:text="评论发送之后等待"/>
     <EditText
         android:id="@+id/edit_text_wt_by_after_comment_sent"
+        android:inputType="number"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"
@@ -28,6 +29,7 @@
         android:text="发图片时再多等待"/>
     <EditText
         android:id="@+id/edit_text_wt_by_has_pictures"
+        android:inputType="number"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"
@@ -43,6 +45,7 @@
         android:text="弹幕发送之后等待(已删除该功能)"/>
     <EditText
         android:id="@+id/edit_text_wt_danmaku_sent"
+        android:inputType="number"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"

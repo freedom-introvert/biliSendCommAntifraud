@@ -1,59 +1,56 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.async.commentcheck;
 
-import icu.freedomIntrovert.async.EventMessage;
-import icu.freedomIntrovert.biliSendCommAntifraud.Config;
-import icu.freedomIntrovert.biliSendCommAntifraud.async.BiliBiliApiRequestHandler;
+import android.content.Context;
+
+import icu.freedomIntrovert.biliSendCommAntifraud.account.Account;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.CommentAddResult;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
-import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 
 public class AreaMartialLawCheckTask extends CommentOperateTask<AreaMartialLawCheckTask.EventHandler> {
+    Account account;
+    Comment comment;
 
-
-    private final CommentUtil commentUtil;
-    private final boolean isDeputyAccount;
-
-    public AreaMartialLawCheckTask(EventHandler handle, CommentManipulator commentManipulator, Config config, StatisticsDBOpenHelper statisticsDB, Comment comment, CommentUtil commentUtil, boolean isDeputyAccount) {
-        super(handle, commentManipulator, config, statisticsDB, comment);
-        this.commentUtil = commentUtil;
-        this.isDeputyAccount = isDeputyAccount;
+    public AreaMartialLawCheckTask(Context context, Account account, Comment comment,EventHandler handle) {
+        super(handle, context);
+        this.account = account;
+        this.comment = comment;
     }
 
     @Override
-    protected void onStart(EventHandler eventHandler) throws Throwable {
+    protected void onStart(EventHandler handler) throws Throwable {
         CommentArea commentArea = comment.commentArea;
-        String randomComment = commentUtil.getRandomComment(commentArea);
-        CommentAddResult commentAddResult = commentManipulator.sendComment(randomComment, 0, 0, commentArea, isDeputyAccount);
-        eventHandler.sendEventMessage(new EventMessage(EventHandler.WHAT_ON_TEST_COMMENT_SENT, randomComment));
+
+        String randomComment = randomComments.getRandomComment(commentArea);
+        CommentAddResult commentAddResult = commentManipulator.sendComment(randomComment, 0, 0/*不知道有没有楼中楼域的戒严，默认没有吧*/, commentArea, account);
+        int waitTime = (int) config.getWaitTime();
+        handler.onTestCommentSent(randomComment,waitTime);
         long testCommentRpid = commentAddResult.rpid;
-        sleep(config.getWaitTime());
-        eventHandler.sendEmptyEventMessage(EventHandler.WHAT_ON_START_CHECK);
-        if (commentManipulator.findComment(commentArea, testCommentRpid, 0) != null) {
-            commentManipulator.deleteComment(commentArea, testCommentRpid, isDeputyAccount);
+        for (int i = 0; i < waitTime; i+=10) {
+            Thread.sleep(10);
+            handler.onWaitProgress(i);
+        }
+        handler.onStartCheck();
+        if (commentManipulator.findComment(commentAddResult.reply, account) != null) {
+            commentManipulator.deleteComment(commentArea, testCommentRpid, account);
             statisticsDB.updateCheckedArea(comment.rpid, HistoryComment.CHECKED_NOT_MARTIAL_LAW);
-            eventHandler.sendEmptyEventMessage(EventHandler.WHAT_THEN_AREA_OK);
+            handler.onAreaOk();
         } else {
             if (config.getRecordeHistoryIsEnable()) {
                 statisticsDB.updateCheckedArea(comment.rpid, HistoryComment.CHECKED_MARTIAL_LAW);
-                statisticsDB.insertMartialLawCommentArea(commentManipulator.getMartialLawCommentArea(commentArea, testCommentRpid, isDeputyAccount));
+                statisticsDB.insertMartialLawCommentArea(commentManipulator.getMartialLawCommentArea(commentArea, testCommentRpid, account));
             }
-            commentManipulator.deleteComment(commentArea, testCommentRpid, isDeputyAccount);
-            eventHandler.sendEmptyEventMessage(EventHandler.WHAT_THEN_MARTIAL_LAW);
+            commentManipulator.deleteComment(commentArea, testCommentRpid, account);
+            handler.onMartialLaw();
         }
     }
 
-    public static abstract class EventHandler extends BiliBiliApiRequestHandler {
-        public static final int WHAT_ON_TEST_COMMENT_SENT = 1;
-        public static final int WHAT_ON_START_CHECK = 2;
-        public static final int WHAT_THEN_AREA_OK = 10;
-        public static final int WHAT_THEN_MARTIAL_LAW = 11;
-
-        public EventHandler(ErrorHandle errorHandle) {
-            super(errorHandle);
-        }
+    public interface EventHandler extends BaseEventHandler{
+        void onTestCommentSent(String testComment, int maxProgress);
+        void onWaitProgress(int progress);
+        void onStartCheck();
+        void onAreaOk();
+        void onMartialLaw();
     }
 }

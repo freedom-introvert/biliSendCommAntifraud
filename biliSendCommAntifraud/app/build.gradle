@@ -14,9 +14,9 @@ android {
         applicationId "icu.freedomIntrovert.biliSendCommAntifraud"
         minSdk 21
         targetSdk 34
-        versionCode 535
-        versionName "5.3.5_dev_${currentTimeMillis}" //每编译一次改变版本号，以更新模块
-        //versionName "5.3.5 - 63bit Edition"
+        versionCode 599
+        //versionName "5.9.9_dev_${currentTimeMillis}" //每编译一次改变版本号，以更新模块
+        versionName "5.9.9 - beta"
     }
     buildTypes {
         release {
@@ -47,4 +47,5 @@ dependencies {
     implementation 'com.opencsv:opencsv:5.5.2'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.github.wanggaowan:PhotoPreview:2.5.5'
+    implementation 'de.hdodenhof:circleimageview:3.1.0'
 }

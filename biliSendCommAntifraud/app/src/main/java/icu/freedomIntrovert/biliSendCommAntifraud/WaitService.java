@@ -1,131 +1,89 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
-import static android.app.Notification.VISIBILITY_SECRET;
-
-import android.annotation.SuppressLint;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.os.Handler;
 import android.os.IBinder;
 
 import androidx.core.app.NotificationCompat;
 
+import java.util.ArrayList;
+
+import icu.freedomIntrovert.biliSendCommAntifraud.async.CountdownTask;
+
 public class WaitService extends Service {
-    public static final int ID_WAIT_PROGRESS = 1;
-    public static final int ID_WAIT_OVER = 2;
-    public static final String CHANNEL_ID_TIMER = "timer";
-    public static final String CHANNEL_ID_OVER = "over";
-    long waitTime;
-    Handler handler;
-    NotificationCompat.Builder builder;
-    NotificationManager manager;
-    long rpid;
-    String comment;
+
+    private NotificationService notificationService;
+    private NotificationManager notificationManager;
+    private int foregroundServiceId;
 
     public WaitService() {
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
         return null;
     }
 
     @Override
     public void onCreate() {
-        handler = new Handler();
-        manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        builder = new NotificationCompat.Builder(getApplicationContext(), CHANNEL_ID_TIMER)
-                .setWhen(System.currentTimeMillis())
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setSmallIcon(R.drawable.launcher)
-                .setContentTitle("等待中")
-                .setContentText("")
-                .setOngoing(true)
-                .setProgress(100, 0, false);
-        NotificationChannel notificationChannel;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {//不保证兼容老版本安卓，若不兼容请发issues
-            notificationChannel = new NotificationChannel(CHANNEL_ID_TIMER, "定时器", NotificationManager.IMPORTANCE_DEFAULT);
-            notificationChannel.setVibrationPattern(new long[]{100, 100, 200});//设置震动模式
-            notificationChannel.setLockscreenVisibility(VISIBILITY_SECRET);//锁屏显示通知
-            notificationChannel.enableLights(true);//闪光灯
-            notificationChannel.setShowBadge(true);
-            notificationChannel.enableVibration(true);//是否允许震动
-            manager.createNotificationChannel(notificationChannel);
-            notificationChannel = new NotificationChannel(CHANNEL_ID_OVER, "等待结束", NotificationManager.IMPORTANCE_DEFAULT);
-            notificationChannel.setVibrationPattern(new long[]{100, 100, 200});//设置震动模式
-            notificationChannel.setLockscreenVisibility(VISIBILITY_SECRET);//锁屏显示通知
-            notificationChannel.enableLights(true);//闪光灯
-            notificationChannel.setShowBadge(true);
-            notificationChannel.enableVibration(true);//是否允许震动
-            manager.createNotificationChannel(notificationChannel);
-        }
+        super.onCreate();
+        notificationService = NotificationService.getInstance(this);
+        notificationManager = notificationService.notificationManager;
+        foregroundServiceId = notificationService.createNewId();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        waitTime = intent.getLongExtra("wait_time", 5000);
-        if (waitTime < 100) {
-            waitTime = 100;
-        }
-        rpid = intent.getLongExtra("rpid",-114514);
-        comment = intent.getStringExtra("comment");
-        manager.notify(ID_WAIT_PROGRESS, builder.build());
-        startTimer();
+        int nId = notificationService.createNewId();
+        int waitSeconds = intent.getIntExtra("wait_seconds", 5);
+        System.out.println("等待时间："+waitSeconds);
+        long rpid = intent.getLongExtra("rpid", -1);
+        String comment = intent.getStringExtra("comment");
+        ArrayList<String> cookies = intent.getStringArrayListExtra("cookies");
+        new CountdownTask(waitSeconds, new CountdownTask.EventHandler() {
+            @Override
+            public void onProgress(int max, int progress) {
+                postProgress(nId,comment,max,progress);
+            }
+
+            @Override
+            public void onComplete(CountdownTask task) {
+                postOver(nId,rpid,cookies,comment);
+            }
+        }).execute();
         return super.onStartCommand(intent, flags, startId);
     }
 
-    private void startTimer() {
-        new Thread(() -> {
-            int graduation = 100;
-            long sleepSeg = waitTime / graduation;
-            for (int i = 0; i <= graduation; i++) {
-                try {
-                    Thread.sleep(sleepSeg);
-                    int finalI = i;
-                    handler.post(() -> {
-                        builder.setProgress(graduation, finalI, false);
-                        builder.setContentText(finalI * sleepSeg + "/" + graduation * sleepSeg + "ms");
-                        manager.notify(ID_WAIT_PROGRESS, builder.build());
-                        if (finalI == graduation) {
-                            manager.cancel(ID_WAIT_PROGRESS);
-                        }
-                    });
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            waitOver();
-        }).start();
+    private void postProgress(int id, String comment, int max, int progress) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NotificationService.CHANNEL_BACKGROUND_TASK)
+                .setContentTitle("等待剩余" + (max - progress) + "秒")
+                .setContentText(comment)
+                .setSmallIcon(R.drawable.launcher)
+                .setProgress(max, progress, false)  // 设置通知进度条
+                .setOngoing(true);  // 使通知不可移除
+        notificationManager.notify(id, builder.build());
     }
 
-    @SuppressLint("MissingPermission")
-    private void waitOver() {
-        NotificationCompat.Builder builder1 = new NotificationCompat.Builder(this, CHANNEL_ID_OVER);
+    private void postOver(int id, long rpid,ArrayList<String> cookies,String comment) {
+        notificationManager.cancel(id);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NotificationService.CHANNEL_BACKGROUND_TASK_RESULT);
         Intent intent = new Intent(this, ByXposedLaunchedActivity.class);
-        intent.putExtra("todo", ByXposedLaunchedActivity.TODO_CONTINUE_CHECK_COMMENT);
+        intent.putExtra("action", ByXposedLaunchedActivity.ACTION_RESUME_CHECK_COMMENT);
         intent.putExtra("rpid", rpid);
+        intent.putExtra("cookies", cookies);
         intent.setAction(Intent.ACTION_VIEW);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        SharedPreferences sp_counter = getSharedPreferences("counter",MODE_PRIVATE);
-        int id = sp_counter.getInt("notification_id", 0);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, id, intent, PendingIntent.FLAG_MUTABLE);
-        System.out.println("pendingIntent:" + pendingIntent);
-        builder1.setWhen(System.currentTimeMillis())
+        builder.setWhen(System.currentTimeMillis())
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setSmallIcon(R.drawable.launcher)
                 .setContentIntent(pendingIntent)
-                .setContentTitle("已完成等待，点击此通知继续检查！")
+                .setContentTitle("已完成等待，点击此通知继续检查")
                 .setContentText(comment != null ? comment : "null")
                 .setAutoCancel(true);
-        manager.notify(id, builder1.build());
-        id++;
-        sp_counter.edit().putInt("notification_id",id).apply();
-        stopSelf();
+        notificationManager.notify(id, builder.build());
     }
+
 }
