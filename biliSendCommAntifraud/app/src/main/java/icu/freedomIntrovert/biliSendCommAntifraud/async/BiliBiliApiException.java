@@ -12,6 +12,8 @@ public class BiliBiliApiException extends Exception{
     public final String tipsMessage;
 
     public BiliBiliApiException(int code, String message,@Nullable String tipsMessage) {
+        super(String.format("Tips:%s\ncode:%s\nmessage:%s",
+                tipsMessage,code,message));
         this.code = code;
         this.message = message;
         this.tipsMessage = tipsMessage;

@@ -42,13 +42,13 @@ public class HistoryComment extends Comment{
     public String firstState;
     public String lastState;
     public Date lastCheckDate;
-    public SensitiveScanResult sensitiveScanResult;
+    public SensitiveScanResult sensitiveScanResult;//JsonString
 
     public HistoryComment(CommentArea commentArea, long rpid, long parent, long root, String comment,
                           Date date, int like, int replyCount, String lastState, Date lastCheckDate,
                           int checkedArea, String firstState, String pictures,
-                          SensitiveScanResult sensitiveScanResult) {
-        super(commentArea, rpid, parent, root, comment, pictures, date);
+                          SensitiveScanResult sensitiveScanResult,long uid) {
+        super(commentArea, rpid, parent, root, comment, pictures, date,uid);
         this.like = like;
         this.replyCount = replyCount;
         this.lastState = lastState;
@@ -59,8 +59,10 @@ public class HistoryComment extends Comment{
     }
 
     //5.0.0及之前csv导入专用方法
-    public HistoryComment(long oid, String sourceId, int type, long rpid, long parent, long root, String comment, Date date, int like, int replyCount, String lastState, Date lastCheckDate) {
-        super(new CommentArea(oid, sourceId, type), rpid, parent, root, comment, null, date);
+    public HistoryComment
+    (long oid, String sourceId, int type, long rpid, long parent, long root, String comment,
+     Date date, int like, int replyCount, String lastState, Date lastCheckDate,long uid) {
+        super(new CommentArea(oid, sourceId, type), rpid, parent, root, comment, null, date,uid);
         this.like = like;
         this.replyCount = replyCount;
         if (lastState.equals("shadowBanRecking")) {
@@ -74,8 +76,9 @@ public class HistoryComment extends Comment{
         this.lastCheckDate = lastCheckDate;
     }
 
-    public HistoryComment(Comment originalComment) {
-        super(originalComment.commentArea, originalComment.rpid, originalComment.parent, originalComment.root, originalComment.comment, originalComment.pictures, originalComment.date);
+    public HistoryComment(Comment original) {
+        super(original.commentArea, original.rpid, original.parent, original.root,
+                original.comment, original.pictures, original.date,original.uid);
     }
 
     public String getFormatLastCheckDateFor_yMd() {

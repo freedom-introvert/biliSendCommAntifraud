@@ -31,7 +31,7 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
     private StatisticsDBOpenHelper statisticsDBOpenHelper;
 
     public MartialLawCommentAreaListAdapter(ArrayList<MartialLawCommentArea> areaArrayList, Context context) {
-        statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
+        statisticsDBOpenHelper = StatisticsDBOpenHelper.getInstance(context);
         this.areaArrayList = areaArrayList;
         Collections.reverse(this.areaArrayList);
         this.context = context;

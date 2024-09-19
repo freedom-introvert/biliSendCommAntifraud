@@ -2,9 +2,11 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import static android.view.KeyEvent.KEYCODE_BACK;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -22,13 +24,18 @@ public class WebViewLoginActivity extends AppCompatActivity {
     public Context context;
     Config config;
     ProgressBar progressBar;
+
+    public static final int RESULT_CODE_SUCCEED = 1;
+    public static final int RESULT_CODE_CANCELED = 2;
+
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_web_view_login);
         progressBar = findViewById(R.id.progressBar);
         context = this;
-        config = new Config(context);
+        config = Config.getInstance(context);
         webView = findViewById(R.id.web_view);
         webView.loadUrl("https://www.bilibili.com");
         webView.getSettings().setJavaScriptEnabled(true);
@@ -43,15 +50,18 @@ public class WebViewLoginActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 CookieManager cookieManager = CookieManager.getInstance();
                 String cookieStr = cookieManager.getCookie(url);
-                if (cookieStr != null) {
+                if (url.equals("https://www.bilibili.com/") && cookieStr != null && !isFinishing()) {
+                    Log.i("Cookies", "Url = " + url);
                     Log.i("Cookies", "Cookies = " + cookieStr);
                     if (cookieStr.contains("bili_jct=")){
                         new AlertDialog.Builder(context).setTitle("获取到cookie!")
                                 .setMessage(cookieStr)
-                                .setPositiveButton("设置并返回", new DialogInterface.OnClickListener() {
+                                .setPositiveButton("选择此cookie", new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
-                                        onCookieSet(cookieStr);
+                                        Intent intent = new Intent();
+                                        intent.putExtra("cookie",cookieStr);
+                                        WebViewLoginActivity.this.setResult(RESULT_CODE_SUCCEED,intent);
                                         finish();
                                     }
                                 })
@@ -79,10 +89,6 @@ public class WebViewLoginActivity extends AppCompatActivity {
                 }
             }
         });
-    }
-
-    protected void onCookieSet(String cookie){
-        config.setCookie(cookie);
     }
 
     public boolean onKeyDown(int keyCode, KeyEvent event) {

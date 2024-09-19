@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
@@ -13,10 +15,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BiliSendCommAntifraud.HasActionBar"
         tools:targetApi="33">
+        <service
+            android:name=".CommentMonitoringService"
+            android:enabled="true"
+            android:exported="true"></service>
+
         <activity
             android:name=".PendingCheckCommentsActivity"
-            android:label="待检查评论列表"
-            android:exported="false" />
+            android:exported="false"
+            android:label="待检查评论列表" />
 
         <service
             android:name=".WaitService"

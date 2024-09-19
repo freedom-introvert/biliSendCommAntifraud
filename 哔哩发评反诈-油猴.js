@@ -1,12 +1,15 @@
 // ==UserScript==
 // @name         哔哩发评反诈
 // @namespace    http://tampermonkey.net/
-// @version      2.5
+// @version      3.0
 // @description  评论发送后自动检测状态，避免被发送成功的谎言所欺骗！
 // @author       freedom-introvert & ChatGPT
 // @match        https://*.bilibili.com/*
 // @run-at       document-idle
 // @grant        none
+// @license      GPL
+// @downloadURL https://update.greasyfork.org/scripts/496537/%E5%93%94%E5%93%A9%E5%8F%91%E8%AF%84%E5%8F%8D%E8%AF%88.user.js
+// @updateURL https://update.greasyfork.org/scripts/496537/%E5%93%94%E5%93%A9%E5%8F%91%E8%AF%84%E5%8F%8D%E8%AF%88.meta.js
 // ==/UserScript==
 
 const waitTime = 5000;//评论发送后的等待时间，单位毫秒，可修改此项，不建议低于5秒
@@ -383,9 +386,14 @@ async function handleAddCommentResponse(url, responseJson) {
 async function handleCheckDynamic(id) {
     var resp = await fetchDynamic(id, false);
     console.log(resp);
-    if (resp.code == -352 || resp.code == 4101131) {
+    if (resp.code == -352) {
+        addDynamicShadowBannedHint("检测到此动态被shadowBan，仅自己可见！（也可能是误判了，你可以在无痕模式去验证一下）");
+    } else if(resp.code == 4101131) {
         console.log("检测到动态被shadowBan！");
-        addDynamicShadowBannedHint();
+        addDynamicShadowBannedHint("检测到此动态被shadowBan，仅自己可见！（可能你转发到动态的评论被ShadowBan）");
+    } else if(resp.code == 500){
+        console.log("检测到动态被shadowBan！");
+        addDynamicShadowBannedHint("检测到此动态被shadowBan，仅自己可见!（可能你转发到动态的评论疑似审核中）");
     } else if (resp.code == 0) {
         console.log("检查到此动态正常，没被shadowBan");
     } else {
@@ -544,7 +552,7 @@ function showQuickDeleteResult(reply) {
 
 function showSusResult(reply) {
     showResult(`
-                你评论状态有点可疑，虽然我账号翻找评论区获取不到你的评论，但是无账号可通过
+                你评论状态有点可疑，虽然无账号翻找评论区获取不到你的评论，但是无账号可通过
                 https://api.bilibili.com/x/v2/reply/reply?oid=${reply.oid}&pn=1&ps=20&root=${reply.rpid}&type=${reply.type}&sort=0
                 获取你的评论，疑似评论区被戒严或者这是你的视频。
 
@@ -567,7 +575,7 @@ function showErrorResult(message) {
 }
 
 //样式抄自X（Twitter）的shadowBan检查器，插件可在Chrome商店搜索
-function addDynamicShadowBannedHint() {
+function addDynamicShadowBannedHint(message) {
     const biliDynContent = document.querySelector('.bili-dyn-content');
 
     if (biliDynContent) {
@@ -576,7 +584,7 @@ function addDynamicShadowBannedHint() {
         shadowbanMessage.style.setProperty('--md-sys-color-on-primary', 'rgb(15, 20, 25)');
 
         const messageSpan = document.createElement('span');
-        messageSpan.textContent = '检测到此动态被shadowBan，仅自己可见';
+        messageSpan.textContent = message;
 
         shadowbanMessage.appendChild(messageSpan);
         biliDynContent.appendChild(shadowbanMessage);

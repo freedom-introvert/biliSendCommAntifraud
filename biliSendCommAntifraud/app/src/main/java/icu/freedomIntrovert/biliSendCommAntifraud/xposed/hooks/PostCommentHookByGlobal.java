@@ -1,32 +1,13 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks;
 
-import android.app.Activity;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.os.Handler;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
 import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
-import icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
-import icu.freedomIntrovert.biliSendCommAntifraud.xposed.BaseHook;
 
-public class PostCommentHookByGlobal extends BaseHook {
-    @Override
+public class PostCommentHookByGlobal extends PostCommentHook {
+/*    @Override
     public void startHook(int appVersionCode, ClassLoader classLoader) throws ClassNotFoundException {
-        Handler handler = new Handler();
-        AtomicReference<Context> currentContext = new AtomicReference<>();
-        AtomicReference<String> currentDynId = new AtomicReference<>();
 
-        XposedHelpers.findAndHookMethod("com.bilibili.lib.ui.ComposeActivity", classLoader, "onCreate", android.os.Bundle.class, new XC_MethodHook() {
+        *//*XposedHelpers.findAndHookMethod("com.bilibili.lib.ui.ComposeActivity", classLoader, "onCreate", android.os.Bundle.class, new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 super.beforeHookedMethod(param);
@@ -62,9 +43,9 @@ public class PostCommentHookByGlobal extends BaseHook {
                 currentContext.set(context);
                 XposedBridge.log("context:" + context);
             }
-        });
+        });*//*
 
-        /*XposedHelpers.findAndHookMethod("retrofit2.Retrofit", classLoader, "b", java.lang.Class.class, new XC_MethodHook() {
+     *//*XposedHelpers.findAndHookMethod("retrofit2.Retrofit", classLoader, "b", java.lang.Class.class, new XC_MethodHook() {
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                 super.afterHookedMethod(param);
@@ -91,7 +72,7 @@ public class PostCommentHookByGlobal extends BaseHook {
                     }
                 }
             }
-        });*/
+        });*//*
 
         XposedHelpers.findAndHookMethod("com.bilibili.okretro.call.a", classLoader, "execute", new XC_MethodHook() {
             @Override
@@ -116,7 +97,7 @@ public class PostCommentHookByGlobal extends BaseHook {
                             Integer type = (Integer) XposedHelpers.getObjectField(reply, "mType");
                             Long oid = (Long) XposedHelpers.getObjectField(reply, "mOid");
                             if ((Integer) biliCommentAddResultClass.getField("action").get(data) == 0) {
-                                intent.putExtra("todo", ByXposedLaunchedActivity.TODO_CHECK_COMMENT);
+                                intent.putExtra("action", ByXposedLaunchedActivity.ACTION_CHECK_COMMENT);
                                 intent.putExtra("message", (String) biliCommentAddResultClass.getField("message").get(data));
                                 intent.putExtra("oid", String.valueOf(oid));
                                 intent.putExtra("type", String.valueOf(type));
@@ -145,7 +126,10 @@ public class PostCommentHookByGlobal extends BaseHook {
                 }
             }
         });
+    }*/
 
+    @Override
+    public void hook(int appVersionCode, ClassLoader classLoader) throws ClassNotFoundException {
         //强制显示invisible评论
         XposedHelpers.findAndHookMethod("com.bapis.bilibili.main.community.reply.v1.ReplyControl", classLoader, "getInvisible", new XC_MethodHook() {
             @Override
@@ -159,5 +143,27 @@ public class PostCommentHookByGlobal extends BaseHook {
                 param.setResult(false);
             }
         });
+    }
+
+    @Override
+    protected String getBiliCallClassName() {
+        return "com.bilibili.okretro.call.a";
+    }
+
+    @Override
+    protected String getBiliCall_body_MethodName() {
+        return "a";
+    }
+
+    @Override
+    protected String getBiliCall_request_MethodName() {
+        return "h";
+    }
+
+    @Override
+    protected String[] getCookieDBFilePaths() {
+        return new String[]{
+                "/data/data/com.bilibili.app.in/app_webview_com.bilibili.app.in/Default/Cookies",
+                "/data/data/com.bilibili.app.in/app_webview_com.bilibili.app.in_web/Default/Cookies"};
     }
 }

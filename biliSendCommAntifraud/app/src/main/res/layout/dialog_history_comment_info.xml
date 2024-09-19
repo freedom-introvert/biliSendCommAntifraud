@@ -103,6 +103,19 @@
                     android:layout_height="match_parent"
                     android:layout_marginVertical="5dp">
 
+                    <TextView android:text="uid" />
+
+                    <TextView
+                        android:id="@+id/txv_uid"
+                        android:layout_marginLeft="10dp"
+                        android:textIsSelectable="true" />
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginVertical="5dp">
+
                     <TextView android:text="rpid" />
 
                     <TextView

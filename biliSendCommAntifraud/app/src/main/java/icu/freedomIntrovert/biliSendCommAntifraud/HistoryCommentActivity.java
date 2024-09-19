@@ -29,7 +29,6 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.alibaba.fastjson.JSON;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
@@ -44,7 +43,6 @@ import java.io.OutputStreamWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -59,11 +57,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import icu.freedomIntrovert.biliSendCommAntifraud.async.commentcheck.BatchReviewCommentStatusTask;
+import icu.freedomIntrovert.biliSendCommAntifraud.account.Account;
+import icu.freedomIntrovert.biliSendCommAntifraud.async.commentcheck.ReviewCommentStatusTask;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.HistoryCommentCsvSerializer;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.SensitiveScanResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.docmenthelper.ActivityResult;
 import icu.freedomIntrovert.biliSendCommAntifraud.docmenthelper.ActivityResultCallbackForSaveDoc;
@@ -71,24 +70,6 @@ import icu.freedomIntrovert.biliSendCommAntifraud.docmenthelper.ActivityResultFo
 import icu.freedomIntrovert.biliSendCommAntifraud.picturestorage.PictureStorage;
 
 public class HistoryCommentActivity extends AppCompatActivity {
-    private static final String[] csv_header_after_v500 = new String[]{
-            "rpid",
-            "parent",
-            "root",
-            "oid",
-            "area_type",
-            "source_id",
-            "comment",
-            "like",
-            "reply",
-            "last_state",
-            "last_check_date",
-            "date",
-            "checked_area",
-            "first_state",
-            "pictures",
-            "sensitive_scan_result"};
-
     private static final int REQUEST_CODE_EXPORT = 1;
     private static final int REQUEST_CODE_IMPORT = 2;
     StatisticsDBOpenHelper statisticsDBOpenHelper;
@@ -109,11 +90,10 @@ public class HistoryCommentActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-        ByXposedLaunchedActivity.lastActivity = this;
         context = this;
-        config = new Config(context);
-        commentManipulator = new CommentManipulator(config.getCookie(), config.getDeputyCookie());
-        statisticsDBOpenHelper = new StatisticsDBOpenHelper(context);
+        config = Config.getInstance(context);
+        commentManipulator = CommentManipulator.getInstance();
+        statisticsDBOpenHelper = StatisticsDBOpenHelper.getInstance(context);
         adapter = new HistoryCommentAdapter(this, commentManipulator, statisticsDBOpenHelper);
         loadingHistoryCommentFragment = new LoadingHistoryCommentFragment();
         historyCommentFragment = new HistoryCommentFragment(adapter);
@@ -193,27 +173,11 @@ public class HistoryCommentActivity extends AppCompatActivity {
                 zos.putNextEntry(csvEntry);
                 CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(zos));
                 //写入csv头
-                csvWriter.writeNext(csv_header_after_v500);
+                csvWriter.writeNext(HistoryCommentCsvSerializer.getLatestHeader());
                 for (HistoryComment comment : historyCommentList) {
-                    csvWriter.writeNext(new String[]{
-                            String.valueOf(comment.rpid),
-                            String.valueOf(comment.parent),
-                            String.valueOf(comment.root),
-                            String.valueOf(comment.commentArea.oid),
-                            String.valueOf(comment.commentArea.type),
-                            comment.commentArea.sourceId,
-                            comment.comment,
-                            String.valueOf(comment.like),
-                            String.valueOf(comment.replyCount),
-                            comment.lastState,
-                            String.valueOf(comment.lastCheckDate.getTime()), // Assuming lastCheckDate is stored as milliseconds
-                            String.valueOf(comment.date.getTime()), // Assuming date is stored as milliseconds
-                            String.valueOf(comment.checkedArea),
-                            comment.firstState,
-                            comment.pictures,
-                            comment.sensitiveScanResult != null ? JSON.toJSONString(comment.sensitiveScanResult) : null
-                    });
+                    csvWriter.writeNext(HistoryCommentCsvSerializer.toCsvData(comment));
                 }
+
                 csvWriter.flush();
                 zos.closeEntry();
                 File file = PictureStorage.getPicturesDir(context);
@@ -411,7 +375,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
             });
 
         }/* else if (itemId == R.id.statistics) {
-            *//*new AlertDialog.Builder(this)
+         *//*new AlertDialog.Builder(this)
                     .setTitle("统计")
                     .*//*
         }*/
@@ -452,21 +416,52 @@ public class HistoryCommentActivity extends AppCompatActivity {
                 .setTitle(String.format("检查中[%s/%s]……", 0, pendingCheckComments.size()))
                 .setView(dialogView)
                 .setCancelable(false)
-                .setPositiveButton("取消",null)
+                .setPositiveButton("取消", null)
                 .show();
 
-        BatchReviewCommentStatusTask task = new BatchReviewCommentStatusTask(commentManipulator, statisticsDBOpenHelper,
-                pendingCheckComments, new BatchReviewCommentStatusTask.EventHandler() {
+        ReviewCommentStatusTask task = new ReviewCommentStatusTask(context, pendingCheckComments.toArray(new HistoryComment[]{}), null, new ReviewCommentStatusTask.EventHandler() {
+
             @Override
-            public void onStartCheck(HistoryComment checkingComment) {
+            public void onCookieFailed(Account account) {
+                dialog.dismiss();
+                DialogUtil.dialogMessage(context, "错误", String.format("账号：%s(%s)的cookie已失效！", account.uname, account.uid));
+            }
+
+            @Override
+            public void onNoAccount(long uid) {
+                dialog.dismiss();
+                DialogUtil.dialogMessage(context, "错误", "没有对应UID：" + uid + " 的账号");
+            }
+
+            @Override
+            public void onAreaDead(HistoryComment historyComment, int index) {
+                adapter.overCheckComment("评论区失效");
+                recyclerView.scrollToPosition(adapter.getItemCount());
+            }
+
+            @Override
+            public void onRootCommentFailed(HistoryComment historyComment, int index) {
+                adapter.overCheckComment("根评论失效");
+                recyclerView.scrollToPosition(adapter.getItemCount());
+            }
+
+            @Override
+            public void onStartCheck(HistoryComment checkingComment, int index) {
                 adapter.setCheckingComment(checkingComment);
                 dialog.setTitle(String.format("检查中[%s/%s]……", adapter.getItemCount(), pendingCheckComments.size()));
             }
 
             @Override
-            public void onCheckOver(String newStatus) {
-                adapter.overCheckComment(newStatus);
+            public void onCheckResult(HistoryComment historyComment, int index) {
+                adapter.overCheckComment(historyComment.lastState);
                 recyclerView.scrollToPosition(adapter.getItemCount());
+            }
+
+            @Override
+            public void onError(Throwable th) {
+                dialog.dismiss();
+                reloadData(null);
+                DialogUtil.dialogError(context, th);
             }
 
             @Override
@@ -474,13 +469,6 @@ public class HistoryCommentActivity extends AppCompatActivity {
                 dialog.setTitle(pendingCheckComments.size() + "条评论已检查完毕");
                 reloadData(null);
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("关闭");
-            }
-
-            @Override
-            public void onError(Throwable th) {
-                dialog.dismiss();
-                reloadData(null);
-                DialogUtil.dialogMessage(context,"错误", th.toString());
             }
         });
         task.execute();
@@ -657,16 +645,17 @@ public class HistoryCommentActivity extends AppCompatActivity {
                                     String name = nextEntry.getName();
                                     System.out.println(name);
                                     if (name.equals("comments.csv")) {
-                                        readComments = readCSVToHistoryComments(new CSVReader(new InputStreamReader(zis)));
+                                        readComments = HistoryCommentCsvSerializer.readCSVToHistoryComments
+                                                (new CSVReader(new InputStreamReader(zis)));
                                     } else if (name.startsWith("pictures/")) {
                                         String[] split = name.split("/");
                                         PictureStorage.save(context, zis, split[split.length - 1]);
                                     }
-                                    zis.closeEntry();
                                 }
                                 zis.close();
                             } else if ("text/comma-separated-values".equals(type)) {
-                                readComments = readCSVToHistoryComments(new CSVReader(new InputStreamReader(inputStream)));
+                                readComments = HistoryCommentCsvSerializer.readCSVToHistoryComments
+                                        (new CSVReader(new InputStreamReader(inputStream)));
                                 inputStream.close();
                             } else {
                                 error("不支持的文件类型");
@@ -702,6 +691,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
                             });
 
                         } catch (IOException e) {
+                            e.printStackTrace();
                             error("发生IO异常，导入失败，异常：" + e.getMessage());
                         } catch (CsvValidationException e) {
                             error("CsvValidationException：" + e.getMessage());
@@ -718,108 +708,6 @@ public class HistoryCommentActivity extends AppCompatActivity {
         }
 
     }
-
-
-    private List<HistoryComment> readCSVToHistoryComments(CSVReader csvReader) throws CsvValidationException, IOException {
-        String[] header_before_v500 = new String[]{"oid", "sourceId", "type", "rpid", "parent", "root", "comment", "date", "like", "replyCount", "state", "lastCheckDate"};
-        String[] header_banned = new String[]{"rpid", "oid", "sourceId", "comment", "bannedType", "commentAreaType", "checkedArea", "date"};
-        String[] data;
-        if ((data = csvReader.readNext()) == null) {
-            return null;
-        }
-
-        if (Arrays.equals(header_before_v500, data)) {
-            //5.0.0及之前版本到导出的数据导入方式
-            return readCSVToHistoryComments_before_v500(csvReader);
-        } else if (Arrays.equals(csv_header_after_v500, data)) {
-            return readCSVToHistoryComments_after_v500(csvReader);
-        } else if (Arrays.equals(header_banned, data)) {
-            return readCSVToHistoryComments_banned_to_history(csvReader);
-        } else {
-            return null;
-        }
-    }
-
-    private List<HistoryComment> readCSVToHistoryComments_before_v500(CSVReader csvReader) throws CsvValidationException, IOException {
-        List<HistoryComment> historyCommentList = new ArrayList<>();
-        String[] data;
-        while ((data = csvReader.readNext()) != null) {
-            HistoryComment historyComment = new HistoryComment(Long.parseLong(data[0]),
-                    data[1], Integer.parseInt(data[2]), Long.parseLong(data[3]),
-                    Long.parseLong(data[4]), Long.parseLong(data[5]),
-                    data[6], new Date(Long.parseLong(data[7])), Integer.parseInt(data[8]),
-                    Integer.parseInt(data[9]), data[10], new Date(Long.parseLong(data[11])));
-            historyCommentList.add(historyComment);
-        }
-        return historyCommentList;
-    }
-
-    private List<HistoryComment> readCSVToHistoryComments_after_v500(CSVReader csvReader) throws CsvValidationException, IOException {
-        List<HistoryComment> historyCommentList = new ArrayList<>();
-        String[] data;
-        while ((data = csvReader.readNext()) != null) {
-            CommentArea commentArea = new CommentArea(Long.parseLong(data[3]), data[5], Integer.parseInt(data[4]));
-            HistoryComment comment = new HistoryComment(
-                    commentArea,
-                    Long.parseLong(data[0]),//rpid
-                    Long.parseLong(data[1]),//parent
-                    Long.parseLong(data[2]),//root
-                    data[6],//comment(text)
-                    new Date(Long.parseLong(data[11])), //sentDate, Assuming timestamp in milliseconds
-                    Integer.parseInt(data[7]),//like
-                    Integer.parseInt(data[8]),//replyCount
-                    data[9],//lastState
-                    new Date(Long.parseLong(data[10])), //lastCheckDate, Assuming timestamp in milliseconds
-                    Integer.parseInt(data[12]),//checkedArea
-                    data[13],//firstState
-                    data[14],//pictures
-                    JSON.parseObject(data[15], SensitiveScanResult.class)//sensitiveScanResult
-            );
-            historyCommentList.add(comment);
-        }
-        return historyCommentList;
-    }
-
-    private List<HistoryComment> readCSVToHistoryComments_banned_to_history(CSVReader csvReader) throws CsvValidationException, IOException {
-        String[] data;
-        List<HistoryComment> historyCommentList = new ArrayList<>();
-        while ((data = csvReader.readNext()) != null) {
-            CommentArea commentArea = new CommentArea(Long.parseLong(data[1]), data[2], Integer.parseInt(data[5]));
-            String state = data[4];//bannedType --> state
-
-            HistoryComment comment = new HistoryComment(
-                    commentArea,
-                    Long.parseLong(data[0]),//rpid
-                    0,//parent
-                    0,//root
-                    data[3],//comment(text)
-                    new Date(Long.parseLong(data[7])), //sentDate, Assuming timestamp in milliseconds
-                    0,//like
-                    0,//replyCount
-                    state,//lastState
-                    new Date(Long.parseLong(data[7])), //lastCheckDate, Assuming timestamp in milliseconds
-                    Integer.parseInt(data[6]),//checkedArea
-                    state,//firstState
-                    null,//pictures
-                    null//sensitiveScanResult
-            );
-            if (comment.firstState.equals("shadowBanRecking")) {
-                comment.firstState = HistoryComment.STATE_NORMAL;
-            }
-            if (comment.firstState.equals("quickDelete")) {
-                comment.firstState = HistoryComment.STATE_DELETED;
-            }
-            if (comment.lastState.equals("shadowBanRecking")) {
-                comment.lastState = HistoryComment.STATE_SHADOW_BAN;
-            }
-            if (comment.lastState.equals("quickDelete")) {
-                comment.lastState = HistoryComment.STATE_DELETED;
-            }
-            historyCommentList.add(comment);
-        }
-        return historyCommentList;
-    }
-
 
     @Override
     protected void attachBaseContext(Context newBase) {

@@ -2,6 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,25 +13,21 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
-import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
 
 public class PendingCommentListAdapter extends RecyclerView.Adapter<PendingCommentListAdapter.ViewHolder> {
 
     private final Context context;
     private final StatisticsDBOpenHelper helper;
     private final List<Comment> comments;
-    private final DialogCommCheckWorker worker;
 
     public PendingCommentListAdapter(Context context) {
         this.context = context;
-        helper = new StatisticsDBOpenHelper(context);
+        helper = StatisticsDBOpenHelper.getInstance(context);
         comments = helper.getAllPendingCheckComments();
-        Config config = new Config(context);
-        worker = new DialogCommCheckWorker(context, config, helper, new CommentManipulator(config.getCookie(), config.getDeputyCookie()), new CommentUtil(context));
+        Config config = Config.getInstance(context);
     }
 
     @NonNull
@@ -51,20 +48,17 @@ public class PendingCommentListAdapter extends RecyclerView.Adapter<PendingComme
                     .setTitle("确认检查此评论")
                     .setMessage(comment.comment)
                     .setPositiveButton(android.R.string.ok, (dialogInterface, i) -> {
-                        ProgressBarDialog progressBarDialog = new ProgressBarDialog.Builder(context)
-                                .setTitle("检查中")
-                                .setMessage("准备检查评论……")
-                                .setIndeterminate(true)
-                                .setCancelable(false)
-                                .show();
-                        worker.setExitListener(new OnExitListener() {
+                        new DialogCommCheckWorker(context).checkComment(comment, false, null,
+                                new DialogCommCheckWorker.CheckCommentCallBack() {
                             @Override
-                            public void onNewCommentRpid(long rpid) {
+                            public void onResult(HistoryComment historyComment) {
                                 comments.remove(holder.getBindingAdapterPosition());
                                 notifyItemRemoved(holder.getBindingAdapterPosition());
                             }
+
+                            @Override
+                            public void onDismiss(DialogInterface dialog) {}
                         });
-                        worker.checkComment(comment, progressBarDialog);
                     })
                     .setNegativeButton(android.R.string.cancel, new VoidDialogInterfaceOnClickListener())
                     .setNeutralButton("删除", (dialogInterface, i) -> {

@@ -8,7 +8,7 @@ public class ForwardDynamicReqObject {
     public DynReq dyn_req;
     public WebRepostSrc web_repost_src;
 
-    public static ForwardDynamicReqObject getInstance(String uid,String dynIdStr){
+    public static ForwardDynamicReqObject create(long uid, String dynIdStr){
         ForwardDynamicReqObject object = JSON.parseObject("{\n" +
                 "  \"dyn_req\": {\n" +
                 "    \"content\": {\n" +

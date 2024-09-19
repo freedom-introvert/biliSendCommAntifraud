@@ -14,10 +14,23 @@ public class Comment {
     public long rpid;
     public long parent;
     public long root;
+    public long uid;
     public String comment;
     public String pictures;
     public Date date;
 
+    public Comment(CommentArea commentArea, long rpid,long parent,long root, String comment,String pictures, Date date,long uid) {
+        this.commentArea = commentArea;
+        this.rpid = rpid;
+        this.comment = comment;
+        this.date = date;
+        this.parent = parent;
+        this.root = root;
+        this.pictures = pictures;
+        this.uid = uid;
+    }
+
+/*    @Deprecated
     public Comment(CommentArea commentArea, long rpid,long parent,long root, String comment,String pictures, Date date) {
         this.commentArea = commentArea;
         this.rpid = rpid;
@@ -26,7 +39,7 @@ public class Comment {
         this.parent = parent;
         this.root = root;
         this.pictures = pictures;
-    }
+    }*/
 
     public long getTimeStampDate(){
         return date.getTime();
@@ -81,6 +94,14 @@ public class Comment {
 
         public static String toJsonString(List<PictureInfo> imageInfoList){
             return JSON.toJSONString(imageInfoList);
+        }
+    }
+
+    public String omitCommentText(int length){
+        if (comment.length() > length) {
+            return comment.substring(0, length - 2) + "……";
+        } else {
+            return comment;
         }
     }
 
