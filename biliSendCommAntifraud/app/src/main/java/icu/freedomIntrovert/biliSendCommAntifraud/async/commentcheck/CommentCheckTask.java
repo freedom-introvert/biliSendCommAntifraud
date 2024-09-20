@@ -209,7 +209,7 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
                 result(historyComment,handler);
             }
         }
-        //删除待检查评论
+        //删除待检查评论（如果存在）
         statisticsDB.deletePendingCheckComment(rpid);
     }
 
