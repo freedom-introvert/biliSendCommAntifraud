@@ -94,6 +94,7 @@ public class DialogCommCheckWorker {
                 waitMessage = "评论包含图片，等待" + totalCommWaitMs + "+" + totalPicWaitMs + "=" + totalMs + "ms后检查评论\n当前剩余：%s ms";
                 dialog.setIndeterminate(false);
                 dialog.setMax((int) totalMs);
+                dialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
             }
 
             @Override
