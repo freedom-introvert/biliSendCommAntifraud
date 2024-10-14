@@ -276,7 +276,7 @@ public class DialogCommCheckWorker {
                                 public void onError(Throwable th) {
                                     DialogUtil.dialogError(context, th);
                                 }
-                            });
+                            }).execute();
                             break;
                         case 3://复制rpid等评论信息
                             ClipboardManager cm = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);

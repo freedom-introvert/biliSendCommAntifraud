@@ -71,15 +71,6 @@
                 android:value="" />
         </activity>
         <activity
-            android:name=".WebViewLoginByDeputyActivity"
-            android:exported="false"
-            android:label="网页浏览器"
-            android:parentActivityName=".MainActivity">
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="" />
-        </activity>
-        <activity
             android:name=".MartialLawCommentAreaListActivity"
             android:exported="true"
             android:label="@string/martial_law_comment_area_list"

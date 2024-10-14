@@ -14,11 +14,12 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class BBCall<T extends GeneralResponse<R>,R> implements Call<T> {
+//BBCall不吉利，已改名😅
+public class BiliCall<T extends GeneralResponse<R>,R> implements Call<T> {
 
     private final Call<T> delegate; // 原始的 Retrofit Call
 
-    public BBCall(Call<T> delegate) {
+    public BiliCall(Call<T> delegate) {
         this.delegate = delegate;
     }
 
@@ -38,13 +39,13 @@ public class BBCall<T extends GeneralResponse<R>,R> implements Call<T> {
             @Override
             public void onResponse(@NonNull Call<T> call, @NonNull Response<T> response) {
                 // 对 response 进行自定义处理
-                callback.onResponse(BBCall.this, response);
+                callback.onResponse(BiliCall.this, response);
             }
 
             @Override
             public void onFailure(@NonNull Call<T> call, @NonNull Throwable t) {
                 // 对错误进行自定义处理
-                callback.onFailure(BBCall.this, t);
+                callback.onFailure(BiliCall.this, t);
             }
         });
     }
@@ -68,7 +69,7 @@ public class BBCall<T extends GeneralResponse<R>,R> implements Call<T> {
     @NonNull
     @Override
     public Call<T> clone() {
-        return new BBCall<>(delegate.clone());
+        return new BiliCall<>(delegate.clone());
     }
 
     @NonNull

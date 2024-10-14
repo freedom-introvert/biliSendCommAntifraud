@@ -1,10 +1,13 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -19,6 +22,8 @@ import java.util.concurrent.ExecutionException;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
+import icu.freedomIntrovert.async.TaskManger;
+import icu.freedomIntrovert.biliSendCommAntifraud.BuildConfig;
 import icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
@@ -27,6 +32,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.xposed.XB;
 
 public abstract class PostCommentHook extends BaseHook {
     Activity currentActivity;
+
     @Override
     public void startHook(int appVersionCode, ClassLoader classLoader) throws ClassNotFoundException {
         XposedHelpers.findAndHookMethod(Activity.class, "onResume", new XC_MethodHook() {
@@ -43,6 +49,19 @@ public abstract class PostCommentHook extends BaseHook {
         });
 
 
+        //若ComposeActivity启动其他Activity，将动态ID往上传递
+        XposedHelpers.findAndHookMethod(Activity.class, "startActivityForResult", Intent.class, int.class, Bundle.class, new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                super.beforeHookedMethod(param);
+                Activity activity = (Activity) param.thisObject;
+                if ("com.bilibili.lib.ui.ComposeActivity".equals(activity.getClass().getCanonicalName())) {
+                    Intent intent = (Intent) param.args[0];
+                    intent.putExtra("dynamic_id", getDynamic11ID(activity));
+                }
+            }
+        });
+
         XposedHelpers.findAndHookMethod(getBiliCallClassName()/*com.bilibili.okretro.call.BiliCall 混淆*/, classLoader, "execute", new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
@@ -53,7 +72,7 @@ public abstract class PostCommentHook extends BaseHook {
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                 super.afterHookedMethod(param);
                 Object arg = param.getResult();
-                if (arg == null){
+                if (arg == null) {
                     return;
                 }
                 Object body = XposedHelpers.callMethod(arg, getBiliCall_body_MethodName()/* body 混淆*/);
@@ -99,11 +118,11 @@ public abstract class PostCommentHook extends BaseHook {
                     ArrayList<String> cookies = new ArrayList<>();
                     for (String cookieDBFilePath : getCookieDBFilePaths()) {
                         String cookie = getCookiesAsString(cookieDBFilePath);
-                        if (cookie.contains("SESSDATA") && cookie.contains("buvid3")){
+                        if (cookie.contains("SESSDATA") && cookie.contains("buvid3")) {
                             cookies.add(cookie);
                         }
                     }
-                    extras.putStringArrayList("cookies",cookies);
+                    extras.putStringArrayList("cookies", cookies);
                     //extras.putString("cookie",getCookiesAsString("/data/data/tv.danmaku.bili/app_webview_tv.danmaku.bili/Default/Cookies"));
                     Utils.startActivity(currentActivity, extras);
                 } else if (XposedHelpers.getIntField(body, "code") == GeneralResponse.CODE_COMMENT_CONTAIN_SENSITIVE) {
@@ -129,12 +148,27 @@ public abstract class PostCommentHook extends BaseHook {
             }
         });
         hook(appVersionCode, classLoader);
+
+        if (BuildConfig.DEBUG) {
+            XposedHelpers.findAndHookMethod(BitmapFactory.class, "decodeResource", Resources.class, int.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    if ((int) param.args[1] == 2131231545) {
+                        param.setThrowable(new RuntimeException("河蟹你全家"));
+                    }
+                    //XB.log("decodeResource:"+param.args[0]+"  "+param.args[1]);
+                }
+            });
+        }
     }
 
     public abstract void hook(int appVersionCode, ClassLoader classLoader) throws ClassNotFoundException;
 
     protected abstract String getBiliCallClassName();
+
     protected abstract String getBiliCall_body_MethodName();
+
     protected abstract String getBiliCall_request_MethodName();
 
     protected abstract String[] getCookieDBFilePaths();
@@ -152,7 +186,7 @@ public abstract class PostCommentHook extends BaseHook {
             default:
                 String msg = "不支持的评论区类型：" + type + "，无法获取源ID，请报告哔哩发评反诈开发者！";
                 XB.log(msg);
-                Toast.makeText(currentActivity, msg, Toast.LENGTH_SHORT).show();
+                toastInUi(currentActivity, msg, Toast.LENGTH_SHORT);
                 return null;
         }
     }
@@ -169,8 +203,14 @@ public abstract class PostCommentHook extends BaseHook {
             if (fragmentArgs == null) {
                 return null;
             }
-            id = fragmentArgs.getString("oid");
+            id = fragmentArgs.getString("dynamicId");
+            if (id == null) {
+                id = fragmentArgs.getString("oid");
+            }
             XB.log("动态ID:" + id);
+            if (id == null) {
+                dumpIntent(activity);
+            }
             return id;
         }
         //信息箱打开评论详情页的情况
@@ -186,9 +226,18 @@ public abstract class PostCommentHook extends BaseHook {
             XB.log("评论详情页，获取到动态ID：" + dynamicId);
             return dynamicId;
         }
+        //楼中楼回复，动态ID接力，需在com.bilibili.lib.ui.ComposeActivity启动本Activity时注入动态ID
+        if ("com.bilibili.lib.ui.GeneralActivity".equals(activityName)) {
+            String dynamicId = extras.getString("dynamic_id");
+            if (dynamicId != null) {
+                XB.log("评论楼中楼页，获取到动态ID：" + dynamicId);
+                return dynamicId;
+            }
+        }
         String msg = "糟糕，无法获取当前动态ID！当前Activity：" + activityName;
         XB.log(msg);
-        Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show();
+        dumpIntent(activity);
+        toastInUi(activity, msg, Toast.LENGTH_SHORT);
         return null;
     }
 
@@ -230,5 +279,35 @@ public abstract class PostCommentHook extends BaseHook {
 
         // 返回cookie字符串
         return cookieString.toString();
+    }
+
+    public static void toastInUi(Context context, CharSequence text, int duration) {
+        TaskManger.postOnUiThread(() -> Toast.makeText(context, text, duration).show());
+    }
+
+    public static void dumpIntent(Activity activity) {
+        // 获取当前Activity的Intent
+        Intent intent = activity.getIntent();
+        if (intent == null) {
+            XB.log("No Intent found.");
+            return;
+        }
+
+        // 打印Intent的基本信息
+        XB.log("Action: " + intent.getAction());
+        XB.log("Data: " + intent.getDataString());
+        XB.log("Categories: " + intent.getCategories());
+
+        // 获取Intent的extras
+        Bundle extras = intent.getExtras();
+        if (extras != null) {
+            XB.log("Extras:");
+            for (String key : extras.keySet()) {
+                Object value = extras.get(key);
+                XB.log("  Key: " + key + ", Value: " + value);
+            }
+        } else {
+            XB.log("No extras found.");
+        }
     }
 }

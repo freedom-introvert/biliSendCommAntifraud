@@ -94,7 +94,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 
-
        /* Intent serviceIntent = new Intent(this, CommentMonitoringService.class);
         ContextCompat.startForegroundService(this, serviceIntent);*/
 
