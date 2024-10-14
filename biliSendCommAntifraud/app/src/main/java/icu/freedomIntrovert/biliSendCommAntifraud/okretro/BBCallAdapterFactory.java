@@ -16,9 +16,9 @@ public class BBCallAdapterFactory extends CallAdapter.Factory {
     public CallAdapter<?, ?> get(@NonNull Type returnType, @NonNull Annotation[] annotations, @NonNull Retrofit retrofit) {
         // 确保返回类型是 Call
 
-        if (getRawType(returnType) == BBCall.class){
+        if (getRawType(returnType) == BiliCall.class){
             final Type responseType = getParameterUpperBound(0, (ParameterizedType) returnType);
-            return new CallAdapter<Object, BBCall<?,?>>() {
+            return new CallAdapter<Object, BiliCall<?,?>>() {
                 @NonNull
                 @Override
                 public Type responseType() {
@@ -28,8 +28,8 @@ public class BBCallAdapterFactory extends CallAdapter.Factory {
                 @SuppressWarnings("all")
                 @NonNull
                 @Override
-                public BBCall<?,?> adapt(@NonNull Call<Object> call) {
-                    return new BBCall(call);
+                public BiliCall<?,?> adapt(@NonNull Call<Object> call) {
+                    return new BiliCall(call);
                 }
             };
         }

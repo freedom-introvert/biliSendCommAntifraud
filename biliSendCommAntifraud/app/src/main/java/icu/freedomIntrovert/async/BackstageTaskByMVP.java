@@ -4,8 +4,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 
@@ -24,7 +24,7 @@ public abstract class BackstageTaskByMVP<T extends BackstageTaskByMVP.BaseEventH
     @Override
     public void run() {
         //要考虑类继承的情况
-        List<Class<?>> interfaces = new ArrayList<>();
+        List<Class<?>> interfaces = new LinkedList<>();
         Class<?> clazz = uiHandler.getClass();
         while (clazz != null && clazz != Object.class) {
             interfaces.addAll(Arrays.asList(clazz.getInterfaces()));

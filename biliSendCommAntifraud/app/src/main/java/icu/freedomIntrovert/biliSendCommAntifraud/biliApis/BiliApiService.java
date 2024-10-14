@@ -2,7 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud.biliApis;
 
 import java.util.Map;
 
-import icu.freedomIntrovert.biliSendCommAntifraud.okretro.BBCall;
+import icu.freedomIntrovert.biliSendCommAntifraud.okretro.BiliCall;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Field;
@@ -24,21 +24,21 @@ public interface BiliApiService {
     Call<GeneralResponse<VideoInfo>> getVideoInfoByAid(@Query("aid") long aid);
 
     @GET("/x/web-interface/view")
-    BBCall<GeneralResponse<VideoInfo>,VideoInfo> getVideoInfoByBvid(@Query("bvid") String bvid);
+    BiliCall<GeneralResponse<VideoInfo>,VideoInfo> getVideoInfoByBvid(@Query("bvid") String bvid);
 
     @FormUrlEncoded
     @POST("/x/v2/reply/add")
-    BBCall<GeneralResponse<CommentAddResult>, CommentAddResult> postComment(@Header("cookie") String cookie, @FieldMap Map<String, String> map);
+    BiliCall<GeneralResponse<CommentAddResult>, CommentAddResult> postComment(@Header("cookie") String cookie, @FieldMap Map<String, String> map);
 
     @FormUrlEncoded
     @POST("/x/v2/reply/del")
-    BBCall<GeneralResponse<Object>, Object> deleteComment(@Header("cookie") String cookie, @Field("csrf") String csrf, @Field("oid") long oid, @Field("type") int type, @Field("rpid") long rpid);
+    BiliCall<GeneralResponse<Object>, Object> deleteComment(@Header("cookie") String cookie, @Field("csrf") String csrf, @Field("oid") long oid, @Field("type") int type, @Field("rpid") long rpid);
 
     @GET("/x/v2/reply/reply")
-    BBCall<GeneralResponse<CommentReplyPage>, CommentReplyPage> getCommentReply(@Header("cookie") String cookie, @Query("csrf") String csrf, @Query("oid") long oid, @Query("pn") int pn, @Query("ps") int ps, @Query("root") long root, @Query("type") int type, @Query("sort") int sort);
+    BiliCall<GeneralResponse<CommentReplyPage>, CommentReplyPage> getCommentReply(@Header("cookie") String cookie, @Query("csrf") String csrf, @Query("oid") long oid, @Query("pn") int pn, @Query("ps") int ps, @Query("root") long root, @Query("type") int type, @Query("sort") int sort);
 
     @GET("/x/v2/reply/reply")
-    BBCall<GeneralResponse<CommentReplyPage>,CommentReplyPage> getCommentReply
+    BiliCall<GeneralResponse<CommentReplyPage>,CommentReplyPage> getCommentReply
             (@Query("oid") long oid, @Query("pn") int pn, @Query("ps") int ps,
              @Query("root") long root, @Query("type") int type, @Query("sort") int sort);
 
@@ -72,17 +72,17 @@ public interface BiliApiService {
      * @return
      */
     @GET("/x/v2/reply/main")
-    BBCall<GeneralResponse<MainApiCommentPage>, MainApiCommentPage> getCommentMainPage
+    BiliCall<GeneralResponse<MainApiCommentPage>, MainApiCommentPage> getCommentMainPage
     (@Header("cookie") String cookie, @Query("oid") long oid, @Query("type") int type,
      @Query("mode") int mode, @Query("pagination_str") String pagination_str, @Query("seek_rpid") Long seek_rpid);
 
     @POST("/x/dynamic/feed/create/dyn")
-    BBCall<GeneralResponse<ForwardDynamicResult>, ForwardDynamicResult> forwardDynamic
+    BiliCall<GeneralResponse<ForwardDynamicResult>, ForwardDynamicResult> forwardDynamic
             (@Header("cookie") String cookie, @Query("platform") String platform,
              @Query("csrf") String csrf, @Body ForwardDynamicReqObject forwardDynamicReqObject);
 
     @POST("/x/dynamic/feed/operate/remove")
-    BBCall<GeneralResponse<Object>, Object> removeDynamic
+    BiliCall<GeneralResponse<Object>, Object> removeDynamic
             (@Header("cookie") String cookie, @Query("platform") String platform,
              @Query("csrf") String csrf, @Body RemoveDynamicReqObject removeDynamicReqObject);
 
@@ -92,10 +92,10 @@ public interface BiliApiService {
      * @return
      */
     @GET("/x/web-interface/nav")
-    BBCall<GeneralResponse<Nav>, Nav> getNav(@Header("cookie") String cookie);
+    BiliCall<GeneralResponse<Nav>, Nav> getNav(@Header("cookie") String cookie);
 
     @FormUrlEncoded
     @POST("/x/v2/reply/appeal/submit")
-    BBCall<GeneralResponse<CommentAppealResp>,CommentAppealResp> appealComment(@Header("cookie") String cookie,@FieldMap Map<String,String> map);
+    BiliCall<GeneralResponse<CommentAppealResp>,CommentAppealResp> appealComment(@Header("cookie") String cookie, @FieldMap Map<String,String> map);
 
 }
