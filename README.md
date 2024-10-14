@@ -510,7 +510,7 @@ activity.startActivity(intent);
 
 ### 讨论交流
 
-Telegram: [@biliSendCommAntifraud](https://t.me/biliSendCommAntifraud)
+Telegram: [@biliSendCommAntifraud](https://t.me/+6Ugpd4TtB8liZDg1)
 
 ### LOGO含义
 
