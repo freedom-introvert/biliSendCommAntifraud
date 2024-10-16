@@ -57,7 +57,9 @@ public abstract class PostCommentHook extends BaseHook {
                 Activity activity = (Activity) param.thisObject;
                 if ("com.bilibili.lib.ui.ComposeActivity".equals(activity.getClass().getCanonicalName())) {
                     Intent intent = (Intent) param.args[0];
-                    intent.putExtra("dynamic_id", getDynamic11ID(activity));
+                    String dynamic11ID = getDynamic11ID(activity);
+                    intent.putExtra("inject_dynamic_id", dynamic11ID);
+                    XB.log(String.format("动态ID:%s 已注入将要打开的Activity: %s",dynamic11ID,intent.getComponent()));
                 }
             }
         });
@@ -197,48 +199,51 @@ public abstract class PostCommentHook extends BaseHook {
         if (extras == null) {
             return null;
         }
-        String id;
-        if ("com.bilibili.lib.ui.ComposeActivity".equals(activityName)) {
-            Bundle fragmentArgs = extras.getBundle("fragment_args");
-            if (fragmentArgs == null) {
-                return null;
-            }
-            id = fragmentArgs.getString("dynamicId");
-            if (id == null) {
-                id = fragmentArgs.getString("oid");
-            }
+        String id = null;
+        if (activityName == null) {
+            return null;
+        }
+        switch (activityName) {
+            case "com.bilibili.lib.ui.ComposeActivity":
+                Bundle fragmentArgs = extras.getBundle("fragment_args");
+                if (fragmentArgs == null) {
+                    break;
+                }
+                id = fragmentArgs.getString("dynamicId");
+                if (id == null) {
+                    id = fragmentArgs.getString("oid");
+                }
+                if (id == null) {
+                    String targetUrl = extras.getString("blrouter.targeturl");
+                    if (targetUrl != null) {
+                        String[] split = targetUrl.split("/");
+                        id = split[split.length - 1];
+                    }
+                }
+                break;
+            case "com.bilibili.app.comm.comment2.comments.view.CommentDetailActivity"://信息箱打开评论详情页的情况
+            case "com.bilibili.app.comm.comment2.comments.view.CommentFeedListActivity"://
+                Intent activityIntent = activity.getIntent();
+                String enterUri = activityIntent.getStringExtra("enterUri");
+                if (enterUri != null) {
+                    String[] split = enterUri.split("/");
+                    id = split[split.length - 1];
+                }
+                break;
+            case "com.bilibili.lib.ui.GeneralActivity"://楼中楼回复，动态ID接力，需在com.bilibili.lib.ui.ComposeActivity启动本Activity时注入动态ID
+                id = extras.getString("inject_dynamic_id");
+                break;
+        }
+        if (id == null){
+            String msg = "糟糕，无法获取当前动态ID！当前Activity：" + activityName;
+            XB.log(msg);
+            dumpIntent(activity);
+            toastInUi(activity, msg, Toast.LENGTH_SHORT);
+        } else {
             XB.log("动态ID:" + id);
-            if (id == null) {
-                dumpIntent(activity);
-            }
-            return id;
+            XB.log("Activity：" + activityName);
         }
-        //信息箱打开评论详情页的情况
-        if ("com.bilibili.app.comm.comment2.comments.view.CommentDetailActivity".equals(activityName)
-                || "com.bilibili.app.comm.comment2.comments.view.CommentFeedListActivity".equals(activityName)) {
-            Intent activityIntent = activity.getIntent();
-            String enterUri = activityIntent.getStringExtra("enterUri");
-            if (enterUri == null) {
-                return null;
-            }
-            String[] split = enterUri.split("/");
-            String dynamicId = split[split.length - 1];
-            XB.log("评论详情页，获取到动态ID：" + dynamicId);
-            return dynamicId;
-        }
-        //楼中楼回复，动态ID接力，需在com.bilibili.lib.ui.ComposeActivity启动本Activity时注入动态ID
-        if ("com.bilibili.lib.ui.GeneralActivity".equals(activityName)) {
-            String dynamicId = extras.getString("dynamic_id");
-            if (dynamicId != null) {
-                XB.log("评论楼中楼页，获取到动态ID：" + dynamicId);
-                return dynamicId;
-            }
-        }
-        String msg = "糟糕，无法获取当前动态ID！当前Activity：" + activityName;
-        XB.log(msg);
-        dumpIntent(activity);
-        toastInUi(activity, msg, Toast.LENGTH_SHORT);
-        return null;
+        return id;
     }
 
     public static String getCookiesAsString(String dbPath) {

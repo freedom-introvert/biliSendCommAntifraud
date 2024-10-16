@@ -372,18 +372,16 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                 return true;
             });
         }
-        if (historyComment.lastState.equals(HistoryComment.STATE_UNDER_REVIEW)){
-            popupMenu.getMenu().add("监控评论").setOnMenuItemClickListener(item -> {
-                CommentUtil.toMonitoringURComment(context,historyComment);
-                return true;
-            });
-        }
 
         if (!historyComment.lastState.equals(HistoryComment.STATE_SENSITIVE)) {
             popupMenu.getMenu().add("定位评论").setOnMenuItemClickListener(item -> {
                 CommentLocator.lunch(context, historyComment.commentArea.type,
                         historyComment.commentArea.oid, historyComment.rpid,
                         historyComment.root, historyComment.commentArea.sourceId);
+                return true;
+            });
+            popupMenu.getMenu().add("监控评论").setOnMenuItemClickListener(item -> {
+                CommentUtil.toMonitoringComment(context,historyComment);
                 return true;
             });
         }

@@ -185,8 +185,8 @@ public class Config {
     }
 
     public void setForwardDynamic(ForwardDynamic forwardDynamic){
-        sp_config.getString("forward_dynamic_url", forwardDynamic.forwardDynamicUrl);
-        sp_config.getString("forward_dynamic_id", forwardDynamic.forwardDynamicId);
+        sp_config.edit().putString("forward_dynamic_url", forwardDynamic.forwardDynamicUrl)
+                .putString("forward_dynamic_id", forwardDynamic.forwardDynamicId).apply();
     }
 
     public boolean get花里胡哨Enable(){

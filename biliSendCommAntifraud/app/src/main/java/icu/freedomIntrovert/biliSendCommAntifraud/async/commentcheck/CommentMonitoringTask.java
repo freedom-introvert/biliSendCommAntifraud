@@ -5,63 +5,73 @@ import android.content.Context;
 import icu.freedomIntrovert.biliSendCommAntifraud.account.Account;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 
-public class URCommentMonitoringTask extends CommentOperateTask<URCommentMonitoringTask.EventHandler> {
+public class CommentMonitoringTask extends CommentOperateTask<CommentMonitoringTask.EventHandler> {
     Context context;
     public final HistoryComment comment;
-
-    public URCommentMonitoringTask(Context context, HistoryComment comment,EventHandler handle) {
+    public final int timeoutMinute;
+    private boolean isCanceled = false;
+    public CommentMonitoringTask(Context context, HistoryComment comment,int timeoutMinute, EventHandler handle) {
         super(handle, context);
         this.context = context;
         this.comment = comment;
+        this.timeoutMinute = timeoutMinute;
     }
 
     @SuppressWarnings("BusyWait")
     @Override
     protected void onStart(EventHandler handler) throws Throwable {
+        handler.onInit(this);
         String lastState = comment.lastState;
-        for (int j = 0; j < 60; j++) {
+        for (int j = 0; j < timeoutMinute; j++) {
             for (int i = 0; i < 60; i++) {
                 Thread.sleep(1000);
+                if (isCanceled){
+                    handler.onCanceled();
+                    return;
+                }
                 handler.onWaiting(60,i,j);
             }
             handler.onStartCheck();
             Account account = accountManger.getAccount(comment.uid);
             if (account == null){
-                handler.onNoAccount(comment.uid,this);
+                handler.onNoAccount(comment.uid);
                 return;
             }
             try {
                 HistoryComment checkedComment = commentManipulator.checkRootCommentStateByFast(comment, account);
                 if (checkedComment == null){
-                    handler.onAreaDead(this,comment);
+                    handler.onAreaDead(comment);
                     return;
                 }
                 updateHistoryComment(checkedComment);
                 if (!checkedComment.lastState.equals(lastState)) {
-                    handler.onStateChange(checkedComment,j,this);
+                    handler.onStateChange(checkedComment,j);
                     return;
                 } else {
                     handler.onStateNotChange();
                 }
             } catch (Throwable th){
-                handler.onError(th,this);
+                handler.onError(th);
                 return;
             }
         }
-        //超过一小时
-        handler.onTimeOut1Hour(comment,this);
+        //超过超时
+        handler.onTimeout(comment,timeoutMinute);
+    }
 
+    public void cancel(){
+        isCanceled = true;
     }
 
     public interface EventHandler extends BaseEventHandler{
-        void onNoAccount(long uid,URCommentMonitoringTask task);
-        void onError(Throwable th,URCommentMonitoringTask task);
-        void onTimeOut1Hour(HistoryComment historyComment, URCommentMonitoringTask task);
+        void onInit(CommentMonitoringTask task);
+        void onNoAccount(long uid);
+        void onTimeout(HistoryComment historyComment,int minute);
         void onWaiting(int max, int progressSecond, int minute);
         void onStartCheck();
         void onStateNotChange();
-        void onStateChange(HistoryComment historyComment,int minute,URCommentMonitoringTask task);
-        void onAreaDead(URCommentMonitoringTask task, HistoryComment comment);
-
+        void onStateChange(HistoryComment historyComment, int minute);
+        void onAreaDead(HistoryComment comment);
+        void onCanceled();
     }
 }
