@@ -130,7 +130,7 @@ public class DialogCommCheckWorker {
                 callback.onResult(historyComment);
                 switch (historyComment.lastState) {
                     case HistoryComment.STATE_NORMAL:
-                        showCommentIsOkResult(comment.comment, callback);
+                        showCommentIsOkResult(historyComment, callback);
                         break;
                     case HistoryComment.STATE_INVISIBLE:
                         showCommentBannedResult(BANNED_TYPE_INVISIBLE, historyComment, callback);
@@ -175,14 +175,16 @@ public class DialogCommCheckWorker {
         });
     }
 
-    private void showCommentIsOkResult(String comment, DialogInterface.OnDismissListener listener) {
-        new AlertDialog.Builder(context)
+    private void showCommentIsOkResult(HistoryComment comment, DialogInterface.OnDismissListener listener) {
+        AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("检查结果")
-                .setMessage("你的评论：“" + comment + "”正常显示！")
+                .setMessage("你的评论：“" + comment.comment + "”正常显示！")
                 .setCancelable(false)
                 .setOnDismissListener(listener)
+                .setNeutralButton("监控此评论", null)
                 .setPositiveButton("关闭", null)
                 .show();
+        dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener(v -> CommentUtil.toMonitoringComment(context, comment));
     }
 
 
@@ -235,10 +237,7 @@ public class DialogCommCheckWorker {
 
         //更多评论选项
         resultDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
-            String[] strings = {"扫描敏感词", "申诉", "删除发布的评论", "复制rpid、oid、type"};
-            if (bannedType == BANNED_TYPE_UNDER_REVIEW) {
-                strings = new String[]{"扫描敏感词", "申诉", "删除发布的评论", "复制rpid、oid、type", "监控评论"};
-            }
+            String[] strings = {"扫描敏感词", "申诉", "删除发布的评论", "复制rpid、oid、type", "监控评论"};
             new AlertDialog.Builder(context).setTitle("更多选项").setItems(strings, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
@@ -285,7 +284,7 @@ public class DialogCommCheckWorker {
                             toastShort("已复制");
                             break;
                         case 4:
-                            CommentUtil.toMonitoringURComment(context, comment);
+                            CommentUtil.toMonitoringComment(context, comment);
                     }
                 }
             }).show();
@@ -311,7 +310,6 @@ public class DialogCommCheckWorker {
 
     public interface CheckCommentCallBack extends DialogInterface.OnDismissListener {
         default void onResult(HistoryComment historyComment) {
-
         }
     }
 

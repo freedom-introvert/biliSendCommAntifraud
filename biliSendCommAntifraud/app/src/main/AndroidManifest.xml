@@ -15,11 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BiliSendCommAntifraud.HasActionBar"
         tools:targetApi="33">
-        <service
-            android:name=".CommentMonitoringService"
-            android:enabled="true"
-            android:exported="true"></service>
-
+        
         <activity
             android:name=".PendingCheckCommentsActivity"
             android:exported="false"
@@ -93,6 +89,12 @@
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
+
+        <service
+            android:name=".CommentMonitoringService"
+            android:enabled="true"
+            android:exported="true" />
+        <receiver android:name=".CancelMonitorReceiver"/>
     </application>
 
 </manifest>

@@ -14,7 +14,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-//BBCall不吉利，已改名😅
+//BBCall不吉利，已改名，请求时可别炸了😅
 public class BiliCall<T extends GeneralResponse<R>,R> implements Call<T> {
 
     private final Call<T> delegate; // 原始的 Retrofit Call
