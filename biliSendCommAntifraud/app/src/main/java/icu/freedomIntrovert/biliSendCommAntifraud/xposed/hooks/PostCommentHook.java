@@ -156,7 +156,7 @@ public abstract class PostCommentHook extends BaseHook {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     super.beforeHookedMethod(param);
-                    if ((int) param.args[1] == 2131231545) {
+                    if ((int) param.args[1] == 0x7f0803ab) {
                         param.setThrowable(new RuntimeException("河蟹你全家"));
                     }
                     //XB.log("decodeResource:"+param.args[0]+"  "+param.args[1]);

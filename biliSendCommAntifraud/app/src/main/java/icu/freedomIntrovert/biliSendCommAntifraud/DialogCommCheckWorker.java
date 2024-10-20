@@ -201,7 +201,8 @@ public class DialogCommCheckWorker {
                             "”在无账号环境下未找到，自己账号下获取该评论的回复列表成功，判定为被ShadowBan（仅自己可见），请检查评论内容或者检查评论区是否被戒严");
                 } else {
                     resultDialogBuilder.setMessage("您的楼中楼评论“" + CommentUtil.omitComment(commentText, 100) +
-                            "”在无账号环境下未找到，自己账号下成功找到，判定为被ShadowBan（仅自己可见），请检查评论内容或者检查评论区是否被戒严");
+                            "”在无账号环境下未找到，自己账号下成功找到，判定为被ShadowBan（仅自己可见），请检查评论内容或者检查评论区是否被戒严。" +
+                            "\n温馨提示：楼中楼ShadowBan的情况建议将其监控10分钟，时间到后的结果即为最终");
                 }
                 break;
             case BANNED_TYPE_UNDER_REVIEW:
