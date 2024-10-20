@@ -126,13 +126,20 @@ public class CommentMonitoringService extends Service {
             }
 
             @Override
+            public void onRootDead(HistoryComment comment) {
+                postResult(nId, "根评论寄了",
+                        String.format("楼中楼根评论ID：%s 已被删除或屏蔽", comment.root));
+            }
+
+            @Override
             public void onCanceled() {
                 notificationManager.cancel(nId);
             }
 
             @Override
             public void onError(Throwable th) {
-                postResult(nId,"检查时发生异常",th.getMessage());
+                th.printStackTrace();
+                postResult(nId,"检查时发生异常",th.toString());
             }
 
             @Override

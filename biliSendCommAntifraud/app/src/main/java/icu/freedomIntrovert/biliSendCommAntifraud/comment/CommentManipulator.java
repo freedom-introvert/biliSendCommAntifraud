@@ -515,7 +515,7 @@ public class CommentManipulator {
      * @throws BiliBiliApiException
      * @throws IOException
      */
-    public HistoryComment checkRootCommentStateByFast(HistoryComment historyComment,Account account) throws BiliBiliApiException, IOException {
+    public HistoryComment recheckRootCommentStateByFast(HistoryComment historyComment, Account account) throws BiliBiliApiException, IOException {
         assert historyComment.root == 0;
         CommentArea commentArea = historyComment.commentArea;
         long rpid = historyComment.rpid;
@@ -552,6 +552,39 @@ public class CommentManipulator {
         }
     }
 
+    public HistoryComment recheckReplyCommentState(HistoryComment historyComment,Account account) throws BiliBiliApiException, IOException, RootCommentDeadException {
+        GeneralResponse<CommentReplyPage> gr = getCommentReplyNoAccount(historyComment.commentArea, historyComment.rpid, 1);
+        if (gr.isSuccess()){
+            //不登录seek_rpid查找评论
+            BiliComment foundReply = findCommentFromCommentReplyArea(historyComment,account,false);
+            if (foundReply != null) {
+                if (foundReply.invisible){
+                    //回复评论invisible
+                    return updateHistoryComment(foundReply,HistoryComment.STATE_INVISIBLE,historyComment);
+                } else {
+                    //回复评论正常
+                    return updateHistoryComment(foundReply,HistoryComment.STATE_NORMAL,historyComment);
+                }
+            } else {
+                //登录seek_rpid查找评论
+                BiliComment foundReplyHasAcc = findCommentFromCommentReplyArea(historyComment, account,true);
+                if (foundReplyHasAcc != null) {
+                    //回复评论ShadowBan
+                    return updateHistoryComment(foundReplyHasAcc,HistoryComment.STATE_SHADOW_BAN,historyComment);
+                } else {
+                    //回复评论被删除
+                    return updateHistoryComment(null,HistoryComment.STATE_DELETED,historyComment);
+                }
+            }
+        } else if (gr.code == GeneralResponse.CODE_COMMENT_DELETED){//根评论挂了
+            throw new RootCommentDeadException(historyComment.root,gr);
+        } else if (gr.code == GeneralResponse.CODE_COMMENT_AREA_CLOSED) {
+            return null;
+        } else {
+            throw new BiliBiliApiException(gr,"获取评论回复页失败");
+        }
+    }
+
     public static HistoryComment updateHistoryComment(BiliComment biliComment,String state,HistoryComment historyComment){
         //当前面申诉提示无评论可申诉时，后面再检测到疑似审核就不改变状态
         historyComment.lastCheckDate = new Date();
@@ -563,6 +596,15 @@ public class CommentManipulator {
             historyComment.replyCount = biliComment.rcount;
         }
         return historyComment;
+    }
+
+    public static class RootCommentDeadException extends Throwable {
+        public final long rootRpid;
+        public final GeneralResponse<?> generalResponse;
+        public RootCommentDeadException(long root,GeneralResponse<?> generalResponse) {
+            this.rootRpid = root;
+            this.generalResponse = generalResponse;
+        }
     }
 
     /*public String getDedeUserID(boolean isDeputy){

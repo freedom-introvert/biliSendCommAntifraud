@@ -53,7 +53,15 @@ public class Utils {
 
     public static void startActivity(Activity activity, Bundle extras) {
         XB.log("当前Activity：" + activity);
-        XB.log("启动反诈参数：" + extras);
+        XB.log("启动反诈参数：");
+        for (String key : extras.keySet()) {
+            Object value = extras.get(key);
+            if (key.equals("cookies")){
+                XB.log("    Key: " + key + ", Value: ■■■■");
+            } else {
+                XB.log("    Key: " + key + ", Value: " + value);
+            }
+        }
         Intent intent = new Intent();
         intent.setComponent(new ComponentName("icu.freedomIntrovert.biliSendCommAntifraud",
                 "icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity"));
