@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 
@@ -36,6 +37,11 @@ public class WaitService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent == null){
+            Toast.makeText(this, "错误，启动后台等待时未传入Intent参数", Toast.LENGTH_SHORT).show();
+            System.err.println("错误，启动后台等待时未传入Intent参数");
+            return super.onStartCommand(intent, flags, startId);
+        }
         int nId = notificationService.createNewId();
         int waitSeconds = intent.getIntExtra("wait_seconds", 5);
         System.out.println("等待时间："+waitSeconds);
@@ -53,13 +59,15 @@ public class WaitService extends Service {
                 postOver(nId,rpid,cookies,comment);
             }
         }).execute();
-        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
     }
 
     private void postProgress(int id, String comment, int max, int progress) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NotificationService.CHANNEL_BACKGROUND_TASK)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
                 .setContentTitle("等待剩余" + (max - progress) + "秒")
                 .setContentText(comment)
+                .setSound(null)
                 .setSmallIcon(R.drawable.launcher)
                 .setProgress(max, progress, false)  // 设置通知进度条
                 .setOngoing(true);  // 使通知不可移除
