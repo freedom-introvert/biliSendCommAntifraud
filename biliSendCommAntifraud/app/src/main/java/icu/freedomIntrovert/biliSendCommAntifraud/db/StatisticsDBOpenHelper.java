@@ -213,9 +213,23 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         values.put("checked_area", areaChecked);
         return db.update(TABLE_NAME_HISTORY_COMMENT, values, "rpid = ?", new String[]{String.valueOf(rpid)});
     }
+    public List<HistoryComment> queryAllHistoryComments(String[][] unequalFields,String dateOrderBy) {
+        StringBuilder sb = new StringBuilder();
+        if (unequalFields != null && unequalFields.length >= 1) {
+            //WHERE a != 0,b != 0
+            sb.append("WHERE ");
+            int length = unequalFields.length;
+            for (int i = 0; i < length - 1; i++) {
+                sb.append(unequalFields[i][0]).append(" != \"").append(unequalFields[i][1]).append("\" AND ");
+            }
+            sb.append(unequalFields[length - 1][0]).append(" != \"").append(unequalFields[length - 1][1]).append("\" ");
+        }
+        sb.append("ORDER BY ").append(dateOrderBy);
+        return selectHistoryComments(sb.toString());
+    }
 
-    public List<HistoryComment> queryAllHistoryComments(String dateOrderBy) {
-        return selectHistoryComments("ORDER BY " + dateOrderBy);
+    public List<HistoryComment> exportAllHistoryComment(){
+        return selectHistoryComments("ORDER BY "+ORDER_BY_DATE_ASC);
     }
 
     public List<HistoryComment> queryHistoryCommentsByDateGT(long timestamp) {
@@ -243,7 +257,9 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
     private List<HistoryComment> selectHistoryComments(String selectAddition) {
         SQLiteDatabase db = getReadableDatabase();
         List<HistoryComment> historyCommentList = new ArrayList<>();
-        GreatCursor cursor = new GreatCursor(db.rawQuery("select * from " + TABLE_NAME_HISTORY_COMMENT + " " + selectAddition, null));
+        String sql = "select * from " + TABLE_NAME_HISTORY_COMMENT + " " + selectAddition;
+        System.out.println(sql);
+        GreatCursor cursor = new GreatCursor(db.rawQuery(sql, null));
         while (cursor.moveToNext()) {
             historyCommentList.add(loadHistoryComment(cursor));
         }

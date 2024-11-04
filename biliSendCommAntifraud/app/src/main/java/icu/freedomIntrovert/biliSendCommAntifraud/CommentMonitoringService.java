@@ -82,13 +82,12 @@ public class CommentMonitoringService extends Service {
 
             @Override
             public void onNoAccount(long uid) {
-                postResult(nId,"错误","未找到账号："+uid);
-                updateForeground();
+                postResult(nId,"错误","未找到账号："+uid,comment);
             }
 
             @Override
             public void onTimeout(HistoryComment historyComment, int minute) {
-                postResult(nId,"检查已超时","已超过"+minute+"分钟，评论状态未发生变化，监控停止。评论："+historyComment.comment);
+                postResult(nId,"检查已超时","已超过"+minute+"分钟，评论状态未发生变化，监控停止。评论："+historyComment.comment,comment);
             }
 
             @Override
@@ -114,21 +113,21 @@ public class CommentMonitoringService extends Service {
                 postResult(nId, "评论状态改变",
                         String.format("状态变更为：%s，监控用时：%s分钟，评论：%s", HistoryComment.getStateDesc(historyComment.lastState),
                                 minute,
-                                historyComment.comment));
+                                historyComment.comment),comment);
             }
 
             @Override
             public void onAreaDead(HistoryComment comment) {
                 postResult(nId, "评论区寄了",
                         String.format("评论所在评论：%s 已失效，评论：%s", comment.commentArea.sourceId,
-                                comment.comment));
+                                comment.comment),comment);
 
             }
 
             @Override
             public void onRootDead(HistoryComment comment) {
                 postResult(nId, "根评论寄了",
-                        String.format("楼中楼根评论ID：%s 已被删除或屏蔽", comment.root));
+                        String.format("楼中楼根评论ID：%s 已被删除或屏蔽", comment.root),comment);
             }
 
             @Override
@@ -139,7 +138,8 @@ public class CommentMonitoringService extends Service {
             @Override
             public void onError(Throwable th) {
                 th.printStackTrace();
-                postResult(nId,"检查时发生异常",th.toString());
+                postResult(nId,"检查时发生异常",th.toString(),comment);
+                updateForeground();
             }
 
             @Override
@@ -153,9 +153,11 @@ public class CommentMonitoringService extends Service {
         task.execute();
     }
 
-    private void postResult(int id, String title, String message) {
+    private void  postResult(int id, String title, String message,HistoryComment comment) {
         notificationManager.cancel(id);//取消进度条的通知
         Intent intent = new Intent(this, HistoryCommentActivity.class);
+        //历史记录定位评论（搜索）
+        intent.putExtra("search","[rpid]:"+comment.rpid);
         intent.setAction(Intent.ACTION_VIEW);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(this,id,intent,PendingIntent.FLAG_MUTABLE);
@@ -178,6 +180,8 @@ public class CommentMonitoringService extends Service {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NotificationService.CHANNEL_BACKGROUND_TASK)
                 .setContentTitle("评论状态监控")
                 .setContentText(message)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setSound(null) //啥子手机上居然有声音呢😂
                 .setSmallIcon(R.drawable.launcher)
                 .addAction(0, "取消", cancelPendingIntent)
                 .setProgress(max, progress, indeterminate)  // 设置通知进度条

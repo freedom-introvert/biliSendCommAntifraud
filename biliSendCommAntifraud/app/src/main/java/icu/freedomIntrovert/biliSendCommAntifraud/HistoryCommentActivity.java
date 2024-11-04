@@ -1,6 +1,5 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -40,7 +39,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -51,17 +49,15 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.account.Account;
+import icu.freedomIntrovert.biliSendCommAntifraud.async.HistoryCommentSearchTask;
 import icu.freedomIntrovert.biliSendCommAntifraud.async.commentcheck.ReviewCommentStatusTask;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.HistoryCommentCsvSerializer;
-import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.docmenthelper.ActivityResult;
@@ -82,6 +78,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
     public ActivityResultLauncher<File> savePicFileLauncher;
     public ActivityResultLauncher<Intent> exportLauncher;
     public CommentManipulator commentManipulator;
+    public String search;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +87,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
+        search = getIntent().getStringExtra("search");
         context = this;
         config = Config.getInstance(context);
         commentManipulator = CommentManipulator.getInstance();
@@ -97,7 +95,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
         adapter = new HistoryCommentAdapter(this, commentManipulator, statisticsDBOpenHelper);
         loadingHistoryCommentFragment = new LoadingHistoryCommentFragment();
         historyCommentFragment = new HistoryCommentFragment(adapter);
-        reloadData(null);
+        reloadData(search);
         savePicFileLauncher = registerForActivityResult(new ActivityResultContract<File, ActivityResultForFile>() {
             File inputFile;
 
@@ -168,7 +166,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
                 ZipOutputStream zos = new ZipOutputStream(outputStream);
                 byte[] buffer = new byte[1024];
 
-                List<HistoryComment> historyCommentList = statisticsDBOpenHelper.queryAllHistoryComments(StatisticsDBOpenHelper.ORDER_BY_DATE_ASC);
+                List<HistoryComment> historyCommentList = statisticsDBOpenHelper.exportAllHistoryComment();
                 ZipEntry csvEntry = new ZipEntry("comments.csv");
                 zos.putNextEntry(csvEntry);
                 CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(zos));
@@ -222,9 +220,11 @@ public class HistoryCommentActivity extends AppCompatActivity {
         MenuItem menuItem = menu.findItem(R.id.search);
         SearchView searchView = (SearchView) menuItem.getActionView();
         assert searchView != null;
+        if (search != null){
+            searchView.setQuery(search,false);
+        }
         searchView.setSubmitButtonEnabled(true);
         menu.findItem(R.id.花里胡哨).setChecked(config.get花里胡哨Enable());
-
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -482,115 +482,24 @@ public class HistoryCommentActivity extends AppCompatActivity {
 
     private void reloadData(String searchText) {
         replaceFragment(loadingHistoryCommentFragment);
-        new Thread(new Runnable() {
+        new HistoryCommentSearchTask(new HistoryCommentSearchTask.EventHandler() {
             @Override
-            public void run() {
-                String sortRuler = null;
-                switch (config.getSortRuler()) {
-                    case Config.SORT_RULER_DATE_ASC:
-                        sortRuler = StatisticsDBOpenHelper.ORDER_BY_DATE_ASC;
-                        break;
-                    case Config.SORT_RULER_DATE_DESC:
-                        sortRuler = StatisticsDBOpenHelper.ORDER_BY_DATE_DESC;
-                        break;
-                    case Config.SORT_RULER_LIKE_DESC:
-                        sortRuler = StatisticsDBOpenHelper.ORDER_BY_LIKE_DESC;
-                        break;
-                    case Config.SORT_RULER_REPLY_COUNT_DESC:
-                        sortRuler = StatisticsDBOpenHelper.ORDER_BY_REPLY_COUNT_DESC;
-                        break;
-                    default:
-                        throw new RuntimeException("sp config error: Unknown sort rule: " + config.getSortRuler());
-                }
-                List<HistoryComment> historyCommentList = statisticsDBOpenHelper.queryAllHistoryComments(sortRuler);
-                // historyCommentList = statisticsDBOpenHelper.getDemoHistoryComments();
-                List<HistoryComment> sortedCommentList = new ArrayList<>(historyCommentList.size());
-                boolean enableNormal = config.getFilterRulerEnableNormal();
-                boolean enableShadowBan = config.getFilterRulerEnableShadowBan();
-                boolean enableDelete = config.getFilterRulerEnableDelete();
-                boolean enableOther = config.getFilterRulerEnableOther();
-                boolean enableType1 = config.getFilterRulerEnableType1();
-                boolean enableType12 = config.getFilterRulerEnableType12();
-                boolean enableType11 = config.getFilterRulerEnableType11();
-                boolean enableType17 = config.getFilterRulerEnableType17();
-                if (!TextUtils.isEmpty(searchText) && searchText.startsWith("[date]:")) {
-                    Pattern pattern = Pattern.compile("\\[date]:(\\d{4}\\.\\d{2}\\.\\d{2})-(\\d{4}\\.\\d{2}\\.\\d{2})");
-                    // Match the pattern against the text
-                    Matcher matcher = pattern.matcher(searchText);
-                    // Check if the text matches the pattern
-                    if (matcher.find()) {
-                        String startDateStr = matcher.group(1);
-                        String endDateStr = matcher.group(2);
+            public void onResult(List<HistoryComment> historyComments) {
+                if (!TextUtils.isEmpty(searchText)) {
+                    if (!searchText.startsWith("[rpid]:")){
+                        Toast.makeText(context, "已搜索到 " + historyComments.size() + " 历史评论", Toast.LENGTH_SHORT).show();
+                    }
 
-                        try {
-                            // Parse start and end dates
-                            @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
-                            if (startDateStr != null && endDateStr != null) {
-                                Date startDate = dateFormat.parse(startDateStr);
-                                Date endDate = dateFormat.parse(endDateStr);
-                                // Filter comments within the time range
-                                historyCommentList = filterCommentsWithinRange(historyCommentList, startDate, endDate);
-                            } else {
-                                toastInUi("解析日期时出错，");
-                            }
-                            // Do something with filteredComments
-                        } catch (ParseException e) {
-                            toastInUi("解析日期时出错");
-                        }
-                    } else {
-                        toastInUi("格式不正确，正确示例：\n[date]:2023.06.04-2023.10.24");
-                    }
                 }
-                boolean continueToSearching = !TextUtils.isEmpty(searchText) && !searchText.startsWith("[date]:");
-                for (HistoryComment historyComment : historyCommentList) {
-                    if (continueToSearching && !(historyComment.comment.contains(searchText) || historyComment.commentArea.sourceId.contains(searchText))) {
-                        continue;
-                    }
-                    int type = historyComment.commentArea.type;
-                    if (type == CommentArea.AREA_TYPE_VIDEO) {
-                        if (!enableType1) {
-                            continue;
-                        }
-                    } else if (type == CommentArea.AREA_TYPE_ARTICLE) {
-                        if (!enableType12) {
-                            continue;
-                        }
-                    } else if (type == CommentArea.AREA_TYPE_DYNAMIC11) {
-                        if (!enableType11) {
-                            continue;
-                        }
-                    } else if (type == CommentArea.AREA_TYPE_DYNAMIC17) {
-                        if (!enableType17) {
-                            continue;
-                        }
-                    }
-                    if (historyComment.lastState.equals(HistoryComment.STATE_NORMAL)) {
-                        if (enableNormal) {
-                            sortedCommentList.add(historyComment);
-                        }
-                    } else if (historyComment.lastState.equals(HistoryComment.STATE_SHADOW_BAN)) {
-                        if (enableShadowBan) {
-                            sortedCommentList.add(historyComment);
-                        }
-                    } else if (historyComment.lastState.equals(HistoryComment.STATE_DELETED)) {
-                        if (enableDelete) {
-                            sortedCommentList.add(historyComment);
-                        }
-                    } else if (enableOther) {
-                        sortedCommentList.add(historyComment);
-                    }
-                }
-
-
-                runOnUiThread(() -> {
-                    if (!TextUtils.isEmpty(searchText)) {
-                        Toast.makeText(context, "已搜索到 " + sortedCommentList.size() + " 历史评论", Toast.LENGTH_SHORT).show();
-                    }
-                    adapter.reloadData(sortedCommentList);
-                    replaceFragment(historyCommentFragment);
-                });
+                adapter.reloadData(historyComments);
+                replaceFragment(historyCommentFragment);
             }
-        }).start();
+
+            @Override
+            public void onMatchError(String errorMsg) {
+                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show();
+            }
+        }, searchText, context).execute();
     }
 
 
@@ -728,6 +637,10 @@ public class HistoryCommentActivity extends AppCompatActivity {
         fragmentTransaction.replace(R.id.frame, fragment);
         fragmentTransaction.commit();
     }
+
+
+
+
 
     public static List<HistoryComment> filterCommentsWithinRange
             (List<HistoryComment> historyCommentList, Date startDate, Date endDate) {

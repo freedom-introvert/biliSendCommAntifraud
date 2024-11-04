@@ -4,6 +4,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.provider.Settings;
 import android.widget.Toast;
@@ -16,15 +17,16 @@ public class NotificationService {
     public static final String CHANNEL_BACKGROUND_TASK_RESULT = "BACKGROUND_TASK_RESULT";
     private static NotificationService instance;
     public final NotificationManager notificationManager;
-    private int idIndex = 1;//自增ID
+    private final SharedPreferences preferences;
     private NotificationService(Context context){
         notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         createNotificationChannels();
+        preferences = context.getSharedPreferences("counter",Context.MODE_PRIVATE);
     }
 
     public synchronized static NotificationService getInstance(Context context) {
         if (instance == null){
-            instance = new NotificationService(context);
+            instance = new NotificationService(context.getApplicationContext());
         }
         return instance;
     }
@@ -50,8 +52,18 @@ public class NotificationService {
         }
     }
 
+    /**
+     * 创建新的通知ID（自增），并且以本地配置文件记录上次值，保证应用安装以来的ID唯一性
+     */
     public int createNewId(){
-        return idIndex++;
+        int notificationId = preferences.getInt("notification_id", 0);
+        //解决不可能发生的bug :(
+        if (notificationId == Integer.MAX_VALUE){
+            notificationId = 0;
+        }
+        notificationId++;
+        preferences.edit().putInt("notification_id",notificationId).apply();
+        return notificationId;
     }
 
     public static boolean checkOrRequestNotificationPermission(Context context){

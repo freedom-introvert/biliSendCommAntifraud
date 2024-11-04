@@ -24,7 +24,4 @@ public class TaskManger {
         thread.setName(runnable.getClass().getSimpleName());
         thread.start();
     }
-    public static void execute(BackstageTask<?> backstageTask){
-        start(backstageTask);
-    }
 }

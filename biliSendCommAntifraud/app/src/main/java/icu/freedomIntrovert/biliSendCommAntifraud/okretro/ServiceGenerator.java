@@ -16,7 +16,7 @@ public class ServiceGenerator {
         if (retrofit == null){
             retrofit = new Retrofit.Builder()
                     .baseUrl("https://api.bilibili.com")
-                    .addCallAdapterFactory(new BBCallAdapterFactory())
+                    .addCallAdapterFactory(new BiliCallAdapterFactory())
                     .addConverterFactory(FastJsonConverterFactory.create())
                     .client(OkHttpUtil.getHttpClient())
                     .build();
