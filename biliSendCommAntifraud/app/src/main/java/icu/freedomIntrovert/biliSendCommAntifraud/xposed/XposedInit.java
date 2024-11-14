@@ -8,6 +8,7 @@ import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
+import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.FuckFoldPicturesHook;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.IntentTransferStationHook;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostCommentHookByMaster;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostCommentHookByGlobal;
@@ -29,6 +30,9 @@ public class XposedInit implements IXposedHookLoadPackage {
             hookStater.startHook(new ShowInvisibleCommentHook());
             hookStater.startHook(new IntentTransferStationHook());
             hookStater.startHook(new PostPictureHook());
+            //去他妈的图片折叠
+            hookStater.startHook(new FuckFoldPicturesHook());
+
         } else if (loadPackageParam.packageName.equals("com.bilibili.app.in")){//国际版
             ClassLoader classLoader = loadPackageParam.classLoader;
             int appVersionCode = systemContext().getPackageManager().getPackageInfo(loadPackageParam.packageName, 0).versionCode;
@@ -36,6 +40,9 @@ public class XposedInit implements IXposedHookLoadPackage {
             HookStater hookStater = new HookStater(appVersionCode,classLoader);
             hookStater.startHook(new IntentTransferStationHook());
             hookStater.startHook(new PostCommentHookByGlobal());
+
+            //去他妈的图片折叠
+            hookStater.startHook(new FuckFoldPicturesHook());
         }
     }
 

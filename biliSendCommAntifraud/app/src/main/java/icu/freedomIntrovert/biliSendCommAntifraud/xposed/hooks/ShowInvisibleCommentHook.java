@@ -23,6 +23,7 @@ public class ShowInvisibleCommentHook extends BaseHook {
                 param.setResult(false);
             }
         });
+
         //如果是invisible评论，在IP属地信息那标记是[隐藏评论]
         XposedHelpers.findAndHookMethod("com.bapis.bilibili.main.community.reply.v1.ReplyControl", classLoader, "getLocation", new XC_MethodReplacement() {
             @Override

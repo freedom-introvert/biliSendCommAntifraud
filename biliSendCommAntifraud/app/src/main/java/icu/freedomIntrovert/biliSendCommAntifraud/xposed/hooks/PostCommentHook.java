@@ -11,6 +11,7 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -157,7 +158,7 @@ public abstract class PostCommentHook extends BaseHook {
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     super.beforeHookedMethod(param);
                     if ((int) param.args[1] == 0x7f0803ab) {
-                        param.setThrowable(new RuntimeException("河蟹你全家"));
+                        param.setThrowable(new FileNotFoundException("河蟹你全家"));
                     }
                     //XB.log("decodeResource:"+param.args[0]+"  "+param.args[1]);
                 }
