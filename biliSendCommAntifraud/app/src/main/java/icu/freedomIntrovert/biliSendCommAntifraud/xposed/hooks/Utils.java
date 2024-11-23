@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import com.alibaba.fastjson.JSON;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -51,6 +52,7 @@ public class Utils {
         return task.get();
     }
 
+
     public static void startActivity(Activity activity, Bundle extras) {
         XB.log("当前Activity：" + activity);
         XB.log("启动反诈参数：");
@@ -62,6 +64,7 @@ public class Utils {
                 XB.log("    Key: " + key + ", Value: " + value);
             }
         }
+
         Intent intent = new Intent();
         intent.setComponent(new ComponentName("icu.freedomIntrovert.biliSendCommAntifraud",
                 "icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity"));
@@ -72,6 +75,24 @@ public class Utils {
         } catch (ActivityNotFoundException e){
             Toast.makeText(activity, "你好像没有安装哔哩发评反诈应用，如果你使用了内置模块，请安装模块本体一起",
                     Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private static void printFields(Object obj) {
+        Class<?> clazz = obj.getClass();
+        Field[] fields = clazz.getDeclaredFields();
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                Object fieldValue = field.get(obj);
+                XB.log("Type: " + field.getType().getName() +
+                        ", Field Name: " + field.getName() +
+                        ", Value: " + fieldValue);
+            } catch (IllegalAccessException e) {
+                XB.log("Failed to access the field: " + field.getName());
+                e.printStackTrace();
+            }
         }
     }
 

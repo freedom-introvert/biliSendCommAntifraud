@@ -15,6 +15,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
@@ -63,13 +64,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Button btn_test;
     CommentManipulator commentManipulator;
     DrawerLayout drawerLayout;
-    SwitchCompat sw_recorde_history;
-    SwitchCompat sw_use_client_cookie;
     SwitchCompat sw_hook_picture_select;
     Toolbar toolbar;
     private Context context;
     StatisticsDBOpenHelper statisticsDBOpenHelper;
-    boolean enableRecordeHistoryComment;
     Handler handler;
     DialogCommCheckWorker dialogCommCheckWorker;
     Config config;
@@ -92,18 +90,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initRecordeHistoryCommentSW();
         initExportLogs();
 
-
-
-       /* Intent serviceIntent = new Intent(this, CommentMonitoringService.class);
-        ContextCompat.startForegroundService(this, serviceIntent);*/
-
-
-        /*findViewById(R.id.btn_test).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });*/
     }
 
 
@@ -254,16 +240,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 R.id.ll_random_test_comment_pool,
                 R.id.ll_wait_time,
                 R.id.ll_forward_dynamic,
-                R.id.cl_recorde_history_comment_sw,
-                R.id.cl_use_client_cookie,
                 R.id.ll_targeting,
                 R.id.ll_github_project,
                 R.id.btn_send,
                 R.id.btn_send_and_appeal,
                 R.id.btn_clean);
-
-        sw_recorde_history = findViewById(R.id.sw_recorde_history);
-        sw_use_client_cookie = findViewById(R.id.sw_use_client_cookie);
 
         setSupportActionBar(toolbar);
 
@@ -273,31 +254,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initRecordeHistoryCommentSW() {
-        enableRecordeHistoryComment = config.getRecordeHistory();
-        sw_recorde_history.setChecked(enableRecordeHistoryComment);
 
-        sw_recorde_history.setOnCheckedChangeListener((buttonView, isChecked) -> {
+        initConfigSwitch(config.getUseClientCookie(), R.id.cl_use_client_cookie, R.id.sw_use_client_cookie, (buttonView, isChecked) -> {
+            config.setUseClientCookie(isChecked);
+            if (isChecked){
+                Toast.makeText(context, "使用B站客户端Cookie", Toast.LENGTH_SHORT).show();
+            }else{
+                Toast.makeText(context, "不使用B站客户端Cookie", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        initConfigSwitch(config.getRecordeHistory(), R.id.cl_recorde_history_comment_sw, R.id.sw_recorde_history, (buttonView, isChecked) -> {
+            config.setRecordeHistory(isChecked);
             if (isChecked) {
-                enableRecordeHistoryComment = true;
-                config.setRecordeHistory(true);
                 Toast.makeText(context, "开启历史评论记录", Toast.LENGTH_SHORT).show();
             } else {
-                enableRecordeHistoryComment = false;
-                config.setRecordeHistory(false);
                 Toast.makeText(context, "关闭历史评论记录", Toast.LENGTH_SHORT).show();
             }
         });
 
-        sw_use_client_cookie.setChecked(config.getUseClientCookie());
-        sw_use_client_cookie.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked){
-                config.setUseClientCookie(true);
-                Toast.makeText(context, "使用B站客户端Cookie", Toast.LENGTH_SHORT).show();
-            }else{
-                config.setUseClientCookie(false);
-                Toast.makeText(context, "不使用B站客户端Cookie", Toast.LENGTH_SHORT).show();
-            }
+        initConfigSwitch(config.getEnablePostPictureHook(), R.id.cl_enable_post_pictures_hook,
+                R.id.sw_enable_post_pictures_hook, (buttonView, isChecked) -> {
+            config.setEnableReplacePostPictureHook(isChecked);
         });
+
+        initConfigSwitch(config.getEnableFuckFoldPicturesHook(), R.id.cl_fuck_fold_pictures_hook,
+                R.id.sw_fuck_fold_pictures_hook, (buttonView, isChecked) -> {
+                    config.setEnableFuckFoldPicturesHook(isChecked);
+                });
+
+
 
        /* sw_hook_picture_select.setChecked(xConfig.getHookPictureSelectIsEnable());
         findViewById(R.id.cl_hook_picture_select).setOnClickListener(v -> {
@@ -308,6 +294,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });*/
 
 
+    }
+
+    private void initConfigSwitch(boolean initValue,int itemViewRes,int switchRes, CompoundButton.OnCheckedChangeListener listener){
+        View itemView = findViewById(itemViewRes);
+        SwitchCompat switchCompat = findViewById(switchRes);
+        switchCompat.setChecked(initValue);
+        switchCompat.setOnCheckedChangeListener(listener);
+        itemView.setOnClickListener(v -> switchCompat.setChecked(!switchCompat.isChecked()));
     }
 
     private void toastShort(String text) {
@@ -520,10 +514,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             startActivity(new Intent(context, HistoryCommentActivity.class));
         } else if (id == R.id.ll_pending_check_comment_list) {
             startActivity(new Intent(MainActivity.this, PendingCheckCommentsActivity.class));
-        } else if (id == R.id.cl_recorde_history_comment_sw) {
-            sw_recorde_history.setChecked(!enableRecordeHistoryComment);
-        } else if (id == R.id.cl_use_client_cookie){
-            sw_use_client_cookie.setChecked(!config.getUseClientCookie());
         } else if (id == R.id.ll_martial_law_comment_area_list) {
             startActivity(new Intent(context, MartialLawCommentAreaListActivity.class));
         } else if (id == R.id.ll_random_test_comment_pool) {

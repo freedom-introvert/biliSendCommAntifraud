@@ -1,5 +1,6 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -9,6 +10,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.FileNotFoundException;
@@ -26,6 +28,7 @@ import de.robv.android.xposed.XposedHelpers;
 import icu.freedomIntrovert.async.TaskManger;
 import icu.freedomIntrovert.biliSendCommAntifraud.BuildConfig;
 import icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity;
+import icu.freedomIntrovert.biliSendCommAntifraud.Config;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.BaseHook;
@@ -107,7 +110,7 @@ public abstract class PostCommentHook extends BaseHook {
                     extras.putLong("root", XposedHelpers.getLongField(data, "root"));
                     extras.putLong("parent", XposedHelpers.getLongField(data, "parent"));
                     extras.putString("comment_text", (String) XposedHelpers.getObjectField(content, "mMsg"));
-                    extras.putString("source_id", tryGetSourceId(type, oid));
+                    extras.putString("source_id", tryGetSourceId(currentActivity,type, oid));
                     extras.putLong("uid", XposedHelpers.getLongField(reply, "mMid"));
                     try {
                         Field picturesField = content.getClass().getField("pictures");
@@ -118,14 +121,16 @@ public abstract class PostCommentHook extends BaseHook {
                     }
                     long ctime = XposedHelpers.getLongField(reply, "mCtime");
                     extras.putLong("ctime", ctime);
-                    ArrayList<String> cookies = new ArrayList<>();
-                    for (String cookieDBFilePath : getCookieDBFilePaths()) {
-                        String cookie = getCookiesAsString(cookieDBFilePath);
-                        if (cookie.contains("SESSDATA") && cookie.contains("buvid3")) {
-                            cookies.add(cookie);
+                    if (Config.getInstanceByXPEnvironment().getUseClientCookie()){
+                        ArrayList<String> cookies = new ArrayList<>();
+                        for (String cookieDBFilePath : getCookieDBFilePaths()) {
+                            String cookie = getCookiesAsString(cookieDBFilePath);
+                            if (cookie.contains("SESSDATA") && cookie.contains("buvid3")) {
+                                cookies.add(cookie);
+                            }
                         }
+                        extras.putStringArrayList("cookies", cookies);
                     }
-                    extras.putStringArrayList("cookies", cookies);
                     //extras.putString("cookie",getCookiesAsString("/data/data/tv.danmaku.bili/app_webview_tv.danmaku.bili/Default/Cookies"));
                     Utils.startActivity(currentActivity, extras);
                 } else if (XposedHelpers.getIntField(body, "code") == GeneralResponse.CODE_COMMENT_CONTAIN_SENSITIVE) {
@@ -136,14 +141,13 @@ public abstract class PostCommentHook extends BaseHook {
                         String value = (String) XposedHelpers.callMethod(requestBody, "value");
                         requsetMap.put(name, value);
                     }
-
                     Bundle extras = new Bundle();
                     extras.putInt("action", ByXposedLaunchedActivity.ACTION_SAVE_CONTAIN_SENSITIVE_CONTENT);
                     int oid = Integer.parseInt(Objects.requireNonNull(requsetMap.get("oid")));
                     int type = Integer.parseInt(Objects.requireNonNull(requsetMap.get("type")));
                     extras.putLong("oid", oid);
                     extras.putInt("type", type);
-                    extras.putString("source_id", tryGetSourceId(type, oid));
+                    extras.putString("source_id", tryGetSourceId(currentActivity,type, oid));
                     extras.putString("comment_text", requsetMap.get("message"));
                     extras.putString("toast_message", (String) XposedHelpers.getObjectField(body, "message"));
                     Utils.startActivity(currentActivity, extras);
@@ -166,6 +170,7 @@ public abstract class PostCommentHook extends BaseHook {
         }
     }
 
+
     public abstract void hook(int appVersionCode, ClassLoader classLoader) throws ClassNotFoundException;
 
     protected abstract String getBiliCallClassName();
@@ -176,10 +181,21 @@ public abstract class PostCommentHook extends BaseHook {
 
     protected abstract String[] getCookieDBFilePaths();
 
-    protected String tryGetSourceId(int type, long oid) throws ExecutionException, InterruptedException {
+    protected String tryGetSourceId(Activity activity,int type, long oid) {
         switch (type) {
             case CommentArea.AREA_TYPE_VIDEO:
-                return Utils.getBvidFormAvid(oid);
+                String bvid = getBvidFromActivity(activity);
+                if (bvid == null){
+                    XB.log("⚠️从Activity："+activity+" 中获取BV号失败，尝试调用API获取AV号对应的BV号");
+                    try {
+                        return Utils.getBvidFormAvid(oid);
+                    } catch (ExecutionException | InterruptedException e) {
+                        XB.log("⚠️⚠️网络错误，返回视频的AV号");
+                        return "AV" + oid;
+                    }
+                } else {
+                    return bvid;
+                }
             case CommentArea.AREA_TYPE_ARTICLE:
                 return "cv" + oid;
             case CommentArea.AREA_TYPE_DYNAMIC17:
@@ -245,6 +261,28 @@ public abstract class PostCommentHook extends BaseHook {
             XB.log("Activity：" + activityName);
         }
         return id;
+    }
+
+    @SuppressLint("DiscouragedApi")
+    public static String getBvidFromActivity(Activity activity){
+        int viewId = activity.getResources().getIdentifier("avid_title", "id", activity.getPackageName());
+        if (viewId == 0){
+            return null;
+        }
+        TextView descTextView = activity.findViewById(viewId);
+        if (descTextView == null){
+            return null;
+        }
+        CharSequence text = descTextView.getText();
+        if (text == null){
+            return null;
+        }
+        String avidTitle = text.toString();
+        if (avidTitle.startsWith("BV") || avidTitle.startsWith("AV") || avidTitle.startsWith("av")){
+            XB.log("从Activity里获取到BV号："+avidTitle);
+            return avidTitle;
+        }
+        return null;
     }
 
     public static String getCookiesAsString(String dbPath) {

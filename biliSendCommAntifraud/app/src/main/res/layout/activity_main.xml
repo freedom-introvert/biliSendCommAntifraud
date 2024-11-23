@@ -185,7 +185,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
-                        android:text="统计"
+                        android:text="功能"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -641,9 +641,101 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
-                        android:text="其他"
+                        android:text="XPosed小功能"
                         android:textSize="12sp" />
                 </LinearLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/cl_enable_post_pictures_hook"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground">
+
+                    <FrameLayout
+                        android:id="@+id/frameLayout3"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/baseline_add_photo_alternate_24" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/textView4"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:maxLines="2"
+                        android:text="替换拍照为从相册选择"
+                        android:textColor="@color/dark_font"
+                        android:textSize="14sp"
+                        app:layout_constraintEnd_toStartOf="@+id/sw_enable_post_pictures_hook"
+                        app:layout_constraintStart_toEndOf="@+id/frameLayout3" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/sw_enable_post_pictures_hook"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="15dp"
+                        android:focusable="true"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/cl_fuck_fold_pictures_hook"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?selectableItemBackground">
+
+                    <FrameLayout
+                        android:id="@+id/frameLayout4"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/baseline_photo_24" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/textView5"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:maxLines="2"
+                        android:text="去他妈的评论图片折叠"
+                        android:textColor="@color/dark_font"
+                        android:textSize="14sp"
+                        app:layout_constraintEnd_toStartOf="@+id/sw_fuck_fold_pictures_hook"
+                        app:layout_constraintStart_toEndOf="@+id/frameLayout4" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/sw_fuck_fold_pictures_hook"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="15dp"
+                        android:focusable="true"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
 
                 <LinearLayout
                     android:id="@+id/ll_targeting"
@@ -678,6 +770,19 @@
                         android:textSize="14sp"
                         app:layout_constraintStart_toEndOf="@+id/frameLayout2" />
 
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:padding="6dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:text="关于"
+                        android:textSize="12sp" />
                 </LinearLayout>
                 <LinearLayout
                     android:id="@+id/ll_github_project"

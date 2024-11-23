@@ -542,7 +542,7 @@ activity.startActivity(intent);
 
 ## 替换拍照为从相册选择选择图片
 
-点击拍摄按钮会从相册选择图片，虽然它还叫“拍摄”。原本垃圾图片选择器难难用了。
+点击拍摄按钮会从相册选择图片，虽然它还叫“拍摄”。原本的图片选择器像坨屎一样😅
 
 ![Screenshot_2024-11-13-23-00-46-156_tv.danmaku.bili](Screenshot_2024-11-13-23-00-46-156_tv.danmaku.bili.jpg)
 
