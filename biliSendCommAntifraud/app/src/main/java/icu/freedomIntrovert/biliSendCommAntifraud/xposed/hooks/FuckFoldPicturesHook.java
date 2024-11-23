@@ -19,7 +19,5 @@ public class FuckFoldPicturesHook extends BaseHook {
                 param.setResult(false);
             }
         });
-
-
     }
 }

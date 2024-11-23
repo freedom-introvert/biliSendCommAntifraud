@@ -15,9 +15,9 @@ android {
         minSdk 21
         //noinspection OldTargetApi
         targetSdk 33
-        versionCode 612
+        versionCode 621
         //versionName "5.9.9_dev_${currentTimeMillis}" //每编译一次改变版本号，以更新模块
-        versionName "6.1.2"
+        versionName "6.2.1"
     }
     buildTypes {
         release {
