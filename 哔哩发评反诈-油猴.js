@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         哔哩发评反诈
 // @namespace    http://tampermonkey.net/
-// @version      3.0
+// @version      3.5
 // @description  评论发送后自动检测状态，避免被发送成功的谎言所欺骗！
 // @author       freedom-introvert & ChatGPT
 // @match        https://*.bilibili.com/*
 // @run-at       document-idle
-// @grant        none
+// @grant        GM.xmlHttpRequest
 // @license      GPL
 // @downloadURL https://update.greasyfork.org/scripts/496537/%E5%93%94%E5%93%A9%E5%8F%91%E8%AF%84%E5%8F%8D%E8%AF%88.user.js
 // @updateURL https://update.greasyfork.org/scripts/496537/%E5%93%94%E5%93%A9%E5%8F%91%E8%AF%84%E5%8F%8D%E8%AF%88.meta.js
@@ -15,13 +15,12 @@
 const waitTime = 5000;//评论发送后的等待时间，单位毫秒，可修改此项，不建议低于5秒
 
 const sortByTime = 0;
-const sortModeByTime = 2;
+const SORT_MODE_TIME = 2;
 
-
-const originalFetch = window.fetch;
+const originalFetch = unsafeWindow.fetch;//注意是unsafeWindow，不是window，使用 GM.xmlHttpRequest 换掉window里的fecth将不起作用
 
 // Replace the fetch function with a custom one
-window.fetch = async function (...args) {
+unsafeWindow.fetch = async function (...args) {
     // Call the original fetch function and wait for the response
     var response = await originalFetch.apply(this, args);
 
@@ -311,7 +310,11 @@ async function handleAddCommentResponse(url, responseJson) {
         //如果root==0，这是在评论区的根评论，否则是一个对某评论的回复评论
         if (root == 0) {
             ProgressDialog.setMessage("查找无账号评论区时间排序第一页");
-            var resp = await fetchBilibiliComments(oid, type, 1, sortByTime, false);
+            var resp = await getMainCommentList(oid, type,0,SORT_MODE_TIME,false);
+            if(resp.code != 0){
+                showErrorResult("获取评论主列表时发生错误，响应数据：" + resp);
+                return;
+            }
             console.log(resp);
             var replies = resp.data.replies;
             var found = findReplies(replies, rpid);
@@ -344,34 +347,34 @@ async function handleAddCommentResponse(url, responseJson) {
             }
         } else {
             ProgressDialog.setMessage("无账号查找评论回复页……");
-            
-            for(i = 0;true;i++){
+
+            for (i = 0; true; i++) {
                 ProgressDialog.setMessage(`无账号查找评论回复第${i}页……`);
                 var resp = await fetchBilibiliCommentReplies(oid, type, root, i, sortByTime, false);
                 var replies = resp.data.replies;
                 console.log(resp);
-                if(replies === null || replies.length === 0){
+                if (replies === null || replies.length === 0) {
                     console.log("已翻遍无账号下的评论回复页");
                     break;
                 }
 
-                if(findReplies(replies,rpid)){
+                if (findReplies(replies, rpid)) {
                     showOkResult(reply);
                     return;
                 }
             }
 
-            for(i = 0;true;i++){
+            for (i = 0; true; i++) {
                 ProgressDialog.setMessage(`有账号查找评论回复第${i}页……`);
                 var resp = await fetchBilibiliCommentReplies(oid, type, root, i, sortByTime, true);
                 var replies = resp.data.replies;
                 console.log(resp);
-                if(replies === null || replies.length === 0){
+                if (replies === null || replies.length === 0) {
                     console.log("已翻遍有账号下的评论回复页");
                     break;
                 }
 
-                if(findReplies(replies,rpid)){
+                if (findReplies(replies, rpid)) {
                     showShadowBanResult(reply);
                     return;
                 }
@@ -388,10 +391,10 @@ async function handleCheckDynamic(id) {
     console.log(resp);
     if (resp.code == -352) {
         addDynamicShadowBannedHint("检测到此动态被shadowBan，仅自己可见！（也可能是误判了，你可以在无痕模式去验证一下）");
-    } else if(resp.code == 4101131) {
+    } else if (resp.code == 4101131) {
         console.log("检测到动态被shadowBan！");
         addDynamicShadowBannedHint("检测到此动态被shadowBan，仅自己可见！（可能你转发到动态的评论被ShadowBan）");
-    } else if(resp.code == 500){
+    } else if (resp.code == 500) {
         console.log("检测到动态被shadowBan！");
         addDynamicShadowBannedHint("检测到此动态被shadowBan，仅自己可见!（可能你转发到动态的评论疑似审核中）");
     } else if (resp.code == 0) {
@@ -439,29 +442,30 @@ async function sleepAndShowInDialog(sleepTime) {
     }
     ProgressDialog.setProgress(100);
 }
+
 /**
- * 获取评论区的评论
+ * 
  * @param {*} oid 
  * @param {*} type 
- * @param {*} pn 
- * @param {*} sort 
- * @param {*} hasCookie 
+ * @param {*} next 
+ * @param {*} mode 评论排序模式 2为按时间
+ * @param {*} isLogin 是否携带cookie
+ * @param {*} seek_rpid 定位rpid
  * @returns 
  */
-async function fetchBilibiliComments(oid, type, pn, sort, hasCookie) {
-    const url = new URL('https://api.bilibili.com/x/v2/reply');
-    const params = { oid, type, pn, sort };
-    url.search = new URLSearchParams(params).toString();
 
-    try {
-        const response = await originalFetch(url, hasCookie ? { credentials: 'include' } : { credentials: 'omit' });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return await response.json(); // Return JSON object
-    } catch (error) {
-        throw error; // Rethrow the error
+async function getMainCommentList(oid, type, next, mode,isLogin,seek_rpid) {  
+    let url = `https://api.bilibili.com/x/v2/reply/main?oid=${oid}&type=${type}&next=${next}&mode=${mode}` + (seek_rpid ? `&seek_rpid=${seek_rpid}` : "")
+    const req = {
+        url,
+        anonymous: !isLogin
     }
+
+    req.headers={ "cookie": getBuvid3Cookie() };
+    let response = (await GM.xmlHttpRequest(req).catch(e => console.error(e))).response;
+    let resp = JSON.parse(response);
+    console.log("获取主评论列表，携带cookie："+isLogin,url,resp)
+    return resp;
 }
 
 /**
@@ -510,7 +514,7 @@ async function fetchBilibiliCommentsByMainApiUseSeekRpid(oid, type, seek_rpid, n
     url.search = new URLSearchParams(params).toString();
 
     try {
-        const response = await originalFetch(url, hasCookie ? {credentials: 'include'} : { credentials: 'omit' });
+        const response = await originalFetch(url, hasCookie ? { credentials: 'include' } : { credentials: 'omit' });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -589,4 +593,15 @@ function addDynamicShadowBannedHint(message) {
         shadowbanMessage.appendChild(messageSpan);
         biliDynContent.appendChild(shadowbanMessage);
     }
+}
+
+function getBuvid3Cookie() {
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].trim();
+        if (cookie.startsWith('buvid3=')) {
+            return cookie;
+        }
+    }
+    return null;
 }
