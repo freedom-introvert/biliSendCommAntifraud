@@ -125,6 +125,7 @@ public class HistoryCommentSearchTask extends BackstageTaskByMVP<HistoryCommentS
                         Date endDate = dateFormat.parse(endDateStr);
                         // Filter comments within the time range
                         eventHandler.onResult(filterCommentsWithinRange(historyComments, startDate, endDate));
+                        return;
                     } else {
                         eventHandler.onMatchError("解析日期时出错，");
                     }
