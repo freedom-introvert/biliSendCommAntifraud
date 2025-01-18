@@ -4,16 +4,13 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,7 +23,6 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import icu.freedomIntrovert.async.TaskManger;
-import icu.freedomIntrovert.biliSendCommAntifraud.BuildConfig;
 import icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity;
 import icu.freedomIntrovert.biliSendCommAntifraud.Config;
 import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
@@ -68,7 +64,7 @@ public abstract class PostCommentHook extends BaseHook {
             }
         });
 
-        XposedHelpers.findAndHookMethod(getBiliCallClassName()/*com.bilibili.okretro.call.BiliCall 混淆*/, classLoader, "execute", new XC_MethodHook() {
+        XposedHelpers.findAndHookMethod(getBiliCallClassName(classLoader)/*com.bilibili.okretro.call.BiliCall 混淆*/, classLoader, "execute", new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 super.beforeHookedMethod(param);
@@ -155,25 +151,12 @@ public abstract class PostCommentHook extends BaseHook {
             }
         });
         hook(appVersionCode, classLoader);
-
-        if (BuildConfig.DEBUG) {
-            XposedHelpers.findAndHookMethod(BitmapFactory.class, "decodeResource", Resources.class, int.class, new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    super.beforeHookedMethod(param);
-                    if ((int) param.args[1] == 0x7f0803ab) {
-                        param.setThrowable(new FileNotFoundException("河蟹你全家"));
-                    }
-                    //XB.log("decodeResource:"+param.args[0]+"  "+param.args[1]);
-                }
-            });
-        }
     }
 
 
     public abstract void hook(int appVersionCode, ClassLoader classLoader) throws ClassNotFoundException;
 
-    protected abstract String getBiliCallClassName();
+    protected abstract String getBiliCallClassName(ClassLoader classLoader);
 
     protected abstract String getBiliCall_body_MethodName();
 

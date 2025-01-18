@@ -1,9 +1,15 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks;
 
+import android.annotation.SuppressLint;
+
+import java.lang.reflect.Method;
+import java.util.Map;
+
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 
 public class PostCommentHookByGlobal extends PostCommentHook {
+
 /*    @Override
     public void startHook(int appVersionCode, ClassLoader classLoader) throws ClassNotFoundException {
 
@@ -146,8 +152,17 @@ public class PostCommentHookByGlobal extends PostCommentHook {
     }
 
     @Override
-    protected String getBiliCallClassName() {
-        return "com.bilibili.okretro.call.a";
+    protected String getBiliCallClassName(ClassLoader classLoader) {
+        //换了一种更灵活的方式获取BiliCal的类名，以非混淆类站脚
+        try {
+            Class<?> clazz = XposedHelpers.findClass("com.bilibili.app.comm.comment2.model.BiliCommentApiService", classLoader);
+            Method postComment = clazz.getDeclaredMethod("postComment", Map.class);
+            return postComment.getReturnType().getCanonicalName();
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+        //return "com.bilibili.okretro.call.a";
+        //return "rx1.a";
     }
 
     @Override
@@ -160,6 +175,7 @@ public class PostCommentHookByGlobal extends PostCommentHook {
         return "h";
     }
 
+    @SuppressLint("SdCardPath")
     @Override
     protected String[] getCookieDBFilePaths() {
         return new String[]{
