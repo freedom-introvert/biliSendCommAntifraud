@@ -37,10 +37,10 @@
                 android:id="@+id/batch_recheck"
                 android:icon="@drawable/baseline_auto_mode_24"
                 android:title="批量复查"/>
-          <!--  <item
+            <item
                 android:id="@+id/statistics"
                 android:icon="@drawable/statistics"
-                android:title="统计"/>-->
+                android:title="统计"/>
         </menu>
     </item>
 

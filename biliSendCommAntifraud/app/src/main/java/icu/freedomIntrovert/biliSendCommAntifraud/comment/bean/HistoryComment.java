@@ -21,6 +21,10 @@ public class HistoryComment extends Comment{
     //评论区die了
     public static final String STATE_COMMENT_AREA_DIED = "commentAreaDied";
     public static final String STATE_SENSITIVE = "sensitive";
+    public static final int APPEAL_STATE_SUCCESS = 2;
+    public static final int APPEAL_STATE_NO_COMMENT = 1;
+    public static final int APPEAL_STATE_NULL = 0;
+
     /*
     没有检查过评论区                                     [0]
      - 正常                      --测试评论正常          [1]
@@ -43,11 +47,12 @@ public class HistoryComment extends Comment{
     public String lastState;
     public Date lastCheckDate;
     public SensitiveScanResult sensitiveScanResult;//JsonString
+    public int appealState;
 
     public HistoryComment(CommentArea commentArea, long rpid, long parent, long root, String comment,
                           Date date, int like, int replyCount, String lastState, Date lastCheckDate,
                           int checkedArea, String firstState, String pictures,
-                          SensitiveScanResult sensitiveScanResult,long uid) {
+                          SensitiveScanResult sensitiveScanResult,long uid,int appealState) {
         super(commentArea, rpid, parent, root, comment, pictures, date,uid);
         this.like = like;
         this.replyCount = replyCount;
@@ -56,6 +61,7 @@ public class HistoryComment extends Comment{
         this.checkedArea = checkedArea;
         this.firstState = firstState;
         this.sensitiveScanResult = sensitiveScanResult;
+        this.appealState = appealState;
     }
 
     //5.0.0及之前csv导入专用方法
@@ -93,6 +99,8 @@ public class HistoryComment extends Comment{
         this.firstState = state;
         this.lastState = state;
     }
+
+
 
     public static String getStateDesc(String state) {
         if (TextUtils.isEmpty(state)) {

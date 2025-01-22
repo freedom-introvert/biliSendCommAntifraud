@@ -30,10 +30,10 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.SensitiveScanResu
 public class ScanSensitiveWordDialog {
 
     public static void show(Context context, Comment comment) {
-        show(context,comment,null);
+        show(context, comment, null);
     }
 
-    public static void show(Context context, Comment comment,@Nullable CallBack callBack){
+    public static void show(Context context, Comment comment, @Nullable CallBack callBack) {
         if (comment.comment.length() < 8) {
             Toast.makeText(context, "您要扫描的评论太短！至少8个字符", Toast.LENGTH_LONG).show();
             return;
@@ -52,31 +52,31 @@ public class ScanSensitiveWordDialog {
                             AccountManger accountManger = AccountManger.getInstance(context);
                             Account account = accountManger.getAccount(comment.uid);
                             if (account == null) {
-                                Toast.makeText(context, "未找到该评论所属的用户UID："+comment.uid, Toast.LENGTH_LONG).show();
+                                Toast.makeText(context, "未找到该评论所属的用户UID：" + comment.uid, Toast.LENGTH_LONG).show();
                                 return;
-                            } else if (account.accountCommentArea == null){
-                                Toast.makeText(context, String.format("用户 %s（%s） 评论区未设置！请设置后回到历史评论来扫描",account.uname,account.uid), Toast.LENGTH_LONG).show();
+                            } else if (account.accountCommentArea == null) {
+                                Toast.makeText(context, String.format("用户 %s（%s） 评论区未设置！请设置后回到历史评论来扫描", account.uname, account.uid), Toast.LENGTH_LONG).show();
                                 return;
                             }
-                            toScan(context,comment,null,account.accountCommentArea,callBack);
+                            toScan(context, comment, null, account.accountCommentArea, callBack);
                             break;
                         case 1:
-                            showSelectForwardAccountDialog(context,comment,callBack);
+                            showSelectForwardAccountDialog(context, comment, callBack);
                             break;
                         case 2:
-                            toScan(context,comment,null,comment.commentArea,callBack);
+                            toScan(context, comment, null, comment.commentArea, callBack);
                     }
                 }).show();
     }
 
-    private static void showSelectForwardAccountDialog(Context context,Comment comment,CallBack callBack){
+    private static void showSelectForwardAccountDialog(Context context, Comment comment, CallBack callBack) {
         AccountSelectionDialog.show(context, "选择转发动态的账号", comment.uid, account ->
-                toScan(context,comment,account,null,callBack));
+                toScan(context, comment, account, null, callBack));
     }
 
-    private static void toScan(Context context, Comment comment, Account forwardDynamicAccount, CommentArea commentArea,CallBack callBack){
-        SensitiveScannerTask sensitiveScannerTask = new SensitiveScannerTask(context,comment,
-                forwardDynamicAccount,commentArea,new ScanEventHandler(context,comment,callBack));
+    private static void toScan(Context context, Comment comment, Account forwardDynamicAccount, CommentArea commentArea, CallBack callBack) {
+        SensitiveScannerTask sensitiveScannerTask = new SensitiveScannerTask(context, comment,
+                forwardDynamicAccount, commentArea, new ScanEventHandler(context, comment, callBack));
         sensitiveScannerTask.execute();
     }
 
@@ -97,7 +97,7 @@ public class ScanSensitiveWordDialog {
         private final CallBack callBack;
         private final Context context;
 
-        public ScanEventHandler(Context context,Comment comment,CallBack callBack) {
+        public ScanEventHandler(Context context, Comment comment, CallBack callBack) {
             this.comment = comment;
             this.callBack = callBack;
             this.context = context;
@@ -127,7 +127,7 @@ public class ScanSensitiveWordDialog {
         @Override
         public void onCommentAccountNotFound(long uid) {
             dialog.dismiss();
-            Toast.makeText(context, "评论用户不存在，UID："+uid, Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "评论用户不存在，UID：" + uid, Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -150,11 +150,7 @@ public class ScanSensitiveWordDialog {
             SpannableStringBuilder builder = new SpannableStringBuilder(commentText);
             builder.setSpan(greenSpan, 0, commentText.length(), Spannable.SPAN_INCLUSIVE_INCLUSIVE);
             txv_comment_content.setText(builder);
-            if (commentArea == comment.commentArea) {
-                txv_scanning_status.setText("评论全文正常（在评论区:" + commentArea.sourceId + ")，请检查评论区是否戒严或者评论是否仅在那个评论区被ban？");
-            } else {
-                txv_scanning_status.setText("评论全文正常（在你的评论区)，请检查评论区是否戒严或者评论是否仅在那个评论区被ban？");
-            }
+            txv_scanning_status.setText("评论全文正常（在评论区:" + commentArea.sourceId + ")，请检查评论区是否戒严或者评论是否仅在那个评论区被ban？");
             dialog.setTitle("扫描终止");
             pb_scanning_ssw.setMax(1);
             pb_scanning_ssw.setProgress(1);
@@ -228,7 +224,7 @@ public class ScanSensitiveWordDialog {
             buttonClose.setEnabled(true);
             buttonClose.setOnClickListener(v -> dialog.dismiss());
             pb_wait.setIndeterminate(false);
-            if (callBack!=null) {
+            if (callBack != null) {
                 callBack.onScanComplete(comment);
             }
         }
@@ -240,7 +236,7 @@ public class ScanSensitiveWordDialog {
         }
     }
 
-    public interface CallBack{
+    public interface CallBack {
         void onScanComplete(Comment comment);
     }
 

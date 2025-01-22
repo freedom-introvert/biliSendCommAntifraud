@@ -118,7 +118,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="14dp"
                         android:layout_marginBottom="10dp"
-                        android:text="严禁在b站公开区域宣传与展示本软件，尤其是视频、动态、文章！"
+                        android:text="严禁在b站以做视频、发动态、写文章的方式去分享本软件"
                         android:textSize="16sp" />
 
                 </LinearLayout>

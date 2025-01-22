@@ -180,6 +180,16 @@
                         android:textIsSelectable="true"
                         />
                 </TableRow>
+                <TableRow
+                    android:layout_marginVertical="5dp">
+                    <TextView
+                        android:text="评论区申诉"/>
+                    <TextView
+                        android:id="@+id/txv_appeal_state"
+                        android:layout_marginLeft="10dp"
+                        android:textIsSelectable="true"
+                        />
+                </TableRow>
             </TableLayout>
 
 

@@ -20,7 +20,7 @@ public class AppealCommentDialog {
     public static void show(Context context, Comment comment, ResultCallback callback) {
         new AlertDialog.Builder(context)
                 .setTitle("警告")
-                .setMessage("申诉前请不要在此评论区进行敏感词扫描、戒严检测等重复发送删除评论的操作，会污染评论区影响申诉（比如恢复了测试评论）！\n" +
+                .setMessage("申诉前请不要在此评论区进行敏感词扫描、戒严检测等重复发送再删除评论的操作，会污染评论区影响申诉（比如恢复了测试评论）！\n" +
                         "申诉依赖于:https://www.bilibili.com/h5/comment/appeal")
                 .setNegativeButton("还是算了", null)
                 .setNeutralButton("官方申诉网址", (dialog23, which1) -> {

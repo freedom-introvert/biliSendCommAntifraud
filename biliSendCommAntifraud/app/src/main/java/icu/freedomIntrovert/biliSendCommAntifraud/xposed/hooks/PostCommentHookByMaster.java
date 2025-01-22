@@ -1,5 +1,7 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks;
 
+import android.annotation.SuppressLint;
+
 public class PostCommentHookByMaster extends PostCommentHook {
 
     public PostCommentHookByMaster() {
@@ -38,9 +40,6 @@ public class PostCommentHookByMaster extends PostCommentHook {
                 }
             }
         });*//*
-
-
-
     }*/
 
 
@@ -64,6 +63,7 @@ public class PostCommentHookByMaster extends PostCommentHook {
         return "request";
     }
 
+    @SuppressLint("SdCardPath")
     @Override
     protected String[] getCookieDBFilePaths() {
         return new String[]{

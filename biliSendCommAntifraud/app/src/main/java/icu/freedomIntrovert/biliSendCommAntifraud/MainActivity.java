@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         context = this;
         config = Config.getInstance(context);
 
@@ -257,9 +258,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         initConfigSwitch(config.getUseClientCookie(), R.id.cl_use_client_cookie, R.id.sw_use_client_cookie, (buttonView, isChecked) -> {
             config.setUseClientCookie(isChecked);
-            if (isChecked){
+            if (isChecked) {
                 Toast.makeText(context, "使用B站客户端Cookie", Toast.LENGTH_SHORT).show();
-            }else{
+            } else {
                 Toast.makeText(context, "不使用B站客户端Cookie", Toast.LENGTH_SHORT).show();
             }
         });
@@ -274,12 +275,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
         initConfigSwitch(config.getEnablePostPictureHook(), R.id.cl_enable_post_pictures_hook,
-                R.id.sw_enable_post_pictures_hook, (buttonView, isChecked) -> {
-            config.setEnableReplacePostPictureHook(isChecked);
-        });
+                R.id.sw_enable_post_pictures_hook,true, (buttonView, isChecked) -> {
+                    config.setEnableReplacePostPictureHook(isChecked);
+                });
 
         initConfigSwitch(config.getEnableFuckFoldPicturesHook(), R.id.cl_fuck_fold_pictures_hook,
-                R.id.sw_fuck_fold_pictures_hook, (buttonView, isChecked) -> {
+                R.id.sw_fuck_fold_pictures_hook,true, (buttonView, isChecked) -> {
                     config.setEnableFuckFoldPicturesHook(isChecked);
                 });
 
@@ -295,13 +296,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     }
-
-    private void initConfigSwitch(boolean initValue,int itemViewRes,int switchRes, CompoundButton.OnCheckedChangeListener listener){
+    private void initConfigSwitch(boolean initValue, int itemViewRes, int switchRes,boolean needXposed, CompoundButton.OnCheckedChangeListener listener){
         View itemView = findViewById(itemViewRes);
         SwitchCompat switchCompat = findViewById(switchRes);
-        switchCompat.setChecked(initValue);
-        switchCompat.setOnCheckedChangeListener(listener);
-        itemView.setOnClickListener(v -> switchCompat.setChecked(!switchCompat.isChecked()));
+        if (needXposed && !isXposedEnabled()){
+            switchCompat.setEnabled(false);
+            itemView.setOnClickListener(v -> needXposedToast());
+        } else {
+            switchCompat.setChecked(initValue);
+            switchCompat.setOnCheckedChangeListener(listener);
+            itemView.setOnClickListener(v -> switchCompat.setChecked(!switchCompat.isChecked()));
+        }
+    }
+
+    private void initConfigSwitch(boolean initValue, int itemViewRes, int switchRes, CompoundButton.OnCheckedChangeListener listener) {
+        initConfigSwitch(initValue, itemViewRes, switchRes,false, listener);
     }
 
     private void toastShort(String text) {
@@ -397,7 +406,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     public void onError(Throwable th) {
                         toastLong(th.getMessage());
                     }
-                }, editCookie.getText().toString(),editCommentAreaLocation.getText().toString());
+                }, editCookie.getText().toString(), editCommentAreaLocation.getText().toString());
                 task.execute();
             });
             editDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> {
@@ -481,7 +490,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     public void onError(Throwable th) {
                         toastLong(th.getMessage());
                     }
-                }, editText.getText().toString(),null);
+                }, editText.getText().toString(), null);
                 task.execute();
             });
         });
@@ -523,7 +532,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else if (id == R.id.ll_wait_time) {
             openSetWaitTime();
         } else if (id == R.id.ll_targeting) {
-            openTargeting();
+            if (isXposedEnabled()){
+                openTargeting();
+            } else {
+                needXposedToast();
+            }
+
         } else if (id == R.id.ll_github_project) {
             Uri uri = Uri.parse("https://github.com/freedom-introvert/biliSendCommAntifraud");
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
@@ -537,37 +551,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void sendAndCheckOrAppealComment(boolean isAppeal){
+    private void sendAndCheckOrAppealComment(boolean isAppeal) {
         String commentText = edt_comment.getText().toString();
         String commentAreaText = edt_bvid.getText().toString();
-        if (TextUtils.isEmpty(commentText)){
+        if (TextUtils.isEmpty(commentText)) {
             Toast.makeText(context, "请输入评论内容！", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (TextUtils.isEmpty(commentAreaText)){
+        if (TextUtils.isEmpty(commentAreaText)) {
             Toast.makeText(context, "请输入评论区地址！", Toast.LENGTH_SHORT).show();
             return;
         }
         AccountSelectionDialog.show(context, "请选择发送评论的账号", null, account -> {
-            if (isAppeal){
-                sendAndAppealComment(commentText,commentAreaText,account);
+            if (isAppeal) {
+                sendAndAppealComment(commentText, commentAreaText, account);
             } else {
-                sendAndCheckComment(commentText,commentAreaText,account);
+                sendAndCheckComment(commentText, commentAreaText, account);
             }
         });
     }
 
-    private void sendAndCheckComment(String commentText,String commentAreaText,Account account){
+    private void sendAndCheckComment(String commentText, String commentAreaText, Account account) {
         sendComment(commentText, commentAreaText, account, new SendCommentHandler(context) {
             @Override
             public void onSent(Comment comment) {
                 new DialogCommCheckWorker(context)
-                        .checkComment(comment, true, null, dialog -> {});
+                        .checkComment(comment, true, null, dialog -> {
+                        });
             }
         });
     }
 
-    private void sendAndAppealComment(String commentText,String commentAreaText,Account account){
+    private void sendAndAppealComment(String commentText, String commentAreaText, Account account) {
         sendComment(commentText, commentAreaText, account, new SendCommentHandler(context) {
             @Override
             public void onSent(Comment comment) {
@@ -576,7 +591,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     public void onSuccess(String successToast) {
                         HistoryComment historyComment = new HistoryComment(comment);
                         insert(HistoryComment.STATE_UNKNOWN);
-                        DialogUtil.dialogMessage(context, successToast+"，证明评论被ban，但具体情况未知", successToast);
+                        DialogUtil.dialogMessage(context, successToast + "，证明评论被ban，但具体情况未知", successToast);
                         if (config.getRecordeHistoryIsEnable()) {
                             statisticsDBOpenHelper.insertHistoryComment(historyComment);
                         }
@@ -588,7 +603,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         DialogUtil.dialogMessage(context, "评论正常显示！", successToast);
                     }
 
-                    private void insert(String state){
+                    private void insert(String state) {
                         HistoryComment historyComment = new HistoryComment(comment);
                         historyComment.setFirstStateAndCurrentState(state);
                         historyComment.lastCheckDate = new Date();
@@ -601,20 +616,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
-    private void sendComment(String commentText,String commentAreaText,Account account,SendCommentHandler handler){
-        new SendCommentTask(context, commentText, commentAreaText, account, 0, 0,handler).execute();
+    private void sendComment(String commentText, String commentAreaText, Account account, SendCommentHandler handler) {
+        new SendCommentTask(context, commentText, commentAreaText, account, 0, 0, handler).execute();
     }
 
-    private static abstract class SendCommentHandler implements SendCommentTask.EventHandler{
+    private static abstract class SendCommentHandler implements SendCommentTask.EventHandler {
         ProgressDialog progressDialog;
         StatisticsDBOpenHelper statisticsDBOpenHelper;
         Context context;
-        public SendCommentHandler(Context context){
+
+        public SendCommentHandler(Context context) {
             this.context = context;
             this.statisticsDBOpenHelper = StatisticsDBOpenHelper.getInstance(context);
             progressDialog = DialogUtil.newProgressDialog(context, null, "发送评论中……");
             progressDialog.show();
         }
+
         @Override
         public void onCommentAreaMoMatch() {
             progressDialog.dismiss();
@@ -622,7 +639,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         @Override
-        public void onSent(CommentArea commentArea,CommentAddResult commentAddResult) {
+        public void onSent(CommentArea commentArea, CommentAddResult commentAddResult) {
             progressDialog.dismiss();
             BiliComment reply = commentAddResult.reply;
             Comment comment = new Comment(commentArea, reply.rpid, reply.parent, reply.root,
@@ -634,10 +651,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public abstract void onSent(Comment comment);
 
         @Override
-        public void onCommentContainSensitive(CommentArea commentArea, String commentText,long uid,BiliBiliApiException e) {
+        public void onCommentContainSensitive(CommentArea commentArea, String commentText, long uid, BiliBiliApiException e) {
             progressDialog.dismiss();
             HistoryComment historyComment = new HistoryComment(new Comment(commentArea,
-                    -System.currentTimeMillis(), 0, 0, commentText, null, new Date(),uid));
+                    -System.currentTimeMillis(), 0, 0, commentText, null, new Date(), uid));
             historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_SENSITIVE);
             statisticsDBOpenHelper.insertHistoryComment(historyComment);
             Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show();
@@ -646,7 +663,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onError(Throwable th) {
             progressDialog.dismiss();
-            DialogUtil.dialogError(context,th);
+            DialogUtil.dialogError(context, th);
         }
     }
 
@@ -722,6 +739,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void startWebLoginActivity() {
         startActivityForResult(new Intent(context, WebViewLoginActivity.class), REQUEST_CODE_GET_COOKIE);
+    }
+
+    public boolean isXposedEnabled() {
+        return false;
+    }
+
+    public void needXposedToast(){
+        Toast.makeText(context,"此功能需要启用XPosed",Toast.LENGTH_SHORT).show();
     }
 
 }

@@ -25,8 +25,12 @@ public class HistoryCommentCsvSerializer {
     private static final String[] header_v600 = new String[]{"rpid", "parent", "root", "oid",
             "area_type", "source_id", "comment", "like", "reply", "last_state", "last_check_date",
             "date", "checked_area", "first_state", "pictures", "sensitive_scan_result", "uid"};
+    private static final String[] header_v625 = new String[]{"rpid", "parent", "root", "oid",
+            "area_type", "source_id", "comment", "like", "reply", "last_state", "last_check_date",
+            "date", "checked_area", "first_state", "pictures", "sensitive_scan_result", "uid","appeal_state"};
 
     public static List<HistoryComment> readCSVToHistoryComments(CSVReader csvReader) throws CsvValidationException, IOException {
+
         String[] header = csvReader.readNext();
         if (Arrays.equals(header_banned, header)) {
             return toHistoryComments(1, csvReader);
@@ -36,6 +40,8 @@ public class HistoryCommentCsvSerializer {
             return toHistoryComments(3, csvReader);
         } else if (Arrays.equals(header_v600, header)) {
             return toHistoryComments(4, csvReader);
+        } else if (Arrays.equals(header_v625,header)){
+            return toHistoryComments(5,csvReader);
         }
         return null;
     }
@@ -137,7 +143,7 @@ public class HistoryCommentCsvSerializer {
                 data = cache;
 
             case 4: // header_v600
-                // 最新数据，创建 HistoryComment 对象
+            case 5: // header_v625
                 return new HistoryComment(
                         new CommentArea(
                                 Long.parseLong(data[3]), // oid
@@ -157,7 +163,8 @@ public class HistoryCommentCsvSerializer {
                         data[13],                  // firstState
                         data[14],                  // pictures
                         JSON.parseObject(data[15], SensitiveScanResult.class), // sensitiveScanResult
-                        Long.parseLong(data[16])   // uid
+                        Long.parseLong(data[16]),   // uid
+                        Integer.parseInt(data[17])  // appeal_state
                 );
             default:
                 throw new IllegalArgumentException("Invalid headerId " + headerId);
@@ -166,7 +173,7 @@ public class HistoryCommentCsvSerializer {
     }
 
     public static String[] getLatestHeader(){
-        return header_v600;
+        return header_v625;
     }
 
     public static String[] toCsvData(HistoryComment comment){
@@ -187,7 +194,8 @@ public class HistoryCommentCsvSerializer {
                 comment.firstState,
                 comment.pictures,
                 comment.sensitiveScanResult != null ? JSON.toJSONString(comment.sensitiveScanResult) : null,
-                String.valueOf(comment.uid)
+                String.valueOf(comment.uid),
+                String.valueOf(comment.appealState)
         };
     }
 
