@@ -251,7 +251,7 @@ public class DialogCommCheckWorker {
                                 @Override
                                 public void onNoCommentToAppeal(String successToast) {
                                     super.onNoCommentToAppeal(successToast);
-                                    statDB.updateHistoryCommentLastState(rpid, HistoryComment.STATE_SUSPECTED_NO_PROBLEM);
+                                    //statDB.updateHistoryCommentLastState(rpid, HistoryComment.STATE_SUSPECTED_NO_PROBLEM);
                                 }
                             });
                             break;

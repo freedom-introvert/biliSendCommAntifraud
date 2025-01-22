@@ -2,6 +2,8 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -45,6 +47,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -220,8 +223,8 @@ public class HistoryCommentActivity extends AppCompatActivity {
         MenuItem menuItem = menu.findItem(R.id.search);
         SearchView searchView = (SearchView) menuItem.getActionView();
         assert searchView != null;
-        if (search != null){
-            searchView.setQuery(search,false);
+        if (search != null) {
+            searchView.setQuery(search, false);
         }
         searchView.setSubmitButtonEnabled(true);
         menu.findItem(R.id.花里胡哨).setChecked(config.get花里胡哨Enable());
@@ -373,12 +376,25 @@ public class HistoryCommentActivity extends AppCompatActivity {
                 }
                 dialog.dismiss();
             });
+        } else if (itemId == R.id.statistics) {
 
-        }/* else if (itemId == R.id.statistics) {
-         *//*new AlertDialog.Builder(this)
+            String message = "按照最后状态\n"+generateStat(statisticsDBOpenHelper.countingLastStatus())+
+                    "\n按初始状态\n"+generateStat(statisticsDBOpenHelper.countingFirstStatus());
+
+
+            new AlertDialog.Builder(context)
                     .setTitle("统计")
-                    .*//*
-        }*/
+                    .setPositiveButton("关闭",null)
+                    .setNegativeButton("复制", (dialog, which) -> {
+                        ClipboardManager cm = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipData mClipData = ClipData.newPlainText("统计信息",message);
+                        cm.setPrimaryClip(mClipData);
+                        Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show();
+                    })
+                    .setMessage(message)
+                    .show();
+            System.out.println();
+        }
         return true;
     }
 
@@ -480,13 +496,13 @@ public class HistoryCommentActivity extends AppCompatActivity {
         });
     }
 
-    private void reloadData(String searchText) {
+    public void reloadData(String searchText) {
         replaceFragment(loadingHistoryCommentFragment);
         new HistoryCommentSearchTask(new HistoryCommentSearchTask.EventHandler() {
             @Override
             public void onResult(List<HistoryComment> historyComments) {
                 if (!TextUtils.isEmpty(searchText)) {
-                    if (!searchText.startsWith("[rpid]:")){
+                    if (!searchText.startsWith("[rpid]:")) {
                         Toast.makeText(context, "已搜索到 " + historyComments.size() + " 历史评论", Toast.LENGTH_SHORT).show();
                     }
 
@@ -615,7 +631,6 @@ public class HistoryCommentActivity extends AppCompatActivity {
                     }
                 });
         }
-
     }
 
     @Override
@@ -638,10 +653,6 @@ public class HistoryCommentActivity extends AppCompatActivity {
         fragmentTransaction.commit();
     }
 
-
-
-
-
     public static List<HistoryComment> filterCommentsWithinRange
             (List<HistoryComment> historyCommentList, Date startDate, Date endDate) {
         List<HistoryComment> filteredComments = new ArrayList<>();
@@ -657,6 +668,40 @@ public class HistoryCommentActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             Toast.makeText(context, message, Toast.LENGTH_LONG).show();
         });
+    }
+
+    private String generateStat(Map<String,Integer> map){
+        int normal = getOrZero(map, "normal");//正常
+        int shadowBan = getOrZero(map, "shadowBan");//仅自己可见
+        int deleted = getOrZero(map, "deleted");//已删除
+        int underReview = getOrZero(map, "underReview");//疑似审核中
+        int invisible = getOrZero(map, "invisible");//invisible
+        int sensitive = getOrZero(map, "sensitive");//发送时报敏感
+        int suspectedNoProblem = getOrZero(map, "suspectedNoProblem");//疑似正常
+        int unknown = getOrZero(map, "unknown");//未知
+        int total = normal + shadowBan + deleted + underReview + invisible + sensitive + suspectedNoProblem + unknown;
+        if (total == 0) {
+            return "统计结果为空或总数为0\n";
+        }
+        return String.format(Locale.getDefault(), "正常：%d (%.2f%%)\n", normal, (normal * 100.0 / total)) +
+                String.format(Locale.getDefault(), "仅自己可见：%d (%.2f%%)\n", shadowBan, (shadowBan * 100.0 / total)) +
+                String.format(Locale.getDefault(), "已删除：%d (%.2f%%)\n", deleted, (deleted * 100.0 / total)) +
+                String.format(Locale.getDefault(), "疑似审核中：%d (%.2f%%)\n", underReview, (underReview * 100.0 / total)) +
+                String.format(Locale.getDefault(), "不可见：%d (%.2f%%)\n", invisible, (invisible * 100.0 / total)) +
+                String.format(Locale.getDefault(), "敏感：%d (%.2f%%)\n", sensitive, (sensitive * 100.0 / total)) +
+                String.format(Locale.getDefault(), "疑似正常：%d (%.2f%%)\n", suspectedNoProblem, (suspectedNoProblem * 100.0 / total)) +
+                String.format(Locale.getDefault(), "未知：%d (%.2f%%)\n", unknown, (unknown * 100.0 / total)) +
+                String.format(Locale.getDefault(), "总计：%d\n", total);
+    }
+
+
+    private static int getOrZero(Map<String,Integer> map, String key){
+        Integer val = map.get(key);
+        if (val == null){
+            return 0;
+        } else {
+            return val;
+        }
     }
 
 }

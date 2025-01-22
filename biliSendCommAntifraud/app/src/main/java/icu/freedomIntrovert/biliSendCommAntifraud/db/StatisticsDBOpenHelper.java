@@ -23,7 +23,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.SensitiveScanResu
 
 public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
     private static StatisticsDBOpenHelper instance;
-    public static final int VERSION = 10;
+    public static final int VERSION = 11;
     public static final String ORDER_BY_DATE_DESC = "date DESC";
     public static final String ORDER_BY_DATE_ASC = "date ASC";
     public static final String ORDER_BY_LIKE_DESC = "like DESC";
@@ -71,7 +71,8 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
                 "    pictures              TEXT,\n" +
                 "    sensitive_scan_result TEXT,\n" +
                 "    uid                   INTEGER NOT NULL\n" +
-                "                                  DEFAULT 0\n" +
+                "                                  DEFAULT 0,\n" +
+                "    appeal_state          INTEGER NOT NULL DEFAULT 0\n" + // 新增字段
                 ");");
         db.execSQL("CREATE TABLE pending_check_comments (\n" +
                 "    rpid           INTEGER PRIMARY KEY,\n" +
@@ -154,7 +155,8 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
                 db.execSQL("ALTER TABLE history_comment ADD COLUMN uid INTEGER NOT NULL DEFAULT 0;");
                 db.execSQL("DELETE FROM pending_check_comments");//由于未记录UID，旧版还未检查的评论将被移除！
                 db.execSQL("ALTER TABLE pending_check_comments ADD COLUMN uid INTEGER NOT NULL DEFAULT 0;");
-
+            case 10:
+                db.execSQL("ALTER TABLE history_comment ADD COLUMN appeal_state INTEGER NOT NULL DEFAULT 0;");
         }
     }
 
@@ -291,6 +293,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         if (historyComment.sensitiveScanResult != null) {
             cv.put("sensitive_scan_result", JSON.toJSONString(historyComment.sensitiveScanResult));
         }
+        cv.put("appeal_state",historyComment.appealState);
         return db.insert(TABLE_NAME_HISTORY_COMMENT, null, cv);
     }
 
@@ -333,7 +336,8 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
                 cursor.getString("first_state"),
                 cursor.getString("pictures"),
                 JSON.parseObject(cursor.getString("sensitive_scan_result"), SensitiveScanResult.class),
-                cursor.getLong("uid"));
+                cursor.getLong("uid"),
+                cursor.getInt("appeal_state"));
     }
 
     public void insertPendingCheckComment(Comment comment) {
@@ -404,15 +408,34 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         getWritableDatabase().update(TABLE_NAME_HISTORY_COMMENT, cv, "rpid = ?", new String[]{String.valueOf(rpid)});
     }
 
-    public Map<String, String> countingStatus() {
-        Map<String, String> map = new HashMap<>();
+    public void updateCommentAreaAppealState(int type,long oid,Integer state){
+        ContentValues cv = new ContentValues();
+        cv.put("appeal_state",state);
+        getWritableDatabase().update(TABLE_NAME_HISTORY_COMMENT,cv,"area_type = ? AND oid = ?",new String[]{String.valueOf(type),String.valueOf(oid)});
+    }
+
+    public Map<String, Integer> countingLastStatus() {
+        Map<String, Integer> map = new HashMap<>();
         Cursor cursor = getReadableDatabase()
                 .rawQuery("select last_state,count(last_state) AS count from history_comment group by last_state order by count desc;",
                         null);
         while (cursor.moveToNext()) {
-            map.put(cursor.getString(0), cursor.getString(1));
+            map.put(cursor.getString(0), cursor.getInt(1));
         }
         cursor.close();
         return map;
     }
+
+    public Map<String, Integer> countingFirstStatus() {
+        Map<String, Integer> map = new HashMap<>();
+        Cursor cursor = getReadableDatabase()
+                .rawQuery("select last_state,count(last_state) AS count from history_comment group by first_state order by count desc;",
+                        null);
+        while (cursor.moveToNext()) {
+            map.put(cursor.getString(0), cursor.getInt(1));
+        }
+        cursor.close();
+        return map;
+    }
+
 }

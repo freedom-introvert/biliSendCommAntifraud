@@ -193,6 +193,13 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         holder.itemView.setOnClickListener(v -> {
             showCommentInfoDialog(historyComment, holder);
         });
+        if (historyComment.appealState == HistoryComment.APPEAL_STATE_NULL){
+            holder.txv_info.setBackground(null);
+        } else if (historyComment.appealState == HistoryComment.APPEAL_STATE_NO_COMMENT){
+            holder.txv_info.setBackground(context.getDrawable(R.color.appeal_no_comment_green));
+        } else if (historyComment.appealState == HistoryComment.APPEAL_STATE_SUCCESS){
+            holder.txv_info.setBackground(context.getDrawable(R.color.appeal_success_red));
+        }
         //重发功能已移除，因为使用率极低，替代方案：定位评论，到哔哩哔哩App发送
         /*holder.itemView.setOnLongClickListener(v -> {
             View view = View.inflate(context, R.layout.edit_text, null);
@@ -232,6 +239,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         TextView txv_first_state = dialogView.findViewById(R.id.txv_first_state);
         TextView txv_checked_area = dialogView.findViewById(R.id.txv_checked_area);
         TextView txv_uid = dialogView.findViewById(R.id.txv_uid);
+        TextView txv_appeal_state = dialogView.findViewById(R.id.txv_appeal_state);
         SensitiveScanResult scr = historyComment.sensitiveScanResult;
         if (scr != null) {
             ForegroundColorSpan greenSpan = new ForegroundColorSpan(context.getResources().getColor(R.color.green));
@@ -311,7 +319,13 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
             selectAccountToCheck(historyComment, holder);
             return true;
         });
-
+        if (historyComment.appealState == HistoryComment.APPEAL_STATE_NULL){
+            txv_appeal_state.setText("未进行申诉");
+        } else if (historyComment.appealState == HistoryComment.APPEAL_STATE_SUCCESS){
+            txv_appeal_state.setText("申诉提交成功");
+        } else if (historyComment.appealState == HistoryComment.APPEAL_STATE_NO_COMMENT) {
+            txv_appeal_state.setText("无可申诉评论");
+        }
     }
 
     private void showSubMenu(Button button, DialogInterface dialog, ViewHolder holder, HistoryComment historyComment) {
@@ -352,8 +366,13 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
                     @Override
                     public void onNoCommentToAppeal(String successToast) {
                         super.onNoCommentToAppeal(successToast);
-                        statisticsDBOpenHelper.updateHistoryCommentLastState(historyComment.rpid, HistoryComment.STATE_SUSPECTED_NO_PROBLEM);
-                        notifyItemChanged(holder.getBindingAdapterPosition());
+                        //statisticsDBOpenHelper.updateHistoryCommentLastState(historyComment.rpid, HistoryComment.STATE_SUSPECTED_NO_PROBLEM);
+                        //notifyItemChanged(holder.getBindingAdapterPosition());
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        context.reloadData(null);
                     }
                 });
                 return true;

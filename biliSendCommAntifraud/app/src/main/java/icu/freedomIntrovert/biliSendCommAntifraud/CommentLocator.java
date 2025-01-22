@@ -13,7 +13,7 @@ public class CommentLocator {
     public static void lunch(Context context,int areaType,long oid,long rpid,long root,String sourceId) {
         AtomicInteger selected = new AtomicInteger(0);
         new AlertDialog.Builder(context)
-                .setTitle("选择b站版本")
+                .setTitle("选择b站版本（需要挂载XP/LSP）")
                 .setSingleChoiceItems(new String[]{"国内版" ,"国际版"}, 0, (dialog, which) -> selected.set(which))
                 .setNegativeButton(R.string.cancel,null)
                 .setPositiveButton(R.string.ok, (dialog, which) -> {
