@@ -139,6 +139,7 @@ public class CommentMonitoringService extends Service {
             public void onError(Throwable th) {
                 th.printStackTrace();
                 postResult(nId,"检查时发生异常",th.toString(),comment);
+                tasks.remove(task);
                 updateForeground();
             }
 
@@ -181,7 +182,9 @@ public class CommentMonitoringService extends Service {
                 .setContentTitle("评论状态监控")
                 .setContentText(message)
                 .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setSilent(true)
                 .setSound(null) //啥子手机上居然有声音呢😂
+                .setOnlyAlertOnce(true)// 防止进度更新时一直弹通知
                 .setSmallIcon(R.drawable.launcher)
                 .addAction(0, "取消", cancelPendingIntent)
                 .setProgress(max, progress, indeterminate)  // 设置通知进度条

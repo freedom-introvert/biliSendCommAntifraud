@@ -1,25 +1,30 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 
 public class CommentLocator {
-    public static void lunch(Context context,int areaType,long oid,long rpid,long root,String sourceId) {
+    public static void lunch(Context context, int areaType, long oid, long rpid, long root, String sourceId) {
         AtomicInteger selected = new AtomicInteger(0);
         new AlertDialog.Builder(context)
-                .setTitle("选择b站版本（需要挂载XP/LSP）")
-                .setSingleChoiceItems(new String[]{"国内版" ,"国际版"}, 0, (dialog, which) -> selected.set(which))
-                .setNegativeButton(R.string.cancel,null)
+                .setTitle("选择打开方式")
+                .setSingleChoiceItems(new String[]{"URL Scheme", "国内版（需要挂载XP/LSP）", "国际版（需要挂载XP/LSP）"}, 0, (dialog, which) -> selected.set(which))
+                .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.ok, (dialog, which) -> {
-                    if (selected.get() == 0){
+                    if (selected.get() == 0) {
+                        lunchByUrlScheme(context, areaType, oid, rpid, root, sourceId);
+                    } else if (selected.get() == 1) {
                         lunchMaster(context, areaType, oid, rpid, root, sourceId);
-                    } else {
+                    } else if (selected.get() == 2){
                         lunchGlobal(context, areaType, oid, rpid, root, sourceId);
                     }
                 })
@@ -27,7 +32,34 @@ public class CommentLocator {
 
     }
 
-    public static void lunchMaster(Context context,int areaType,long oid,long rpid,long root,String sourceId){
+    public static void lunchByUrlScheme(Context context, int areaType, long oid, long rpid, long root, String sourceId) {
+        String urlScheme;
+
+        if (areaType == CommentArea.AREA_TYPE_VIDEO) {
+            if (root != 0) {
+                urlScheme = String.format("bilibili://video/%s/?comment_root_id=%s&comment_secondary_id=%s", oid, root, rpid);
+            } else {
+                urlScheme = String.format("bilibili://video/%s/?comment_root_id=%s", oid, rpid);
+            }
+        } else {
+            if (root != 0) {
+                urlScheme = String.format("bilibili://comment/detail/%s/%s/%s?anchor=%s", areaType, oid, root, rpid);
+            } else {
+                urlScheme = String.format("bilibili://comment/detail/%s/%s/%s", areaType, oid, rpid);
+            }
+        }
+
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(urlScheme));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            context.startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(context, "无法打开B站App，请确认是否已安装", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    public static void lunchMaster(Context context, int areaType, long oid, long rpid, long root, String sourceId) {
         Intent intent = new Intent();
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
         Bundle extras = new Bundle();
@@ -81,7 +113,7 @@ public class CommentLocator {
         context.startActivity(intent);
     }
 
-    public static void lunchGlobal(Context context,int areaType,long oid,long rpid,long root,String sourceId){
+    public static void lunchGlobal(Context context, int areaType, long oid, long rpid, long root, String sourceId) {
         Intent intent = new Intent();
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
         Bundle extras = new Bundle();

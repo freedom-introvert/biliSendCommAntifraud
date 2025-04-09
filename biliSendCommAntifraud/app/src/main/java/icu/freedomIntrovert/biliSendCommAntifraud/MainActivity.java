@@ -532,12 +532,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else if (id == R.id.ll_wait_time) {
             openSetWaitTime();
         } else if (id == R.id.ll_targeting) {
-            if (isXposedEnabled()){
-                openTargeting();
-            } else {
-                needXposedToast();
-            }
-
+            openTargeting();
         } else if (id == R.id.ll_github_project) {
             Uri uri = Uri.parse("https://github.com/freedom-introvert/biliSendCommAntifraud");
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
@@ -707,35 +702,64 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         EditText rpid = dialogView.findViewById(R.id.edit_rpid);
         EditText root = dialogView.findViewById(R.id.edit_root);
         EditText sourceId = dialogView.findViewById(R.id.edit_source_id);
-        new AlertDialog.Builder(context)
-                .setTitle("定位评论（XPosed）")
+
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setTitle("定位评论")
                 .setView(dialogView)
-                .setPositiveButton(R.string.ok, (dialog, which) -> {
-                    int type = CommentArea.AREA_TYPE_VIDEO;
-                    switch (spinner.getSelectedItemPosition()) {
-                        case 1:
-                            type = CommentArea.AREA_TYPE_ARTICLE;
-                            break;
-                        case 2:
-                            type = CommentArea.AREA_TYPE_DYNAMIC11;
-                            break;
-                        case 3:
-                            type = CommentArea.AREA_TYPE_DYNAMIC17;
-                            break;
-                        default:
-                            break;
-                    }
-                    CommentLocator.lunch(context, type,
-                            Long.parseLong(oid.getText().toString()),
-                            Long.parseLong(rpid.getText().toString()),
-                            TextUtils.isEmpty(root.getText().toString()) ?
-                                    0 : Long.parseLong(root.getText().toString()),
-                            TextUtils.isEmpty(sourceId.getText().toString()) ?
-                                    oid.getText().toString() : sourceId.getText().toString());
-                })
+                .setPositiveButton(R.string.ok, null)  // 先传 null，稍后在 onClickListener 手动处理
                 .setNegativeButton(R.string.cancel, new VoidDialogInterfaceOnClickListener())
-                .show();
+                .create();
+
+        dialog.setOnShowListener(d -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                String oidText = oid.getText().toString().trim();
+                String rpidText = rpid.getText().toString().trim();
+
+                boolean valid = true;
+
+                if (TextUtils.isEmpty(oidText)) {
+                    oid.setError("oid 不能为空");
+                    valid = false;
+                }
+
+                if (TextUtils.isEmpty(rpidText)) {
+                    rpid.setError("rpid 不能为空");
+                    valid = false;
+                }
+
+                if (!valid) return;
+
+                int type = CommentArea.AREA_TYPE_VIDEO;
+                switch (spinner.getSelectedItemPosition()) {
+                    case 1:
+                        type = CommentArea.AREA_TYPE_ARTICLE;
+                        break;
+                    case 2:
+                        type = CommentArea.AREA_TYPE_DYNAMIC11;
+                        break;
+                    case 3:
+                        type = CommentArea.AREA_TYPE_DYNAMIC17;
+                        break;
+                    default:
+                        break;
+                }
+
+                CommentLocator.lunch(context, type,
+                        Long.parseLong(oidText),
+                        Long.parseLong(rpidText),
+                        TextUtils.isEmpty(root.getText().toString()) ?
+                                0 : Long.parseLong(root.getText().toString()),
+                        TextUtils.isEmpty(sourceId.getText().toString()) ?
+                                oidText : sourceId.getText().toString());
+
+                dialog.dismiss();
+            });
+        });
+
+        dialog.show();
     }
+
 
     private void startWebLoginActivity() {
         startActivityForResult(new Intent(context, WebViewLoginActivity.class), REQUEST_CODE_GET_COOKIE);

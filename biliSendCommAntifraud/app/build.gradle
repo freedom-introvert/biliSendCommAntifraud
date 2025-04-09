@@ -6,7 +6,7 @@ def currentTimeMillis = System.currentTimeMillis();
 
 android {
     namespace 'icu.freedomIntrovert.biliSendCommAntifraud'
-    compileSdk 33
+    compileSdk 35
     lint {
         baseline = file("lint-baseline.xml")
     }

@@ -5,7 +5,12 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+        android:minSdkVersion="34"/>
+
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -14,8 +19,9 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.BiliSendCommAntifraud.HasActionBar"
-        tools:targetApi="33">
-        
+        android:windowTranslucentStatus="false"
+        tools:targetApi="35">
+
         <activity
             android:name=".PendingCheckCommentsActivity"
             android:exported="false"
@@ -23,8 +29,7 @@
 
         <service
             android:name=".WaitService"
-            android:enabled="true"
-            android:exported="true" />
+            android:foregroundServiceType="dataSync" />
 
         <activity
             android:name=".HistoryCommentActivity"
@@ -41,7 +46,7 @@
             android:value="true" />
         <meta-data
             android:name="xposedsharedprefs"
-            android:value="true"/>
+            android:value="true" />
         <meta-data
             android:name="xposeddescription"
             android:value="发送评论自动检测，解放双手&amp;你的评论记录器" />
@@ -54,11 +59,11 @@
 
         <activity
             android:name=".ByXposedLaunchedActivity"
-            android:exported="true"
-            android:theme="@style/dialog_activity"
             android:clearTaskOnLaunch="true"
+            android:excludeFromRecents="true"
+            android:exported="true"
             android:noHistory="true"
-            android:excludeFromRecents="true">
+            android:theme="@style/dialog_activity">
 
             <meta-data
                 android:name="android.app.lib_name"
@@ -99,9 +104,9 @@
 
         <service
             android:name=".CommentMonitoringService"
-            android:enabled="true"
-            android:exported="true" />
-        <receiver android:name=".CancelMonitorReceiver"/>
+            android:foregroundServiceType="dataSync"/>
+
+        <receiver android:name=".CancelMonitorReceiver" />
     </application>
 
 </manifest>

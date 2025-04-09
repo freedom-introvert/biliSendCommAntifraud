@@ -36,7 +36,7 @@ public class NotificationService {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_BACKGROUND_TASK,
                     "后台任务",
-                    NotificationManager.IMPORTANCE_DEFAULT
+                    NotificationManager.IMPORTANCE_MIN
             );
             channel.setDescription("检查等待、评论监控的进度等");
             notificationManager.createNotificationChannel(channel);

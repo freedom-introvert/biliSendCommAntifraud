@@ -72,6 +72,7 @@ public class CommentUtil {
         editText.setText("30");
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("监控超时限制（分钟）")
+                .setMessage("如遇卡住不动的情况，请设置“耗电管理”“允许应用后台行为”等相关选项")
                 .setView(dialogView)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.ok, null)
