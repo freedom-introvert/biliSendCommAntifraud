@@ -18,9 +18,9 @@
 
 自动获取哔哩哔哩客户端的cookie，检查时自动添加对应的账号到用户列表，无需手动添加账号。
 
-cookie来源于webview中的cookies数据库，**若该cookie无法使用请关闭该功能**！
+**好像从客户端里获得的cookie只有3天有效期，所以还建议是手动登录获取**
 
-如果一定要使用自动获取cookie，但是cookie无效，可以尝试打开b站APP内依赖webview的地方，例如“客服”
+该功能默认不启用，因为方便但不实用，3天有效期，只要3天不发评论但是来检查历史评论就不行了。
 
 ### 手动添加账号
 
@@ -42,13 +42,15 @@ cookie来源于webview中的cookies数据库，**若该cookie无法使用请关�
 
 ## 随机评论列表
 
+这是检查评论区是否戒严用的测试评论，**正常检查评论不会用到**。
+
 默认三首诗，建议自行修改以避免被针对。不建议设置“测试”、“加油UP”等你认为的白名单词语，有时候戒严评论区都能直接过
 
 ### 随机生成测试评论
 
 随机生成中文字符串，这些评论读起来几乎没有任何意义，因此能避免类似“加油UP”这样的白名单评论。
 
-当然，因为它是随机的，就会有概率抽到敏感词，所以，软件生成后就自动发送到正常评论区来试，正常显示才保存使用。为啥做此功能？因为我发现列如“测试”这样的词语在某些戒严的评论区发送后可正常显示，造成检查结果不准确，鼓励UP主的更别说了。那几首诗特征也有点明显了，到手马上改！（想让叔叔阿姨·知道你在用反诈吗？😁）。
+当然，因为它是随机的，就会有概率抽到敏感词，所以，软件生成后就自动发送到正常评论区来试，正常显示才保存使用。为啥做此功能？因为我发现列如“测试”这样的词语在某些戒严的评论区发送后可正常显示，造成检查结果不准确，鼓励UP主的更别说了。那几首诗特征也有点明显了，到请手马上改！（想让叔叔阿姨知道你在用反诈吗？😁）。
 
 ## 被转发动态
 
@@ -486,6 +488,7 @@ extras.putLong("rpid", rpid);
 extras.putLong("root", root));
 extras.putLong("parent", parent));
 extras.putString("comment_text", "测试");
+extras.putString("pictures","[{\"img_height\":114,\"img_size\":1919.81,\"img_src\":\"http://i0.hdslb.com/bfs/new_dyn/xxx.png\",\"img_width\":514}]");
 ……
 intent.setComponent(new ComponentName("icu.freedomIntrovert.biliSendCommAntifraud",
         "icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity"));
@@ -495,12 +498,12 @@ activity.startActivity(intent);
 
 ### action参数
 
-| action | 作用                          |
-| ------ | --------------------------- |
-| 0      | 检查评论                        |
-| 1      | 检查弹幕（已废弃）                   |
+| action | 作用                                                   |
+| ------ | ------------------------------------------------------ |
+| 0      | 检查评论                                               |
+| 1      | ~~检查弹幕~~（已废弃）                                 |
 | 2      | 重新检查评论，不插入待检查列表（本软件的后台等待功能） |
-| 3      | 保存“评论包含敏感信息”的记录             |
+| 3      | 保存“评论包含敏感信息”的记录                           |
 
 ### 检查评论参数
 
@@ -517,7 +520,7 @@ activity.startActivity(intent);
 | ctime         | long           | 评论发送时间                                                 | 是   |
 | uid           | long           | 发送者UID，用于检查cookie是否对应                            | 是   |
 | toast_message | String         | "发送成功"之类的提示，旧版的功能，新版已移除，因为无意义     | 未用 |
-| cookies       | List\<String\> | 账号cookie，本Hook端从webview目录获取（因为可能有多个所以list），可无。用于自动刷新对应账号cookie。用户设置不使用将被忽略 | 否   |
+| cookies       | List\<String\> | 账号cookie，可以传多个（不是多个账号），只要有一个cookie是有效的就行，可无。用于自动刷新对应账号cookie。用户设置不使用将被忽略。**除了SSESSDATA之外还必须包含bvuid3字段！** | 否   |
 
 ### source_id说明
 
@@ -548,7 +551,8 @@ Telegram: [@biliSendCommAntifraud](https://t.me/+6Ugpd4TtB8liZDg1)
 
 ### LOGO含义
 
-来自：Never Gonna Give You Up - Rick Astley  
+来自：Never Gonna Give You Up - Rick Astley 
+
 意为“发送成功”但是你被骗了🤪
 
 ### icon使用

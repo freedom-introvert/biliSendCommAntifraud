@@ -345,6 +345,8 @@ public class HistoryCommentActivity extends AppCompatActivity {
         } else if (itemId == R.id.batch_recheck) {
             View dialogView = View.inflate(context, R.layout.dialog_batch_recheck_start, null);
             EditText editText = dialogView.findViewById(R.id.edit_text);
+            EditText editInterval = dialogView.findViewById(R.id.edit_batch_check_interval);
+            editInterval.setText(String.valueOf(config.getBatchCheckInterval()));
             Spinner spinner = dialogView.findViewById(R.id.spinner_before_by);
             spinner.setSelection(0);
             AlertDialog dialog = new AlertDialog.Builder(this)
@@ -355,23 +357,29 @@ public class HistoryCommentActivity extends AppCompatActivity {
                     .setNegativeButton(android.R.string.cancel, new VoidDialogInterfaceOnClickListener())
                     .show();
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                if (TextUtils.isEmpty(editText.getText().toString())) {
+                if (TextUtils.isEmpty(editText.getText())) {
                     editText.setError("请输入数字");
                     return;
                 }
+                if (TextUtils.isEmpty(editInterval.getText())) {
+                    editInterval.setError("请输入间隔时间");
+                    return;
+                }
                 int inputNumber = Integer.parseInt(editText.getText().toString());
+                long interval = Long.parseLong(editInterval.getText().toString());
+                config.setBatchCheckInterval(interval);
                 switch (spinner.getSelectedItemPosition()) {
                     case 0:
                         batchCheck(statisticsDBOpenHelper.queryHistoryCommentsByDateGT(
-                                getPreviousNDaysTimestamp(inputNumber)));
+                                getPreviousNDaysTimestamp(inputNumber)),interval);
                         break;
                     case 1:
                         batchCheck(statisticsDBOpenHelper.queryHistoryCommentsByDateGT(
                                 System.currentTimeMillis() -
-                                        (long) inputNumber * 60 * 60 * 1000));
+                                        (long) inputNumber * 60 * 60 * 1000),interval);
                         break;
                     case 2:
-                        batchCheck(statisticsDBOpenHelper.queryHistoryCommentsCountLimit(inputNumber));
+                        batchCheck(statisticsDBOpenHelper.queryHistoryCommentsCountLimit(inputNumber),interval);
                         break;
                 }
                 dialog.dismiss();
@@ -414,7 +422,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
         return previousDate.getTime();
     }
 
-    private void batchCheck(List<HistoryComment> pendingCheckComments) {
+    private void batchCheck(List<HistoryComment> pendingCheckComments,long interval) {
         System.out.println(pendingCheckComments);
         if (pendingCheckComments.isEmpty()) {
             Toast.makeText(context, "没有要检查的评论", Toast.LENGTH_SHORT).show();
@@ -435,7 +443,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
                 .setPositiveButton("取消", null)
                 .show();
 
-        ReviewCommentStatusTask task = new ReviewCommentStatusTask(context, pendingCheckComments.toArray(new HistoryComment[]{}), null, new ReviewCommentStatusTask.EventHandler() {
+        ReviewCommentStatusTask task = new ReviewCommentStatusTask(context, pendingCheckComments.toArray(new HistoryComment[]{}), null,interval, new ReviewCommentStatusTask.EventHandler() {
 
             @Override
             public void onCookieFailed(Account account) {

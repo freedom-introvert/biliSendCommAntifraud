@@ -15,11 +15,14 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 public class CommentLocator {
     public static void lunch(Context context, int areaType, long oid, long rpid, long root, String sourceId) {
         AtomicInteger selected = new AtomicInteger(0);
+        Config config = Config.getInstance(context);
         new AlertDialog.Builder(context)
                 .setTitle("选择打开方式")
-                .setSingleChoiceItems(new String[]{"URL Scheme", "国内版（需要挂载XP/LSP）", "国际版（需要挂载XP/LSP）"}, 0, (dialog, which) -> selected.set(which))
+                .setSingleChoiceItems(new String[]{"URL Scheme", "国内版（需要挂载XP/LSP）", "国际版（需要挂载XP/LSP）"},
+                        config.getLastCommentLocatorMode(), (dialog, which) -> selected.set(which))
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.ok, (dialog, which) -> {
+                    config.setLastCommentLocatorMode(selected.get());
                     if (selected.get() == 0) {
                         lunchByUrlScheme(context, areaType, oid, rpid, root, sourceId);
                     } else if (selected.get() == 1) {

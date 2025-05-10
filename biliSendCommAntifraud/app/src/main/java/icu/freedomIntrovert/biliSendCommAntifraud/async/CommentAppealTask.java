@@ -14,7 +14,7 @@ public class CommentAppealTask extends CommentOperateTask<CommentAppealTask.Even
     String reason;
     Comment comment;
 
-    public CommentAppealTask(Context context, Comment comment, String areaId, String reason,EventHandler handle) {
+    public CommentAppealTask(Context context, Comment comment, String areaId, String reason, EventHandler handle) {
         super(handle, context);
         this.comment = comment;
         this.areaId = areaId;
@@ -25,19 +25,20 @@ public class CommentAppealTask extends CommentOperateTask<CommentAppealTask.Even
     protected void onStart(EventHandler eventHandlerProxy) throws Throwable {
         CommentArea commentArea = comment.commentArea;
         GeneralResponse<CommentAppealResp> response = commentManipulator.appealComment(areaId, reason, accountManger.getAccount(comment.uid));
-        if (response.code == 0){
+        if (response.code == 0) {
             eventHandlerProxy.onSuccess(response.data.success_toast);
-            statisticsDB.updateCommentAreaAppealState(commentArea.type,commentArea.oid, HistoryComment.APPEAL_STATE_SUCCESS);
-        } else if (response.code == 12082){
+            statisticsDB.updateCommentAreaAppealState(commentArea.type, commentArea.oid, comment.uid, HistoryComment.APPEAL_STATE_SUCCESS);
+        } else if (response.code == 12082) {
             eventHandlerProxy.onNoCommentToAppeal(response.message);
-            statisticsDB.updateCommentAreaAppealState(commentArea.type,commentArea.oid, HistoryComment.APPEAL_STATE_NO_COMMENT);
+            statisticsDB.updateCommentAreaAppealState(commentArea.type, commentArea.oid, comment.uid, HistoryComment.APPEAL_STATE_NO_COMMENT);
         } else {
-            throw new BiliBiliApiException(response,"申诉失败");
+            throw new BiliBiliApiException(response, "申诉失败");
         }
     }
 
     public interface EventHandler extends BaseEventHandler {
         void onSuccess(String successToast);
+
         void onNoCommentToAppeal(String successToast);
     }
 

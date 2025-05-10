@@ -8,6 +8,7 @@ import android.os.Bundle;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.BaseHook;
+import icu.freedomIntrovert.biliSendCommAntifraud.xposed.XB;
 
 public class IntentTransferStationHook extends BaseHook {
     @Override
@@ -17,7 +18,7 @@ public class IntentTransferStationHook extends BaseHook {
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 super.beforeHookedMethod(param);
                 Activity activity = (Activity) param.thisObject;
-                positioningActivity(activity,activity.getIntent(),classLoader);
+                positioningActivity(activity, activity.getIntent(), classLoader);
             }
         });
 
@@ -25,7 +26,7 @@ public class IntentTransferStationHook extends BaseHook {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 super.beforeHookedMethod(param);
-                positioningActivity((Activity) param.thisObject, (Intent) param.args[0],classLoader);
+                positioningActivity((Activity) param.thisObject, (Intent) param.args[0], classLoader);
             }
         });
 
@@ -57,25 +58,26 @@ public class IntentTransferStationHook extends BaseHook {
         });*/
     }
 
-    private void positioningActivity(Activity activity, Intent intent,ClassLoader classLoader) throws ClassNotFoundException {
+    private void positioningActivity(Activity activity, Intent intent, ClassLoader classLoader) throws ClassNotFoundException {
         Bundle extras = intent.getExtras();
         if (extras == null) {
             return;
         }
         String transferActivity = extras.getString("TransferActivity");
-        if (transferActivity == null){
+        if (transferActivity == null) {
             return;
         }
 
+        XB.log("Activity转发到：" + transferActivity);
 
         Bundle transferExtras = extras.getBundle("TransferExtras");
         Intent newIntent = new Intent(activity, classLoader.loadClass(transferActivity));
 
-        String transferUri = extras.getString("transferUri",null);
+        String transferUri = extras.getString("transferUri", null);
         if (transferUri != null) {
             newIntent.setData(Uri.parse(transferUri));
         }
-        if (transferExtras != null){
+        if (transferExtras != null) {
             newIntent.putExtras(transferExtras);
         }
         activity.startActivity(newIntent);

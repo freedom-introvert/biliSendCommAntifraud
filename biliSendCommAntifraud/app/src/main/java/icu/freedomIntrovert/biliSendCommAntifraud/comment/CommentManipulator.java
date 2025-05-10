@@ -63,6 +63,7 @@ public class CommentManipulator {
         }
         return instance;
     }
+
     public String getCsrfFromCookie(String cookie) {
         int csrfIndex = cookie.indexOf("bili_jct=");
         return cookie.substring(csrfIndex + 9, csrfIndex + 32 + 9);
@@ -82,14 +83,14 @@ public class CommentManipulator {
         return aid;
     }
 
-    public CommentArea dvidToCommentArea(String dvid,Account account) throws IOException, BiliBiliApiException {
+    public CommentArea dvidToCommentArea(String dvid, Account account) throws IOException, BiliBiliApiException {
         Request request = new Request.Builder()
                 .url("https://api.bilibili.com/x/polymer/web-dynamic/v1/detail?id=" + dvid)
                 //设置各种请求头,尤其是Referer和user-agent不然会被拦截请求:(
 //                .addHeader("accept", "application/json, text/plain, */*")
                 .addHeader("user-agent", "Mozilla/5.0 (Linux; Android " + Build.VERSION.RELEASE + "; " + Build.MODEL + " Build/" + Build.ID + ") " +
                         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.6045.163 Mobile Safari/537.36")
-                .addHeader("Cookie",account != null ? account.cookie : "")
+                .addHeader("Cookie", account != null ? account.cookie : "")
                 .addHeader("Referer", "https://t.bilibili.com/").build();
         Response response = httpClient.newCall(request).execute();
 
@@ -100,10 +101,10 @@ public class CommentManipulator {
             if (respJson.getInteger("code") == 0) {
                 aid = respJson.getJSONObject("data").getJSONObject("item").getJSONObject("basic").getString("comment_id_str");
                 comment_type = respJson.getJSONObject("data").getJSONObject("item").getJSONObject("basic").getInteger("comment_type");
-            } else if (respJson.getInteger("code") == -352){
+            } else if (respJson.getInteger("code") == -352) {
                 throw new BiliBiliApiException(respJson.getInteger("code"),
                         respJson.getString("message"),
-                        account == null ? "-352错误，你没有设置账号，应该是没有cookie被拦截了……" : "-352错误，未知原因被拦截，随机选的账号："+account);
+                        account == null ? "-352错误，你没有设置账号，应该是没有cookie被拦截了……" : "-352错误，未知原因被拦截，随机选的账号：" + account);
             }
         }
         if (aid != null) {
@@ -127,11 +128,11 @@ public class CommentManipulator {
     }
 
     public BiliComment findComment(Comment comment, Account account) throws BiliBiliApiException, IOException {
-        return findComment(comment.commentArea.oid,comment.commentArea.type, comment.rpid, comment.root, comment.date, account);
+        return findComment(comment.commentArea.oid, comment.commentArea.type, comment.rpid, comment.root, comment.date, account);
     }
 
-    public BiliComment findComment(BiliComment comment,Account account) throws BiliBiliApiException, IOException {
-        return findComment(comment.oid,comment.type,comment.rpid,comment.root,new Date(comment.ctime * 1000),account);
+    public BiliComment findComment(BiliComment comment, Account account) throws BiliBiliApiException, IOException {
+        return findComment(comment.oid, comment.type, comment.rpid, comment.root, new Date(comment.ctime * 1000), account);
     }
 
     /**
@@ -142,7 +143,7 @@ public class CommentManipulator {
      * @throws IOException
      * @throws BiliBiliApiException
      */
-    public BiliComment findComment(long oid,int type, long rpid, long root, Date sentTime, Account account) throws IOException, BiliBiliApiException {
+    public BiliComment findComment(long oid, int type, long rpid, long root, Date sentTime, Account account) throws IOException, BiliBiliApiException {
         List<BiliComment> replies;
         if (root == 0) {
             //已改用新的main api，旧版翻页api已被和谐
@@ -154,7 +155,7 @@ public class CommentManipulator {
             //置顶评论要考虑
             if (page.top_replies != null) {
                 for (BiliComment topReply : page.top_replies) {
-                    if (topReply.rpid == rpid){
+                    if (topReply.rpid == rpid) {
                         return topReply;
                     }
                 }
@@ -167,10 +168,10 @@ public class CommentManipulator {
                             return reply;
                         }
                         //到特定时间戳截止
-                        if (reply.ctime < (sentTime.getTime() / 1000)){
+                        if (reply.ctime < (sentTime.getTime() / 1000)) {
                             System.out.printf("到达评论 『%s』 其发送日期 %s < %s 终止查找\n",
-                                    CommentUtil.omitComment(reply.content.message,50),
-                                    reply.ctime,sentTime.getTime() / 1000);
+                                    CommentUtil.omitComment(reply.content.message, 50),
+                                    reply.ctime, sentTime.getTime() / 1000);
                             return null;
                         }
                     }
@@ -185,14 +186,15 @@ public class CommentManipulator {
             throw new IOException("啊？！翻页超过30页了，你所发布的评论是否太久远了？或者程序因特殊原因陷入了死循环");
         } else {
             //楼中楼评论
-            return findCommentFromCommentReplyArea(oid,type, rpid, root, account, false);
+            return findCommentFromCommentReplyArea(oid, type, rpid, root, account, false);
         }
     }
 
     public BiliComment findCommentFromCommentReplyArea(Comment comment, Account account, boolean isLogin) throws BiliBiliApiException, IOException {
-        return findCommentFromCommentReplyArea(comment.commentArea.oid,comment.commentArea.type,comment.rpid,comment.root,account,isLogin);
+        return findCommentFromCommentReplyArea(comment.commentArea.oid, comment.commentArea.type, comment.rpid, comment.root, account, isLogin);
     }
-    public BiliComment findCommentFromCommentReplyArea(long oid,int type, long rpid, long root, Account account, boolean isLogin) throws IOException, BiliBiliApiException {
+
+    public BiliComment findCommentFromCommentReplyArea(long oid, int type, long rpid, long root, Account account, boolean isLogin) throws IOException, BiliBiliApiException {
         assert root != 0;
         String cookie = account.cookie;
         GeneralResponse<MainApiCommentPage> body;
@@ -230,6 +232,7 @@ public class CommentManipulator {
     }
 
     public BiliComment findCommentUsingSeekRpid(Comment comment, Account account, boolean hasAccount) throws IOException, BiliBiliApiException {
+        System.out.println("我调用了");
         String cookie = account.cookie;
         CommentArea commentArea = comment.commentArea;
         GeneralResponse<MainApiCommentPage> body;
@@ -253,7 +256,15 @@ public class CommentManipulator {
                 if (gotAComment.rpid == comment.rpid) {
                     return gotAComment;
                 }
+                if (gotAComment.replies != null){
+                    for (BiliComment reply : gotAComment.replies) {
+                        if (reply.rpid == comment.rpid){
+                            return reply;
+                        }
+                    }
+                }
             }
+
             //评论被置顶的情况
             List<BiliComment> topReplies = body.data.top_replies;
             if (topReplies == null || topReplies.size() == 0) {
@@ -275,7 +286,7 @@ public class CommentManipulator {
     }
 
 
-    public CommentArea matchCommentArea(String input,Account account) throws IOException, BiliBiliApiException {
+    public CommentArea matchCommentArea(String input, Account account) throws IOException, BiliBiliApiException {
         if (input.startsWith("BV")) {
             if (bvidToOid(input) != null) {
                 return new CommentArea(Long.parseLong(bvidToOid(input)), input, CommentArea.AREA_TYPE_VIDEO);
@@ -317,21 +328,21 @@ public class CommentManipulator {
             String sourceId = subUrl(input, "/read/mobile/", 8);
             return new CommentArea(Long.parseLong(sourceId), "cv" + sourceId, CommentArea.AREA_TYPE_ARTICLE);
         } else if (input.startsWith("https://t.bilibili.com/")) {
-            return dvidToCommentArea(subUrl(input, "t.bilibili.com/", 18),account);
+            return dvidToCommentArea(subUrl(input, "t.bilibili.com/", 18), account);
         } else if (input.startsWith("https://m.bilibili.com/opus/")) {
             String sourceId = subUrl(input, "/opus/", 18);
-            return dvidToCommentArea(sourceId,account);
+            return dvidToCommentArea(sourceId, account);
         } else if (input.startsWith("https://m.bilibili.com/dynamic/")) {
             String sourceId = subUrl(input, "/dynamic/", 18);
-            return dvidToCommentArea(sourceId,account);
+            return dvidToCommentArea(sourceId, account);
         }
         return null;
     }
 
-    public void matchCommentAreaInUi(String input, Account account,MatchCommentAreaCallBack callBack) {
+    public void matchCommentAreaInUi(String input, Account account, MatchCommentAreaCallBack callBack) {
         TaskManger.start(() -> {
             try {
-                CommentArea commentArea = matchCommentArea(input,account);
+                CommentArea commentArea = matchCommentArea(input, account);
                 TaskManger.postOnUiThread(() -> callBack.onMatchedArea(commentArea));
             } catch (IOException e) {
                 TaskManger.postOnUiThread(() -> callBack.onNetworkError(e));
@@ -403,7 +414,7 @@ public class CommentManipulator {
                     .addHeader("Referer", "https://t.bilibili.com/")
                     .addHeader("user-agent", "Mozilla/5.0 (Linux; Android " + Build.VERSION.RELEASE + "; " + Build.MODEL + " Build/" + Build.ID + ") " +
                             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.6045.163 Mobile Safari/537.36")
-                    .addHeader("Cookie",account.cookie)
+                    .addHeader("Cookie", account.cookie)
                     .build();
 
             Response response = httpClient.newCall(request).execute();
@@ -503,12 +514,16 @@ public class CommentManipulator {
         String patternString = "buvid3=[^;]+";
         Pattern pattern = Pattern.compile(patternString);
         Matcher matcher = pattern.matcher(cookie);
-        matcher.find();
+        if (!matcher.find()){
+            throw new IllegalArgumentException("Cookie不完整！未找到buvid3字段，可尝试关闭使用B站客户端cookie，然后手动网页登录获取Cookie。" +
+                    "若你使用的是第三方B站客户端，请将此信息发给那个客户端的开发者");
+        }
         return matcher.group();
     }
 
     /**
      * 快速检测根评论（根评论）状态
+     *
      * @param historyComment
      * @param account
      * @return 更新状态后的历史评论，为null为评论区失效
@@ -520,75 +535,75 @@ public class CommentManipulator {
         CommentArea commentArea = historyComment.commentArea;
         long rpid = historyComment.rpid;
         GeneralResponse<CommentReplyPage> grH = getCommentReplyHasAccount(commentArea, rpid, 1, account);
-        if (grH.isSuccess()){
+        if (grH.isSuccess()) {
             BiliComment rootComment = grH.data.root;
             GeneralResponse<CommentReplyPage> grN = getCommentReplyNoAccount(commentArea, rpid, 1);
-            if (grN.isSuccess()){
+            if (grN.isSuccess()) {
                 BiliComment foundComment = findCommentUsingSeekRpid(historyComment, account, false);
-                if (foundComment == null){
+                if (foundComment == null) {
                     //评论疑似审核中
-                    return updateHistoryComment(null,HistoryComment.STATE_UNDER_REVIEW,historyComment);
+                    return updateHistoryComment(null, HistoryComment.STATE_UNDER_REVIEW, historyComment);
                 } else {
-                    if (rootComment.invisible){
+                    if (rootComment.invisible) {
                         //评论invisible
-                        return updateHistoryComment(foundComment,HistoryComment.STATE_INVISIBLE,historyComment);
+                        return updateHistoryComment(foundComment, HistoryComment.STATE_INVISIBLE, historyComment);
                     } else {
                         //评论正常
-                        return updateHistoryComment(foundComment,HistoryComment.STATE_NORMAL,historyComment);
+                        return updateHistoryComment(foundComment, HistoryComment.STATE_NORMAL, historyComment);
                     }
                 }
-            } else if (grN.code == GeneralResponse.CODE_COMMENT_DELETED){
-                return updateHistoryComment(rootComment,HistoryComment.STATE_SHADOW_BAN,historyComment);
+            } else if (grN.code == GeneralResponse.CODE_COMMENT_DELETED) {
+                return updateHistoryComment(rootComment, HistoryComment.STATE_SHADOW_BAN, historyComment);
             } else {
-                throw new BiliBiliApiException(grN,"无账号获取评论回复页失败");
+                throw new BiliBiliApiException(grN, "无账号获取评论回复页失败");
             }
-        } else if (grH.code == GeneralResponse.CODE_COMMENT_DELETED){
+        } else if (grH.code == GeneralResponse.CODE_COMMENT_DELETED) {
             //有账号获取还提示已删除就是真删
-            return updateHistoryComment(null,HistoryComment.STATE_DELETED,historyComment);
+            return updateHistoryComment(null, HistoryComment.STATE_DELETED, historyComment);
         } else if (grH.code == GeneralResponse.CODE_COMMENT_AREA_CLOSED) {
             return null;
         } else {
-            throw new BiliBiliApiException(grH,"有获取评论回复页失败");
+            throw new BiliBiliApiException(grH, "有获取评论回复页失败");
         }
     }
 
-    public HistoryComment recheckReplyCommentState(HistoryComment historyComment,Account account) throws BiliBiliApiException, IOException, RootCommentDeadException {
-        GeneralResponse<CommentReplyPage> gr = getCommentReplyNoAccount(historyComment.commentArea, historyComment.rpid, 1);
-        if (gr.isSuccess()){
+    public HistoryComment recheckReplyCommentState(HistoryComment historyComment, Account account) throws BiliBiliApiException, IOException, RootCommentDeadException {
+        GeneralResponse<CommentReplyPage> gr = getCommentReplyNoAccount(historyComment.commentArea, historyComment.root, 1);
+        if (gr.isSuccess()) {
             //不登录seek_rpid查找评论
-            BiliComment foundReply = findCommentFromCommentReplyArea(historyComment,account,false);
+            BiliComment foundReply = findCommentFromCommentReplyArea(historyComment, account, false);
             if (foundReply != null) {
-                if (foundReply.invisible){
+                if (foundReply.invisible) {
                     //回复评论invisible
-                    return updateHistoryComment(foundReply,HistoryComment.STATE_INVISIBLE,historyComment);
+                    return updateHistoryComment(foundReply, HistoryComment.STATE_INVISIBLE, historyComment);
                 } else {
                     //回复评论正常
-                    return updateHistoryComment(foundReply,HistoryComment.STATE_NORMAL,historyComment);
+                    return updateHistoryComment(foundReply, HistoryComment.STATE_NORMAL, historyComment);
                 }
             } else {
                 //登录seek_rpid查找评论
-                BiliComment foundReplyHasAcc = findCommentFromCommentReplyArea(historyComment, account,true);
+                BiliComment foundReplyHasAcc = findCommentFromCommentReplyArea(historyComment, account, true);
                 if (foundReplyHasAcc != null) {
                     //回复评论ShadowBan
-                    return updateHistoryComment(foundReplyHasAcc,HistoryComment.STATE_SHADOW_BAN,historyComment);
+                    return updateHistoryComment(foundReplyHasAcc, HistoryComment.STATE_SHADOW_BAN, historyComment);
                 } else {
                     //回复评论被删除
-                    return updateHistoryComment(null,HistoryComment.STATE_DELETED,historyComment);
+                    return updateHistoryComment(null, HistoryComment.STATE_DELETED, historyComment);
                 }
             }
-        } else if (gr.code == GeneralResponse.CODE_COMMENT_DELETED){//根评论挂了
-            throw new RootCommentDeadException(historyComment.root,gr);
+        } else if (gr.code == GeneralResponse.CODE_COMMENT_DELETED) {//根评论挂了
+            throw new RootCommentDeadException(historyComment.root, gr);
         } else if (gr.code == GeneralResponse.CODE_COMMENT_AREA_CLOSED) {
             return null;
         } else {
-            throw new BiliBiliApiException(gr,"获取评论回复页失败");
+            throw new BiliBiliApiException(gr, "获取评论回复页失败");
         }
     }
 
-    public static HistoryComment updateHistoryComment(BiliComment biliComment,String state,HistoryComment historyComment){
+    public static HistoryComment updateHistoryComment(BiliComment biliComment, String state, HistoryComment historyComment) {
         //当前面申诉提示无评论可申诉时，后面再检测到疑似审核就不改变状态
         historyComment.lastCheckDate = new Date();
-        if (!(historyComment.lastState.equals(HistoryComment.STATE_SUSPECTED_NO_PROBLEM) && state.equals(HistoryComment.STATE_UNDER_REVIEW))){
+        if (!(historyComment.lastState.equals(HistoryComment.STATE_SUSPECTED_NO_PROBLEM) && state.equals(HistoryComment.STATE_UNDER_REVIEW))) {
             historyComment.lastState = state;
         }
         if (biliComment != null) {
@@ -601,7 +616,8 @@ public class CommentManipulator {
     public static class RootCommentDeadException extends Throwable {
         public final long rootRpid;
         public final GeneralResponse<?> generalResponse;
-        public RootCommentDeadException(long root,GeneralResponse<?> generalResponse) {
+
+        public RootCommentDeadException(long root, GeneralResponse<?> generalResponse) {
             this.rootRpid = root;
             this.generalResponse = generalResponse;
         }

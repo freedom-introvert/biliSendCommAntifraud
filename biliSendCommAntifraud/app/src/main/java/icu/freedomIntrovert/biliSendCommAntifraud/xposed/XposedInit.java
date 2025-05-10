@@ -8,7 +8,6 @@ import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
-import icu.freedomIntrovert.biliSendCommAntifraud.BuildConfig;
 import icu.freedomIntrovert.biliSendCommAntifraud.Config;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.FuckFoldPicturesHook;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.IntentTransferStationHook;
@@ -16,13 +15,11 @@ import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostCommentHookBy
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostCommentHookByMaster;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.PostPictureHook;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.ShowInvisibleCommentHook;
-import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.XPCheckHook;
 
 public class XposedInit implements IXposedHookLoadPackage {
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) throws Throwable {
-
         if (loadPackageParam.packageName.equals("tv.danmaku.bili")) {//国内版
             Config config = Config.getInstanceByXPEnvironment();
             ClassLoader classLoader = loadPackageParam.classLoader;
@@ -55,8 +52,6 @@ public class XposedInit implements IXposedHookLoadPackage {
             if (config.getEnableFuckFoldPicturesHook()) {
                 hookStater.startHook(new FuckFoldPicturesHook());
             }
-        } else if (loadPackageParam.packageName.equals(BuildConfig.APPLICATION_ID)){
-            new XPCheckHook().startHook(BuildConfig.VERSION_CODE,loadPackageParam.classLoader);
         }
     }
 

@@ -3,6 +3,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -284,7 +285,7 @@ public class Config {
     }
 
     public boolean getUseClientCookie(){
-        return sp.getBoolean("use_client_cookie", true);
+        return sp.getBoolean("use_client_cookie", false);
     }
 
     public void setUseClientCookie(boolean enable){
@@ -304,6 +305,22 @@ public class Config {
 
     public void setEnableFuckFoldPicturesHook(boolean enable){
         sp.edit().putBoolean("fuck_fold_pictures_hook",enable).apply();
+    }
+
+    public long getBatchCheckInterval(){
+        return sp.getLong("batch_check_interval",0);
+    }
+
+    public void setBatchCheckInterval(long interval){
+        sp.edit().putLong("batch_check_interval",interval).apply();
+    }
+
+    public int getLastCommentLocatorMode(){
+        return sp.getInt("last_comment_locator_mode", 0);
+    }
+
+    public void setLastCommentLocatorMode(int mode){
+        sp.edit().putInt("last_comment_locator_mode",mode).apply();
     }
 
 }

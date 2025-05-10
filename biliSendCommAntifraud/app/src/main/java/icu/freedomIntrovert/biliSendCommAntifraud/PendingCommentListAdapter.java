@@ -1,5 +1,6 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -73,6 +74,12 @@ public class PendingCommentListAdapter extends RecyclerView.Adapter<PendingComme
     @Override
     public int getItemCount() {
         return comments.size();
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    public void clearAll(){
+        comments.clear();
+        notifyDataSetChanged();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {

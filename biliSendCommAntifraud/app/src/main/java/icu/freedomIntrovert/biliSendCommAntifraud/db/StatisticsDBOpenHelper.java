@@ -402,16 +402,20 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         getWritableDatabase().delete("pending_check_comments", "rpid = ?", new String[]{String.valueOf(rpid)});
     }
 
+    public int deleteAllPendingCheckComment(){
+        return getWritableDatabase().delete("pending_check_comments", null,null);
+    }
+
     public void addSensitiveScanResultToHistoryComment(long rpid, SensitiveScanResult result) {
         ContentValues cv = new ContentValues();
         cv.put("sensitive_scan_result", JSON.toJSONString(result));
         getWritableDatabase().update(TABLE_NAME_HISTORY_COMMENT, cv, "rpid = ?", new String[]{String.valueOf(rpid)});
     }
 
-    public void updateCommentAreaAppealState(int type,long oid,Integer state){
+    public void updateCommentAreaAppealState(int type,long oid,long uid,Integer state){
         ContentValues cv = new ContentValues();
         cv.put("appeal_state",state);
-        getWritableDatabase().update(TABLE_NAME_HISTORY_COMMENT,cv,"area_type = ? AND oid = ?",new String[]{String.valueOf(type),String.valueOf(oid)});
+        getWritableDatabase().update(TABLE_NAME_HISTORY_COMMENT,cv,"area_type = ? AND oid = ? AND uid = ?",new String[]{String.valueOf(type),String.valueOf(oid), String.valueOf(uid)});
     }
 
     public Map<String, Integer> countingLastStatus() {
@@ -437,5 +441,7 @@ public class StatisticsDBOpenHelper extends SQLiteOpenHelper {
         cursor.close();
         return map;
     }
+
+
 
 }

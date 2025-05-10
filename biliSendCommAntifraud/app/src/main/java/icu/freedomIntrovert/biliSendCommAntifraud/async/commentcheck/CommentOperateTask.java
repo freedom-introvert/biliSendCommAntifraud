@@ -17,6 +17,7 @@ public  abstract class CommentOperateTask<T extends BaseEventHandler> extends Ba
     protected final AccountManger accountManger;
     protected final RandomComments randomComments;
     protected final StatisticsDBOpenHelper statisticsDB;
+
     public CommentOperateTask(T handle, Context context) {
         super(handle);
         this.commentManipulator = CommentManipulator.getInstance();
