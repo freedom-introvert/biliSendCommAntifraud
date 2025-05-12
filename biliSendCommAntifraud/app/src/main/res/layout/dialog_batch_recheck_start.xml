@@ -3,23 +3,52 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center"
-    android:orientation="horizontal">
-    <EditText
-        android:id="@+id/edit_text"
-        android:layout_weight="1"
-        android:layout_width="0dp"
-        android:inputType="number"
-        android:hint="注：0天前=今天"
+    android:orientation="vertical">
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="15dp"
-        android:layout_marginBottom="15dp" />
-    <Spinner
-        android:id="@+id/spinner_before_by"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_marginEnd="25dp"
-        android:entries="@array/spinner_before_by_array"
-         />
+        android:orientation="horizontal">
+        <EditText
+            android:id="@+id/edit_text"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:inputType="number"
+            android:hint="注：0天前=今天"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+             />
+        <Spinner
+            android:id="@+id/spinner_before_by"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="25dp"
+            android:entries="@array/spinner_before_by_array"
+            />
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="20dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="25dp"
+            android:textColor="@color/dark_font"
+            android:textSize="15sp"
+            android:text="评论检查间隔时间（ms）"/>
+        <EditText
+            android:id="@+id/edit_batch_check_interval"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginBottom="15dp"/>
+    </LinearLayout>
+
 
 </LinearLayout>

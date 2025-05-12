@@ -9,7 +9,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 public class DeleteCommentTask extends CommentOperateTask<DeleteCommentTask.EventHandler> {
     public final Comment comment;
 
-    public DeleteCommentTask(Context context, Comment comment,EventHandler handle) {
+    public DeleteCommentTask(Context context, Comment comment, EventHandler handle) {
         super(handle, context);
         this.comment = comment;
     }
@@ -17,15 +17,15 @@ public class DeleteCommentTask extends CommentOperateTask<DeleteCommentTask.Even
     @Override
     protected void onStart(EventHandler handler) throws Throwable {
         Account account = accountManger.getAccount(comment.uid);
-        if (account == null){
+        if (account == null) {
             handler.onAccountNotFound(comment.uid);
             return;
         }
-        commentManipulator.deleteComment(comment.commentArea,comment.rpid,account);
+        commentManipulator.deleteComment(comment.commentArea, comment.rpid, account);
         handler.onSuccess();
     }
 
-    public interface EventHandler extends BaseEventHandler{
+    public interface EventHandler extends BaseEventHandler {
         void onAccountNotFound(long uid);
 
         void onSuccess();

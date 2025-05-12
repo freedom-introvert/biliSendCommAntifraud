@@ -53,7 +53,6 @@ public class CommentMonitoringTask extends CommentOperateTask<CommentMonitoringT
                     handler.onStateNotChange();
                 }
             } else {
-                //TODO 补全
                 try {
                     HistoryComment checkedComment = commentManipulator.recheckReplyCommentState(comment, account);
                     if (checkedComment == null) {

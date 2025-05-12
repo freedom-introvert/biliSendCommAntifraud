@@ -8,12 +8,24 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Base64;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,6 +41,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.biliApis.GeneralResponse;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.BaseHook;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.XB;
+import retrofit2.Call;
 
 public abstract class PostCommentHook extends BaseHook {
     Activity currentActivity;
@@ -87,7 +100,6 @@ public abstract class PostCommentHook extends BaseHook {
                     return;
                 }
                 Object data = XposedHelpers.getObjectField(body, "data");
-                Object request = XposedHelpers.callMethod(param.thisObject, getBiliCall_request_MethodName()/*request 混淆*/);
                 if (data != null && "com.bilibili.app.comm.comment2.model.BiliCommentAddResult".equals(data.getClass().getCanonicalName())) {
                     Bundle extras = new Bundle();
                     Class<?> biliCommentAddResultClass = data.getClass();
@@ -95,7 +107,9 @@ public abstract class PostCommentHook extends BaseHook {
                     Object content = XposedHelpers.getObjectField(reply, "mContent");
                     Integer type = (Integer) XposedHelpers.getObjectField(reply, "mType");
                     Long oid = (Long) XposedHelpers.getObjectField(reply, "mOid");
-                    if (!((Integer) biliCommentAddResultClass.getField("action").get(data) == 0)) {
+                    //判断是否是评论区要精选的，是的话就不要检查了
+                    Integer action = ((Integer)biliCommentAddResultClass.getField("action").get(data));
+                    if (action != null && !(action == 0)) {
                         return;
                     }
                     extras.putInt("action", ByXposedLaunchedActivity.ACTION_CHECK_COMMENT);
@@ -121,7 +135,7 @@ public abstract class PostCommentHook extends BaseHook {
                         ArrayList<String> cookies = new ArrayList<>();
                         for (String cookieDBFilePath : getCookieDBFilePaths()) {
                             String cookie = getCookiesAsString(cookieDBFilePath);
-                            if (cookie.contains("SESSDATA") && cookie.contains("buvid3")) {
+                            if (cookie != null && cookie.contains("SESSDATA") && cookie.contains("buvid3")) {
                                 cookies.add(cookie);
                             }
                         }
@@ -130,6 +144,7 @@ public abstract class PostCommentHook extends BaseHook {
                     //extras.putString("cookie",getCookiesAsString("/data/data/tv.danmaku.bili/app_webview_tv.danmaku.bili/Default/Cookies"));
                     Utils.startActivity(currentActivity, extras);
                 } else if (XposedHelpers.getIntField(body, "code") == GeneralResponse.CODE_COMMENT_CONTAIN_SENSITIVE) {
+                    Object request = XposedHelpers.callMethod(param.thisObject, getBiliCall_request_MethodName()/*request 混淆*/);
                     Object requestBody = XposedHelpers.callMethod(request, "body"/*混淆注意*/);
                     Map<String, String> requsetMap = new HashMap<>();
                     for (int i = 0; i < (Integer) XposedHelpers.callMethod(requestBody, "size"); i++) {
@@ -268,10 +283,10 @@ public abstract class PostCommentHook extends BaseHook {
         return null;
     }
 
-    public static String getCookiesAsString(String dbPath) {
+    public String getCookiesAsString(String dbPath) {
         SQLiteDatabase db = null;
-        StringBuilder cookieString = new StringBuilder();
         try {
+            Map<String,String> cookieMap = new HashMap<>();
             // 打开数据库
             db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE);
 
@@ -284,19 +299,39 @@ public abstract class PostCommentHook extends BaseHook {
                 do {
                     String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
                     String value = cursor.getString(cursor.getColumnIndexOrThrow("value"));
-
-                    // 拼接cookie
-                    if (cookieString.length() > 0) {
-                        cookieString.append("; ");
-                    }
-                    cookieString.append(name).append("=").append(value);
+                    cookieMap.put(name,value);
                 } while (cursor.moveToNext());
             }
-
             // 关闭Cursor
             cursor.close();
+
+            File biliAccountStorage = new File(currentActivity.getFilesDir(),"bili.account.storage");
+            @SuppressWarnings("all")//Android Studio 你是不是有什么大病 'InputStream' can be constructed using 'Files.newInputStream()，然后按照你的做我的最低API不支持，加了API判断你还他妈的在老的分支报黄😅
+            DataInputStream dis = new DataInputStream(new FileInputStream(biliAccountStorage));
+            byte[] buffer = new byte[(int) biliAccountStorage.length()];
+            dis.readFully(buffer);
+            dis.close();
+            byte[] decode = Base64.decode(buffer, Base64.DEFAULT);
+            JSONObject cookieInfo = JSON.parseObject(new String(decode));
+            JSONArray cookies = cookieInfo.getJSONArray("cookies");
+            for (int i = 0; i < cookies.size(); i++) {
+                JSONObject cookie = cookies.getJSONObject(i);
+                cookieMap.put(cookie.getString("name"),cookie.getString("value"));
+            }
+            StringBuilder sb = new StringBuilder();
+            Iterator<Map.Entry<String, String>> iterator = cookieMap.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, String> entry = iterator.next();
+                sb.append(entry.getKey()).append("=").append(entry.getValue());
+                if (iterator.hasNext()) {
+                    sb.append("; ");
+                }
+            }
+            return sb.toString();
         } catch (SQLiteException e) {
             XB.log("获取App cookie失败，无法打开或查询数据库: " + e.getMessage());
+        } catch (IOException e) {
+            XB.log("获取App cookie失败，无法打开bili.account.storage文件，异常信息: " + e.getMessage());
         } finally {
             // 关闭数据库连接
             if (db != null && db.isOpen()) {
@@ -305,7 +340,7 @@ public abstract class PostCommentHook extends BaseHook {
         }
 
         // 返回cookie字符串
-        return cookieString.toString();
+        return null;
     }
 
     public static void toastInUi(Context context, CharSequence text, int duration) {

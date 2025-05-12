@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             outputStream.close();
                             runOnUiThread(() -> {
                                 dialog.dismiss();
-                                Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(context, "导出完成！网络日志包含账号隐私信息，请勿公开！", Toast.LENGTH_SHORT).show();
                             });
                         } catch (IOException e) {
                             runOnUiThread(() -> {

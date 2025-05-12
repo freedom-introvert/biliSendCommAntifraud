@@ -1,11 +1,14 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.async.commentcheck;
 
+import android.app.Activity;
 import android.content.Context;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import icu.freedomIntrovert.async.BackstageTaskByMVP;
 import icu.freedomIntrovert.biliSendCommAntifraud.account.Account;
 import icu.freedomIntrovert.biliSendCommAntifraud.account.AccountManger;
 import icu.freedomIntrovert.biliSendCommAntifraud.async.BiliBiliApiException;
@@ -35,7 +38,6 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
 
     @Override
     protected void onStart(EventHandler handler) throws Throwable {
-        long rpid = comment.rpid;
         CommentArea commentArea = comment.commentArea;
         Account account = accountManger.getAccount(comment.uid);
         Account clientAccount = null;
@@ -48,7 +50,7 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
                 clientAccount = AccountManger.cookieToAccount(clientCookie);
                 if (clientAccount == null) {
                     //客户端cookie无效！
-                    if (i == clientCookies.size() - 1){
+                    if (i == clientCookies.size() - 1) {
                         handler.onClientCookieInvalid(clientCookie);
                         return;
                     }
@@ -98,7 +100,7 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
                 totalWaitTime = commWaitTime;
                 handler.onStartWait(totalWaitTime);
             }
-            for (long waitTime = 0; waitTime < totalWaitTime; waitTime+=10) {
+            for (long waitTime = 0; waitTime < totalWaitTime; waitTime += 10) {
                 try {
                     Thread.sleep(10);
                     remainingWaitTime = totalWaitTime - waitTime;
@@ -121,6 +123,14 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
         }
 
         handler.onStartCheck();
+
+        result(check(account, commentArea, handler), handler);
+
+        //删除待检查评论（如果存在）
+        statisticsDB.deletePendingCheckComment(comment.rpid);
+    }
+
+    private HistoryComment check(Account account, CommentArea commentArea, EventHandler handler) throws Throwable {
         HistoryComment historyComment = new HistoryComment(comment);
         historyComment.lastCheckDate = new Date();
         //查找无账号下的评论列表或评论回复列表
@@ -129,28 +139,18 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
             //判断是否被标记为invisible，使其在前端不可见
             if (biliComment.invisible) {
                 historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_INVISIBLE);
-                result(historyComment,handler);
             } else {
                 //评论正常
                 historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_NORMAL);
-                result(historyComment,handler);
             }
-            //删除待检查评论
-            statisticsDB.deletePendingCheckComment(rpid);
-            return;
+            return historyComment;
         }
+
         //没有找到评论时
         handler.onCommentNotFound();
         if (comment.root == 0) {
             GeneralResponse<CommentReplyPage> response = commentManipulator.getCommentReplyHasAccount(commentArea, comment.rpid, 1, account);
             if (response.isSuccess()) {
-                /*
-                //为啥要sleep？
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }*/
                 //评论shadowBan或者疑似审核中
                 GeneralResponse<CommentReplyPage> noACResp = commentManipulator.getCommentReplyNoAccount(commentArea, comment.rpid, 0);
                 if (noACResp.isSuccess()) {
@@ -160,41 +160,23 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
                     if (root.invisible) {
                         //评论invisible
                         historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_INVISIBLE);
-                        result(historyComment,handler);
+                        return historyComment;
                     } else {
                         //评论疑似审核中
                         historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_UNDER_REVIEW);
-                        result(historyComment,handler);
+                        return historyComment;
                     }
                 } else if (noACResp.code == GeneralResponse.CODE_COMMENT_DELETED) {
                     //评论shadowBan
                     historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_SHADOW_BAN);
-                    result(historyComment,handler);
+                    return historyComment;
                 } else {
                     throw new BiliBiliApiException(noACResp, "无法获取评论回复页（无账号）");
                 }
             } else if (response.code == GeneralResponse.CODE_COMMENT_DELETED) {
                 //当有账号都提示已被删除了，则判断为真的被删了
                 historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_DELETED);
-                result(historyComment,handler);
-                //已移除多虑的判断
-                /*//再尝试对评论进行回复，看看是否应session过期导致变成了游客视角
-                GeneralResponse<CommentAddResult> response1 = commentManipulator.getSendCommentCall(testCommentText, comment.rpid, comment.root, commentArea, false).execute().body();
-                OkHttpUtil.respNotNull(response1);
-                if (response1.isSuccess()) {
-                    //应该不存在有账号获取评论列表被删除了还能回复的吧:(
-                    sleep(config.getWaitTime());
-                    commentManipulator.deleteComment(comment.commentArea, comment.rpid,false);
-                    eventHandler.sendEmptyEventMessage(CommentCheckTask.EventHandler.WHAT_THEN_SHADOW_BAN);
-                } else if (response1.code == CommentAddResult.CODE_DELETED) {
-                    //如果获取的评论列表提示被删除和回复评论提示也被删除才算秒删
-                    historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_DELETED);
-                    insertHistoryComment(historyComment);
-                    eventHandler.sendEmptyEventMessage(CommentCheckTask.EventHandler.WHAT_THEN_DELETED);
-                } else {
-                    //登录信息过期或其他异常
-                    eventHandler.sendError(new BiliBiliApiException(response1.code, response1.message, null));
-                }*/
+                return historyComment;
             } else {
                 throw new BiliBiliApiException(response, "无法获取评论回复页（有账号）");
             }
@@ -203,17 +185,14 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
             BiliComment foundReply = commentManipulator.findCommentFromCommentReplyArea(comment, account, true);
             if (foundReply != null) {
                 historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_SHADOW_BAN);
-                result(historyComment,handler);
             } else {
                 historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_DELETED);
-                result(historyComment,handler);
             }
+            return historyComment;
         }
-        //删除待检查评论（如果存在）
-        statisticsDB.deletePendingCheckComment(rpid);
     }
 
-    private void result(HistoryComment historyComment,EventHandler handler){
+    private void result(HistoryComment historyComment, EventHandler handler) {
         insertHistoryComment(historyComment);
         handler.onResult(historyComment);
     }
@@ -229,7 +208,7 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
         return remainingWaitTime;
     }
 
-    public interface EventHandler extends BaseEventHandler {
+    public interface EventHandler extends BackstageTaskByMVP.BaseEventHandler {
 
         void onGettingClientAccount();
 
@@ -255,14 +234,5 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
 
         void onResult(HistoryComment historyComment);
 
-/*        void thenInvisible();
-
-        void thenCommentOk();
-
-        void thenUnderReview();
-
-        void thenShadowBan();
-
-        void thenDeleted();*/
     }
 }

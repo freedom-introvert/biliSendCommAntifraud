@@ -9,11 +9,11 @@ public class XPCheckHook extends BaseHook {
     public void startHook(int appVersionCode, ClassLoader classLoader) throws ClassNotFoundException {
         XposedHelpers.findAndHookMethod("icu.freedomIntrovert.biliSendCommAntifraud.MainActivity",
                 classLoader,"isXposedEnabled", new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                super.beforeHookedMethod(param);
-                param.setResult(true);
-            }
-        });
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        super.beforeHookedMethod(param);
+                        param.setResult(true);
+                    }
+                });
     }
 }

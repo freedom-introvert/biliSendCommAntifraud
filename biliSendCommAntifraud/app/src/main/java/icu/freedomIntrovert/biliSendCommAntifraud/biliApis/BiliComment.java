@@ -19,6 +19,9 @@ public class BiliComment {
     public int like;
     public boolean invisible;
     public long ctime;
+    public int state;
+    public long attr;
+    public int action;
 
 
     public static class Member{

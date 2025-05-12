@@ -65,7 +65,7 @@ public interface BiliApiService {
      *                       1：按热度+按时间
      *                       2：仅按时间
      * @param pagination_str 初始：{"offset":""}，然后从响应数据里取：cursor.pagination_reply.prev_offset 往前推进
-     * @param cookie_buvid3  登录账号：完整cookie
+     * @param cookie         登录账号：完整cookie
      *                       不登录账号：buvid3=xxx 在cookie里任取。若不填会导致-352错误！
      *                       即使是从cookie获取的不会导致登录状态，因为无账号的cookie也有此参数
      * @param seek_rpid      定位评论的rpid，为null不进行定位。可使用楼中楼的rpid，定位评论将出现在预览域里

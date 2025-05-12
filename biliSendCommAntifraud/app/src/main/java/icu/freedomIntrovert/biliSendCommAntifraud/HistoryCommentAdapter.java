@@ -26,9 +26,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+import icu.freedomIntrovert.async.EventHandler;
 import icu.freedomIntrovert.biliSendCommAntifraud.account.Account;
 import icu.freedomIntrovert.biliSendCommAntifraud.account.AccountManger;
 import icu.freedomIntrovert.biliSendCommAntifraud.async.BiliBiliApiRequestHandler;
+import icu.freedomIntrovert.biliSendCommAntifraud.async.DeleteCommentTask;
 import icu.freedomIntrovert.biliSendCommAntifraud.async.commentcheck.ReviewCommentStatusTask;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentManipulator;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.CommentUtil;
@@ -393,6 +395,32 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         }
 
         if (!historyComment.lastState.equals(HistoryComment.STATE_SENSITIVE)) {
+            popupMenu.getMenu().add("删除B站上的评论").setOnMenuItemClickListener(item -> {
+                new AlertDialog.Builder(context)
+                        .setTitle("确认删除吗？")
+                        .setMessage("这会删除你在B站上的评论，但不会删除你在本反诈上的历史记录")
+                        .setNegativeButton("手滑了",null)
+                        .setPositiveButton("确定", (dialog1, which) -> {
+                            new DeleteCommentTask(context, historyComment, new DeleteCommentTask.EventHandler() {
+                                @Override
+                                public void onAccountNotFound(long uid) {
+                                    Toast.makeText(context, "删除失败，未找到账号UID："+uid, Toast.LENGTH_SHORT).show();
+                                }
+
+                                @Override
+                                public void onSuccess() {
+                                    Toast.makeText(context, "删除成功", Toast.LENGTH_SHORT).show();
+                                }
+
+                                @Override
+                                public void onError(Throwable th) {
+                                    Toast.makeText(context, th.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            }).execute();
+                        })
+                        .show();
+                return true;
+            });
             popupMenu.getMenu().add("定位评论").setOnMenuItemClickListener(item -> {
                 CommentLocator.lunch(context, historyComment.commentArea.type,
                         historyComment.commentArea.oid, historyComment.rpid,

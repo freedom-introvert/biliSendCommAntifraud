@@ -22,7 +22,6 @@ public class XposedInit implements IXposedHookLoadPackage {
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) throws Throwable {
-
         if (loadPackageParam.packageName.equals("tv.danmaku.bili")) {//国内版
             Config config = Config.getInstanceByXPEnvironment();
             ClassLoader classLoader = loadPackageParam.classLoader;
@@ -50,7 +49,6 @@ public class XposedInit implements IXposedHookLoadPackage {
             HookStater hookStater = new HookStater(appVersionCode,classLoader);
             hookStater.startHook(new IntentTransferStationHook());
             hookStater.startHook(new PostCommentHookByGlobal());
-
             //去他妈的图片折叠
             if (config.getEnableFuckFoldPicturesHook()) {
                 hookStater.startHook(new FuckFoldPicturesHook());
