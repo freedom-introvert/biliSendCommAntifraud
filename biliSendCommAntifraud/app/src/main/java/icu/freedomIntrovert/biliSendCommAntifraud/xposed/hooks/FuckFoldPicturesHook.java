@@ -1,23 +1,14 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks;
 
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedHelpers;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.BaseHook;
+import icu.freedomIntrovert.biliSendCommAntifraud.xposed.HookConfig;
 
-public class FuckFoldPicturesHook extends BaseHook {
-
-    @Override
-    public void startHook(int appVersionCode, ClassLoader classLoader) throws ClassNotFoundException {
-        XposedHelpers.findAndHookMethod("com.bapis.bilibili.main.community.reply.v1.ReplyControl", classLoader, "getFoldPictures", new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                super.beforeHookedMethod(param);
-            }
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                super.afterHookedMethod(param);
-                param.setResult(false);
-            }
-        });
+public final class FuckFoldPicturesHook extends BaseHook {
+    @Override public void startHook(int version, ClassLoader loader) throws Throwable {
+        hook(loader.loadClass("com.bapis.bilibili.main.community.reply.v1.ReplyControl"),
+                "getFoldPictures", chain -> {
+                    Object original = chain.proceed();
+                    return HookConfig.unfoldPictures() ? false : original;
+                });
     }
 }

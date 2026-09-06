@@ -37,22 +37,21 @@ public class LoggerInterceptor implements Interceptor {
         // 打印请求信息
         String time = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss", Locale.getDefault()).format(new Date());
         logger.log("========[OkHttpClient][" + time + "]=========");
-        logger.log("Request URL: " + request.url());
+        logger.log("Request URL: " + redactUrl(request.url()));
         logger.log("Request Method: " + request.method());
         // 打印请求头
-        logger.log("Request Headers: \n" + request.headers());
+        logger.log("Request Headers: \n" + redactHeaders(request.headers()));
         // 打印请求体
         RequestBody requestBody = request.body();
         if (requestBody != null) {
             if (requestBody instanceof FormBody) {
                 FormBody formBody = (FormBody) requestBody;
                 StringBuilder sb = new StringBuilder("Request Body:");
-                for (int i = 0; i < formBody.size() - 1; i++) {
-                    sb.append(formBody.encodedName(i)).append("=").append(formBody.value(i)).append("&");
+                for (int i = 0; i < formBody.size(); i++) {
+                    if (i > 0) sb.append("&");
+                    sb.append(formBody.encodedName(i)).append("=")
+                            .append(redactFormValue(formBody.encodedName(i), formBody.value(i)));
                 }
-                sb.append(formBody.encodedName(formBody.size() - 1))
-                        .append("=")
-                        .append(formBody.value(formBody.size() - 1));
                 sb.append("\n");
                 logger.log(sb.toString());
             }
@@ -70,7 +69,7 @@ public class LoggerInterceptor implements Interceptor {
             MediaType contentType = body.contentType();
             if (contentType != null && contentType.toString().contains("json")) {
                 String responseBody = body.string();
-                logger.log("Response JSON Data: " + responseBody);
+                logger.log("Response JSON Data: " + summarizeJson(responseBody));
                 // 由于 OkHttp 的 ResponseBody 只能读取一次，所以在打印后需要重新构建一个 Response 并返回
                 logger.log("===========[OkHttpClient][end]===========");
                 return response.newBuilder()
@@ -80,5 +79,56 @@ public class LoggerInterceptor implements Interceptor {
         }
         logger.log("===========[OkHttpClient][end]===========");
         return response;
+    }
+    
+    private static String redactHeaders(okhttp3.Headers headers) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < headers.size(); i++) {
+            String name = headers.name(i);
+            String value = headers.value(i);
+            if (name.equalsIgnoreCase("Cookie") || name.equalsIgnoreCase("Authorization")) {
+                value = "[redacted]";
+            }
+            sb.append(name).append(": ").append(value).append('\n');
+        }
+        return sb.toString();
+    }
+
+    private static String redactFormValue(String name, String value) {
+        if (name == null) return value;
+        String key = name.toLowerCase(Locale.ROOT);
+        if (key.contains("cookie") || key.contains("sessdata") || key.contains("csrf")
+                || key.contains("access_key") || key.contains("bili_jct")) {
+            return "[redacted]";
+        }
+        return value;
+    }
+    
+    private static String redactUrl(okhttp3.HttpUrl url) {
+        okhttp3.HttpUrl.Builder builder = url.newBuilder();
+        for (String name : url.queryParameterNames()) {
+            String key = name.toLowerCase(Locale.ROOT);
+            if (key.contains("csrf") || key.contains("sessdata") || key.contains("access_key")
+                    || key.contains("cookie")) {
+                builder.removeAllQueryParameters(name);
+                builder.addQueryParameter(name, "[redacted]");
+            }
+        }
+        return builder.toString();
+    }
+
+    private static String summarizeJson(String body) {
+        try {
+            com.alibaba.fastjson.JSONObject obj = com.alibaba.fastjson.JSON.parseObject(body);
+            if (obj == null) return "{\"truncated\":true}";
+            com.alibaba.fastjson.JSONObject out = new com.alibaba.fastjson.JSONObject();
+            out.put("code", obj.get("code"));
+            out.put("message", obj.get("message"));
+            out.put("ttl", obj.get("ttl"));
+            out.put("has_data", obj.get("data") != null);
+            return out.toJSONString();
+        } catch (Exception e) {
+            return "{\"truncated\":true}";
+        }
     }
 }

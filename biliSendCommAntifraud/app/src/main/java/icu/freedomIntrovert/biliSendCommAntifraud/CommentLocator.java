@@ -11,6 +11,7 @@ import android.widget.Toast;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
+import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.HostCallAdapter;
 
 public class CommentLocator {
     public static void lunch(Context context, int areaType, long oid, long rpid, long root, String sourceId) {
@@ -122,22 +123,14 @@ public class CommentLocator {
         Bundle extras = new Bundle();
         if (areaType == CommentArea.AREA_TYPE_VIDEO) {
             intent.setClassName("com.bilibili.app.in", "tv.danmaku.bili.MainActivityV2");
-            intent.putExtra("TransferActivity", "com.bilibili.video.videodetail.VideoDetailsActivity");
-            extras.putString("id", String.valueOf(oid));
-
-            //根评论与评论回复的不同处理方法
-            if (root != 0) {
-                extras.putString("comment_root_id", String.valueOf(root));
-                extras.putString("comment_secondary_id", String.valueOf(rpid));
-            } else {
-                extras.putString("comment_root_id", String.valueOf(rpid));
+            intent.putExtra("TransferActivity", HostCallAdapter.GLOBAL_VIDEO_ACTIVITY);
+            for (java.util.Map.Entry<String, String> extra : HostCallAdapter.globalVideoExtras(oid, rpid, root, sourceId).entrySet()) {
+                extras.putString(extra.getKey(), extra.getValue());
             }
-            extras.putString("comment_from_spmid", "im.notify-reply.0.0");
-            extras.putString("tab_index", "1");
-            intent.putExtra("transferUri", "bilibili://video/" + oid);
+            intent.putExtra("transferUri", HostCallAdapter.globalVideoUri(oid));
         } else if (areaType == CommentArea.AREA_TYPE_DYNAMIC11 || areaType == CommentArea.AREA_TYPE_DYNAMIC17) {
             intent.setClassName("com.bilibili.app.in", "tv.danmaku.bili.MainActivityV2");
-            intent.putExtra("TransferActivity", "com.bilibili.app.comm.comment2.comments.view.CommentDetailActivity");
+            intent.putExtra("TransferActivity", HostCallAdapter.COMMENT_DETAIL_ACTIVITY);
             if (root != 0) {
                 extras.putString("commentId", String.valueOf(root));
             } else {
@@ -152,7 +145,7 @@ public class CommentLocator {
             extras.putString("showEnter", "1");
         } else if (areaType == CommentArea.AREA_TYPE_ARTICLE) {
             intent.setClassName("com.bilibili.app.in", "tv.danmaku.bili.MainActivityV2");
-            intent.putExtra("TransferActivity", "com.bilibili.app.comm.comment2.comments.view.CommentDetailActivity");
+            intent.putExtra("TransferActivity", HostCallAdapter.COMMENT_DETAIL_ACTIVITY);
             if (root != 0) {
                 extras.putString("commentId", String.valueOf(root));
             } else {

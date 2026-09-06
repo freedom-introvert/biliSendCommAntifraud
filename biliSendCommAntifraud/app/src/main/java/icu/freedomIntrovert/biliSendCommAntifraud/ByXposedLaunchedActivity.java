@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.Window;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,6 +16,7 @@ import java.util.Date;
 
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
+import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.hooks.Utils;
 
@@ -57,6 +59,10 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
                 break;
             case ACTION_RESUME_CHECK_COMMENT:
                 resumeCheckComment(extras.getLong("rpid"), extras.getStringArrayList("cookies"));
+                break;
+            case ACTION_SAVE_CONTAIN_SENSITIVE_CONTENT:
+                saveSensitiveComment(extras);
+                break;
         }
     }
 
@@ -82,6 +88,24 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
         new DialogCommCheckWorker(context).checkComment(comment, false, clientCookies, dialog -> finish());
     }
 
+    private void saveSensitiveComment(Bundle extras) {
+        long oid = extras.getLong("oid");
+        int type = extras.getInt("type");
+        String sourceId = extras.getString("source_id", "null");
+        String commentText = extras.getString("comment_text");
+        String toast = extras.getString("toast_message");
+        long uid = extras.getLong("uid", 0L);
+        CommentArea commentArea = new CommentArea(oid, sourceId != null ? sourceId : "null", type);
+        HistoryComment historyComment = new HistoryComment(new Comment(commentArea,
+                -System.currentTimeMillis(), 0, 0, commentText, null, new Date(), uid));
+        historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_SENSITIVE);
+        statisticsDBOpenHelper.insertHistoryComment(historyComment);
+        Toast.makeText(context,
+                toast != null && !toast.isEmpty() ? toast : "评论包含敏感词，已保存到历史记录",
+                Toast.LENGTH_LONG).show();
+        finish();
+    }
+
     private boolean checkIntentExtras(Bundle extras) {
         if (extras == null) {
             return false;
@@ -90,16 +114,20 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
         switch (action) {
             case ACTION_CHECK_COMMENT:
                 return Utils.checkExtras(extras, "oid", "type", "rpid", "root",
-                        "parent", "source_id", "comment_text", "ctime", "uid");
+                        "parent", "comment_text", "ctime", "uid");
             case ACTION_RESUME_CHECK_COMMENT:
                 return Utils.checkExtras(extras, "rpid");
+            case ACTION_SAVE_CONTAIN_SENSITIVE_CONTENT:
+                return Utils.checkExtras(extras, "oid", "type", "comment_text");
             default:
                 return false;
         }
     }
 
     private void showExtrasErrorDialog(Bundle extras) {
-        dialogMessageAndExit("启动参数错误，请参阅文档", "你传入的Intent Extras：" + extras);
+        int action = extras == null ? -1 : extras.getInt("action", -1);
+        dialogMessageAndExit("启动参数错误，请参阅文档",
+                "action=" + action + "，缺少必要字段或类型不正确。评论正文与 Cookie 不会显示在此提示中。");
     }
 
     private void dialogMessageAndExit(String title, String message) {

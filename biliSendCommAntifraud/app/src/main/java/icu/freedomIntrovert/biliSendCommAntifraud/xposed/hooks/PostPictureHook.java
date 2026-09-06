@@ -11,51 +11,44 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
-import de.robv.android.xposed.XposedHelpers;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.BaseHook;
+import icu.freedomIntrovert.biliSendCommAntifraud.xposed.Reflect;
+import icu.freedomIntrovert.biliSendCommAntifraud.xposed.HookConfig;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.XB;
 
-public class PostPictureHook extends BaseHook {
+public final class PostPictureHook extends BaseHook {
+    private final java.util.Set<Activity> picking =
+            java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 
-
-
-    @Override
-    public void startHook(int appVersionCode, ClassLoader classLoader) throws ClassNotFoundException {
-        XposedHelpers.findAndHookMethod("com.bilibili.bplus.following.publish.view.MediaChooserActivity", classLoader, "startActivityForResult", android.content.Intent.class, int.class, new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                super.beforeHookedMethod(param);
-                Intent intent = (Intent) param.args[0];
-                int requestCode = (Integer) param.args[1];
-                //劫持打开相机，转向至打开相册
-                if (requestCode == 1000) {
-                    Intent newIntent = new Intent();
-                    newIntent.setAction(Intent.ACTION_PICK);
-                    newIntent.setType("image/*");
-                    param.args[0] = newIntent;
-                }
+    @Override public void startHook(int version, ClassLoader loader) throws Throwable {
+        Class<?> chooser = loader.loadClass("com.bilibili.bplus.following.publish.view.MediaChooserActivity");
+        hook(chooser, "startActivityForResult", chain -> {
+            Object[] args = chain.getArgs().toArray();
+            if (HookConfig.replacePicture() && Integer.valueOf(1000).equals(args[1])) {
+                args[0] = new Intent(Intent.ACTION_PICK).setType("image/*");
+                picking.add((Activity) chain.getThisObject());
             }
-
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                super.afterHookedMethod(param);
+            return chain.proceed(args);
+        }, Intent.class, int.class);
+        hook(chooser, "onActivityResult", chain -> {
+            Object[] args = chain.getArgs().toArray();
+            Activity activity = (Activity) chain.getThisObject();
+            if (Integer.valueOf(1000).equals(args[0]) && picking.remove(activity)) {
+                onPicked(activity, args);
             }
-        });
+            return chain.proceed();
+        }, int.class, int.class, Intent.class);
+    }
 
-        XposedHelpers.findAndHookMethod("com.bilibili.bplus.following.publish.view.MediaChooserActivity", classLoader, "onActivityResult", int.class, int.class, android.content.Intent.class, new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                super.beforeHookedMethod(param);
-                Activity activity = (Activity) param.thisObject;
-                Intent intent = (Intent) param.args[2];
-                if ((Integer) param.args[0] == 1000) {
+    private void onPicked(Object activityObject, Object[] args) throws Throwable {
+                Activity activity = (Activity) activityObject;
+                Intent intent = (Intent) args[2];
+                if ((Integer) args[0] == 1000) {
                     if (intent != null && intent.getData() != null) {
                         //复制文件到缓存路径
                         File boxing = new File(activity.getExternalCacheDir(),"boxing");
                         if (!boxing.exists()){
-                            if (boxing.mkdir()) {
+                            if (!boxing.mkdirs()) {
                                 XB.log("创建路径 "+boxing+" 失败");
                                 return;
                             }
@@ -81,7 +74,7 @@ public class PostPictureHook extends BaseHook {
                                 不过MediaChooserActivity只有一个参数为(String)的方法，也就是目标方法
                                  */
                                 if (Arrays.equals(new Class[]{String.class}, parameterTypes)) {
-                                    XposedHelpers.callMethod(activity, declaredMethod.getName(), fileName);
+                                    Reflect.callMethod(activity, declaredMethod.getName(), fileName);
                                 }
                             }
                         } catch (IOException e) {
@@ -92,8 +85,5 @@ public class PostPictureHook extends BaseHook {
                         activity.finish();
                     }
                 }
-            }
-        });
     }
-
 }
