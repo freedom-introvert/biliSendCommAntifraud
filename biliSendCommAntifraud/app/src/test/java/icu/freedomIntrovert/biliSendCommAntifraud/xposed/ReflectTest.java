@@ -35,4 +35,11 @@ public class ReflectTest {
         assertFalse(Reflect.hasField(new Child(), "missing"));
         assertFalse(Reflect.hasMethod(Child.class, "value", long.class));
     }
+
+    @Test public void prefersDeclaredMethodThenInheritedFallback() throws Exception {
+        assertEquals(Parent.class, Reflect.declaredOrInherited(
+                Child.class, Parent.class, "value", int.class).getDeclaringClass());
+        assertEquals(Object.class, Reflect.declaredOrInherited(
+                Child.class, Object.class, "toString").getDeclaringClass());
+    }
 }

@@ -22,22 +22,26 @@ public final class PostPictureHook extends BaseHook {
 
     @Override public void startHook(int version, ClassLoader loader) throws Throwable {
         Class<?> chooser = loader.loadClass("com.bilibili.bplus.following.publish.view.MediaChooserActivity");
-        hook(chooser, "startActivityForResult", chain -> {
+        hook(Reflect.declaredOrInherited(chooser, Activity.class, "startActivityForResult",
+                Intent.class, int.class), chain -> {
+            if (!chooser.isInstance(chain.getThisObject())) return chain.proceed();
             Object[] args = chain.getArgs().toArray();
             if (HookConfig.replacePicture() && Integer.valueOf(1000).equals(args[1])) {
                 args[0] = new Intent(Intent.ACTION_PICK).setType("image/*");
                 picking.add((Activity) chain.getThisObject());
             }
             return chain.proceed(args);
-        }, Intent.class, int.class);
-        hook(chooser, "onActivityResult", chain -> {
+        });
+        hook(Reflect.declaredOrInherited(chooser, Activity.class, "onActivityResult",
+                int.class, int.class, Intent.class), chain -> {
+            if (!chooser.isInstance(chain.getThisObject())) return chain.proceed();
             Object[] args = chain.getArgs().toArray();
             Activity activity = (Activity) chain.getThisObject();
             if (Integer.valueOf(1000).equals(args[0]) && picking.remove(activity)) {
                 onPicked(activity, args);
             }
             return chain.proceed();
-        }, int.class, int.class, Intent.class);
+        });
     }
 
     private void onPicked(Object activityObject, Object[] args) throws Throwable {

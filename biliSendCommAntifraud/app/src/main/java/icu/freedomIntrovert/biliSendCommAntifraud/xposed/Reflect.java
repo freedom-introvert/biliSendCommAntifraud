@@ -25,6 +25,18 @@ public final class Reflect {
         throw new NoSuchMethodException(type.getName() + "." + name + Arrays.toString(args));
     }
 
+    /** Prefer a method declared on {@code preferred}; otherwise walk {@code fallback}. */
+    public static Method declaredOrInherited(Class<?> preferred, Class<?> fallback,
+                                             String name, Class<?>... args) throws NoSuchMethodException {
+        try {
+            Method method = preferred.getDeclaredMethod(name, args);
+            method.setAccessible(true);
+            return method;
+        } catch (NoSuchMethodException ignored) {
+            return method(fallback, name, args);
+        }
+    }
+
     public static boolean hasMethod(Class<?> type, String name, Class<?>... args) {
         try {
             method(type, name, args);

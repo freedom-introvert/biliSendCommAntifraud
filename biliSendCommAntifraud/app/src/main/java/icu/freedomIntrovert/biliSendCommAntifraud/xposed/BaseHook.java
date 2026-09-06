@@ -32,7 +32,6 @@ public abstract class BaseHook {
         method.setAccessible(true);
         handles.add(api.hook(method)
                 .setId(getClass().getSimpleName() + ":" + method.toGenericString())
-                .setExceptionMode(XposedInterface.ExceptionMode.DEFAULT)
                 .intercept(callback));
         XB.log("event=hook_registered target=" + method.toGenericString());
     }
