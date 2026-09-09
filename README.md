@@ -1,6 +1,6 @@
-> 开发中：模块已迁移到 libxposed API 102，要求 Android 8.0（API 26）及以上和支持 API 102 的框架。国际版 `com.bilibili.app.in` 6.4.0 的发评捕获、字段和启动检查已按反编译证据适配；视频根评有设备检查日志。楼中楼、敏感拦截、评论定位仍待专项验收。详见 [todo.md](todo.md)。
+> 模块已迁移到 libxposed API 102，要求 Android 8.0（API 26）及以上、以及支持 API 102 的框架。国际版 `com.bilibili.app.in` 6.4.0 的发评捕获、评论定位（`UnitedBizDetailsActivity`）和 Cookie 回退（`bili.account.storage`）已按该版本反编译结果适配。
 >
-> 首次安装/升级后先打开模块 App，在菜单“API 102 框架状态”检查连接、作用域和配置同步。未连接框架时仍可使用手动检查。旧框架重定向目录中的设置不会自动迁出，可用“导入旧版设置”恢复自行导出的 config.xml；账号和历史数据库不变。测试包是 Debug 签名，Release 构建产物尚未签名。
+> 首次安装/升级后请先打开模块 App，在菜单“API 102 框架状态”检查连接、作用域和配置同步。未连接框架时仍可使用手动检查。旧框架重定向目录中的设置不会自动迁出，可用“导入旧版设置”恢复自行导出的 config.xml；账号和历史数据库不变。正式版本号请由原作者发布时确定；当前工程版本为 `6.3.5-in641-dev`。
 
 ## 功能介绍
 
@@ -24,7 +24,8 @@
 
 cookie来源于webview中的cookies数据库，**若该cookie无法使用请关闭该功能**！
 
-如果一定要使用自动获取cookie，但是cookie无效，可以尝试打开b站APP内依赖webview的地方，例如“客服”
+如果一定要使用自动获取cookie，但是cookie无效，可以尝试打开b站APP内依赖webview的地方，例如“客服”。
+
 国际版 6.4.0 还会读取应用私有目录中的 `bili.account.storage` 作为回退；WebView 数据库被锁时不一定等于登录态失效。
 
 ### 手动添加账号
