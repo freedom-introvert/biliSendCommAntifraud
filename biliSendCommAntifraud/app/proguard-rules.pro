@@ -60,3 +60,6 @@
 -dontwarn org.openjsse.javax.net.ssl.SSLSocket
 -dontwarn org.openjsse.net.ssl.OpenJSSE
 -dontwarn springfox.documentation.spring.web.json.Json
+-dontwarn io.github.libxposed.annotation.**
+-adaptresourcefilecontents META-INF/xposed/java_init.list
+-keep public class * extends io.github.libxposed.api.XposedModule { public <init>(); }

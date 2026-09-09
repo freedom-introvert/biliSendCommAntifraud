@@ -13,6 +13,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
+        android:name=".AntifraudApplication"
+        android:description="@string/module_description"
         android:allowBackup="true"
         android:icon="@drawable/launcher"
         android:label="@string/app_name"
@@ -21,6 +23,8 @@
         android:theme="@style/Theme.BiliSendCommAntifraud.HasActionBar"
         android:windowTranslucentStatus="false"
         tools:targetApi="35">
+
+        <activity android:name=".LegacyConfigImportActivity" android:exported="false" />
 
         <activity
             android:name=".PendingCheckCommentsActivity"
@@ -40,22 +44,6 @@
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
-
-        <meta-data
-            android:name="xposedmodule"
-            android:value="true" />
-        <meta-data
-            android:name="xposedsharedprefs"
-            android:value="true" />
-        <meta-data
-            android:name="xposeddescription"
-            android:value="发送评论自动检测，解放双手&amp;你的评论记录器" />
-        <meta-data
-            android:name="xposedminversion"
-            android:value="53" />
-        <meta-data
-            android:name="xposedscope"
-            android:resource="@array/xposed_scope" />
 
         <activity
             android:name=".ByXposedLaunchedActivity"

@@ -254,6 +254,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         toggle.syncState();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        initRecordeHistoryCommentSW();
+    }
+
     private void initRecordeHistoryCommentSW() {
 
         initConfigSwitch(config.getUseClientCookie(), R.id.cl_use_client_cookie, R.id.sw_use_client_cookie, (buttonView, isChecked) -> {
@@ -286,13 +292,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 
-       /* sw_hook_picture_select.setChecked(xConfig.getHookPictureSelectIsEnable());
-        findViewById(R.id.cl_hook_picture_select).setOnClickListener(v -> {
-            sw_hook_picture_select.setChecked(!xConfig.getHookPictureSelectIsEnable());
-        });
-        sw_hook_picture_select.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            xConfig.setHookPictureSelectEnable(isChecked);
-        });*/
+
 
 
     }
@@ -303,7 +303,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             switchCompat.setEnabled(false);
             itemView.setOnClickListener(v -> needXposedToast());
         } else {
-            switchCompat.setChecked(initValue);
+        switchCompat.setOnCheckedChangeListener(null);
+        switchCompat.setChecked(initValue);
             switchCompat.setOnCheckedChangeListener(listener);
             itemView.setOnClickListener(v -> switchCompat.setChecked(!switchCompat.isChecked()));
         }
@@ -333,11 +334,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_cookie, menu);
+        menu.add(0, 62001, 0, "API 102 框架状态");
+        menu.add(0, 62002, 1, "导入旧版设置");
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == 62001) {
+            AntifraudApplication app = AntifraudApplication.get();
+            AlertDialog dialog = new AlertDialog.Builder(this)
+                    .setTitle("API 102 框架状态")
+                    .setMessage(app.getFrameworkStatus())
+                    .setPositiveButton("重新同步配置", (d, which) -> app.publish())
+                    .setNegativeButton("关闭", null).create();
+            Runnable refresh = () -> dialog.setMessage(app.getFrameworkStatus());
+            app.addStatusListener(refresh);
+            dialog.setOnDismissListener(d -> app.removeStatusListener(refresh));
+            dialog.show();
+            app.publish();
+            return true;
+        }
+        if (item.getItemId() == 62002) {
+            startActivity(new Intent(this, LegacyConfigImportActivity.class));
+            return true;
+        }
         if (item.getItemId() == R.id.cookie) {
             accountList();
         }

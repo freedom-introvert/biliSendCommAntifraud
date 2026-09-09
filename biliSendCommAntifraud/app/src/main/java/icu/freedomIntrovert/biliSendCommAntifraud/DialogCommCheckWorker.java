@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.widget.Toast;
+import android.util.Log;
 
 import java.util.ArrayList;
 
@@ -38,6 +39,9 @@ public class DialogCommCheckWorker {
     }
 
     public void checkComment(Comment comment, boolean needWait, ArrayList<String> clientCookies, CheckCommentCallBack callback) {
+
+        Log.i("BiliAntifraud", "event=check_started rpid=" + comment.rpid
+                + " oid=" + comment.commentArea.oid + " type=" + comment.commentArea.type);
 
         ProgressBarDialog dialog = new ProgressBarDialog.Builder(context)
                 .setIndeterminate(true)
@@ -128,6 +132,8 @@ public class DialogCommCheckWorker {
             public void onResult(HistoryComment historyComment) {
                 dialog.dismiss();
                 callback.onResult(historyComment);
+                Log.i("BiliAntifraud", "event=check_finished rpid=" + historyComment.rpid
+                        + " state=" + historyComment.lastState);
                 switch (historyComment.lastState) {
                     case HistoryComment.STATE_NORMAL:
                         showCommentIsOkResult(historyComment, callback);
