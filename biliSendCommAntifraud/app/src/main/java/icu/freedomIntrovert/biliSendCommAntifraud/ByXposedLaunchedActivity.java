@@ -68,7 +68,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
 
     private void checkComment(long oid, int type, long rpid, long root, long parent, String sourceId,
                               String commentText, String pictures, long ctime, long uid, ArrayList<String> clientCookies) {
-        if (!config.getUseClientCookie()){
+        if (!config.getUseClientCookie()) {
             clientCookies = null;
         }
         CommentArea commentArea = new CommentArea(oid, sourceId != null ? sourceId : "null", type);

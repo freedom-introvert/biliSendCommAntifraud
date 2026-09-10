@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 import icu.freedomIntrovert.async.TaskManger;
+import icu.freedomIntrovert.biliSendCommAntifraud.BiliVideoId;
 import icu.freedomIntrovert.biliSendCommAntifraud.ByXposedLaunchedActivity;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.HookConfig;
 import icu.freedomIntrovert.biliSendCommAntifraud.xposed.Reflect;
@@ -80,90 +81,90 @@ public abstract class PostCommentHook extends BaseHook {
     }
 
     private void processResponse(Object call, Object response, Activity currentActivity, Context hostContext) throws Throwable {
-                Object arg = response;
-                if (arg == null) {
-                    return;
-                }
-                Object body = extractResponseBody(arg);
-                if (body == null) {
-                    return;
-                }
+        Object arg = response;
+        if (arg == null) {
+            return;
+        }
+        Object body = extractResponseBody(arg);
+        if (body == null) {
+            return;
+        }
 
-                String bodyCanonicalName = body.getClass().getCanonicalName();
-                if (!(bodyCanonicalName != null && bodyCanonicalName.equals("com.bilibili.okretro.GeneralResponse"))) {
-                    return;
+        String bodyCanonicalName = body.getClass().getCanonicalName();
+        if (!(bodyCanonicalName != null && bodyCanonicalName.equals("com.bilibili.okretro.GeneralResponse"))) {
+            return;
+        }
+        Object data = Reflect.getObjectField(body, "data");
+        if (data != null && "com.bilibili.app.comm.comment2.model.BiliCommentAddResult".equals(data.getClass().getCanonicalName())) {
+            Bundle extras = new Bundle();
+            Class<?> biliCommentAddResultClass = data.getClass();
+            Object reply = Reflect.getObjectField(data, "reply");
+            Object content = Reflect.getObjectField(reply, "mContent");
+            Integer type = (Integer) Reflect.getObjectField(reply, "mType");
+            Long oid = (Long) Reflect.getObjectField(reply, "mOid");
+            //判断是否是评论区要精选的，是的话就不要检查了
+            Integer action = ((Integer) biliCommentAddResultClass.getField("action").get(data));
+            if (skipNonZeroHostAction() && action != null && action != 0) {
+                XB.log("event=comment_skipped reason=host_action action=" + action);
+                return;
+            }
+            extras.putInt("action", ByXposedLaunchedActivity.ACTION_CHECK_COMMENT);
+            extras.putString("toast_message", (String) biliCommentAddResultClass.getField("message").get(data));
+            extras.putLong("oid", oid);
+            extras.putInt("type", type);
+            extras.putLong("rpid", Reflect.getLongField(data, "rpid"));
+            extras.putLong("root", Reflect.getLongField(data, "root"));
+            extras.putLong("parent", Reflect.getLongField(data, "parent"));
+            long rpid = extras.getLong("rpid");
+            if (rpid == 0 || !captured.firstSeen(CaptureDeduper.checkKey(rpid))) {
+                XB.log("event=comment_skipped rpid=" + rpid + " reason=no_rpid_or_duplicate");
+                return;
+            }
+            extras.putString("comment_text", (String) Reflect.getObjectField(content, "mMsg"));
+            extras.putString("source_id", tryGetSourceId(currentActivity, type, oid));
+            extras.putLong("uid", Reflect.getLongField(reply, "mMid"));
+            try {
+                Field picturesField = content.getClass().getField("pictures");
+                List<?> pictures = (List<?>) picturesField.get(content);
+                extras.putString("pictures", Utils.picturesObjToString(pictures));
+            } catch (NoSuchFieldException e) {
+                XB.log("当前哔哩哔哩版本不支持发送图片");
+            }
+            long ctime = Reflect.getLongField(reply, "mCtime");
+            extras.putLong("ctime", ctime);
+            if (HookConfig.useClientCookie()) {
+                ArrayList<String> cookies = new ArrayList<>();
+                Context cookieCtx = currentActivity != null ? currentActivity : hostContext;
+                for (String cookieDBFilePath : getCookieDBFilePaths()) {
+                    String cookie = cookieCtx == null ? null : getCookiesAsString(cookieCtx, cookieDBFilePath);
+                    if (cookie != null && cookie.contains("SESSDATA")) {
+                        cookies.add(cookie);
+                    }
                 }
-                Object data = Reflect.getObjectField(body, "data");
-                if (data != null && "com.bilibili.app.comm.comment2.model.BiliCommentAddResult".equals(data.getClass().getCanonicalName())) {
-                    Bundle extras = new Bundle();
-                    Class<?> biliCommentAddResultClass = data.getClass();
-                    Object reply = Reflect.getObjectField(data, "reply");
-                    Object content = Reflect.getObjectField(reply, "mContent");
-                    Integer type = (Integer) Reflect.getObjectField(reply, "mType");
-                    Long oid = (Long) Reflect.getObjectField(reply, "mOid");
-                    //判断是否是评论区要精选的，是的话就不要检查了
-                    Integer action = ((Integer)biliCommentAddResultClass.getField("action").get(data));
-                    if (skipNonZeroHostAction() && action != null && action != 0) {
-                        XB.log("event=comment_skipped reason=host_action action=" + action);
-                        return;
-                    }
-                    extras.putInt("action", ByXposedLaunchedActivity.ACTION_CHECK_COMMENT);
-                    extras.putString("toast_message", (String) biliCommentAddResultClass.getField("message").get(data));
-                    extras.putLong("oid", oid);
-                    extras.putInt("type", type);
-                    extras.putLong("rpid", Reflect.getLongField(data, "rpid"));
-                    extras.putLong("root", Reflect.getLongField(data, "root"));
-                    extras.putLong("parent", Reflect.getLongField(data, "parent"));
-                    long rpid = extras.getLong("rpid");
-                    if (rpid == 0 || !captured.firstSeen(CaptureDeduper.checkKey(rpid))) {
-                        XB.log("event=comment_skipped rpid=" + rpid + " reason=no_rpid_or_duplicate");
-                        return;
-                    }
-                    extras.putString("comment_text", (String) Reflect.getObjectField(content, "mMsg"));
-                    extras.putString("source_id", tryGetSourceId(currentActivity,type, oid));
-                    extras.putLong("uid", Reflect.getLongField(reply, "mMid"));
-                    try {
-                        Field picturesField = content.getClass().getField("pictures");
-                        List<?> pictures = (List<?>) picturesField.get(content);
-                        extras.putString("pictures", Utils.picturesObjToString(pictures));
-                    } catch (NoSuchFieldException e) {
-                        XB.log("当前哔哩哔哩版本不支持发送图片");
-                    }
-                    long ctime = Reflect.getLongField(reply, "mCtime");
-                    extras.putLong("ctime", ctime);
-                    if (HookConfig.useClientCookie()){
-                        ArrayList<String> cookies = new ArrayList<>();
-                        Context cookieCtx = currentActivity != null ? currentActivity : hostContext;
-                        for (String cookieDBFilePath : getCookieDBFilePaths()) {
-                            String cookie = cookieCtx == null ? null : getCookiesAsString(cookieCtx, cookieDBFilePath);
-                            if (cookie != null && cookie.contains("SESSDATA")) {
-                                cookies.add(cookie);
-                            }
-                        }
-                        extras.putStringArrayList("cookies", cookies);
-                    }
-                    //extras.putString("cookie",getCookiesAsString("/data/data/tv.danmaku.bili/app_webview_tv.danmaku.bili/Default/Cookies"));
-                    XB.log("event=comment_captured rpid=" + extras.getLong("rpid")
-                            + " oid=" + oid + " type=" + type + " host_action=" + action);
-                    Utils.startActivity(currentActivity != null ? currentActivity : hostContext, extras);
-                } else if (Reflect.getIntField(body, "code") == GeneralResponse.CODE_COMMENT_CONTAIN_SENSITIVE) {
-                    Map<String, String> requsetMap = extractFormFields(extractRequest(call));
-                    Bundle extras = new Bundle();
-                    extras.putInt("action", ByXposedLaunchedActivity.ACTION_SAVE_CONTAIN_SENSITIVE_CONTENT);
-                    long oid = Long.parseLong(Objects.requireNonNull(requsetMap.get("oid")));
-                    int type = Integer.parseInt(Objects.requireNonNull(requsetMap.get("type")));
-                    extras.putLong("oid", oid);
-                    extras.putInt("type", type);
-                    extras.putString("source_id", tryGetSourceId(currentActivity,type, oid));
-                    extras.putString("comment_text", requsetMap.get("message"));
-                    extras.putString("toast_message", (String) Reflect.getObjectField(body, "message"));
-                    if (!captured.firstSeen(CaptureDeduper.sensitiveKey(oid, type, requsetMap.get("message")))) {
-                        XB.log("event=comment_skipped kind=sensitive oid=" + oid + " type=" + type);
-                        return;
-                    }
-                    XB.log("event=comment_captured kind=sensitive oid=" + oid + " type=" + type);
-                    Utils.startActivity(currentActivity != null ? currentActivity : hostContext, extras);
-                }
+                extras.putStringArrayList("cookies", cookies);
+            }
+            //extras.putString("cookie",getCookiesAsString("/data/data/tv.danmaku.bili/app_webview_tv.danmaku.bili/Default/Cookies"));
+            XB.log("event=comment_captured rpid=" + extras.getLong("rpid")
+                    + " oid=" + oid + " type=" + type + " host_action=" + action);
+            Utils.startActivity(currentActivity != null ? currentActivity : hostContext, extras);
+        } else if (Reflect.getIntField(body, "code") == GeneralResponse.CODE_COMMENT_CONTAIN_SENSITIVE) {
+            Map<String, String> requsetMap = extractFormFields(extractRequest(call));
+            Bundle extras = new Bundle();
+            extras.putInt("action", ByXposedLaunchedActivity.ACTION_SAVE_CONTAIN_SENSITIVE_CONTENT);
+            long oid = Long.parseLong(Objects.requireNonNull(requsetMap.get("oid")));
+            int type = Integer.parseInt(Objects.requireNonNull(requsetMap.get("type")));
+            extras.putLong("oid", oid);
+            extras.putInt("type", type);
+            extras.putString("source_id", tryGetSourceId(currentActivity, type, oid));
+            extras.putString("comment_text", requsetMap.get("message"));
+            extras.putString("toast_message", (String) Reflect.getObjectField(body, "message"));
+            if (!captured.firstSeen(CaptureDeduper.sensitiveKey(oid, type, requsetMap.get("message")))) {
+                XB.log("event=comment_skipped kind=sensitive oid=" + oid + " type=" + type);
+                return;
+            }
+            XB.log("event=comment_captured kind=sensitive oid=" + oid + " type=" + type);
+            Utils.startActivity(currentActivity != null ? currentActivity : hostContext, extras);
+        }
     }
 
     protected abstract String getBiliCallClassName(ClassLoader classLoader);
@@ -194,28 +195,20 @@ public abstract class PostCommentHook extends BaseHook {
         return true;
     }
 
-    protected String tryGetSourceId(Activity activity,int type, long oid) {
-        switch (type) {
-            case CommentArea.AREA_TYPE_VIDEO:
-                String bvid = getBvidFromActivity(activity);
-                if (bvid == null){
-                    String data = (activity != null && activity.getIntent() != null) ? activity.getIntent().getDataString() : null;
-                    XB.log("event=source_id_fallback oid=" + oid + " activity=" + activity);
-                    return HostCallAdapter.videoSourceId(null, null, data, oid);
-                } else {
-                    return bvid;
-                }
-            case CommentArea.AREA_TYPE_ARTICLE:
-                return "cv" + oid;
-            case CommentArea.AREA_TYPE_DYNAMIC17:
-                return String.valueOf(oid);
-            case CommentArea.AREA_TYPE_DYNAMIC11:
+    protected String tryGetSourceId(Activity activity, int type, long oid) {
+        return switch (type) {
+            case CommentArea.AREA_TYPE_VIDEO -> BiliVideoId.av2bv(oid);
+            case CommentArea.AREA_TYPE_ARTICLE -> "cv" + oid;
+            case CommentArea.AREA_TYPE_DYNAMIC17 -> String.valueOf(oid);
+            case CommentArea.AREA_TYPE_DYNAMIC11 -> {
                 String dynId = getDynamic11ID(activity);
-                return dynId != null ? dynId : String.valueOf(oid);
-            default:
+                yield dynId != null ? dynId : String.valueOf(oid);
+            }
+            default -> {
                 XB.log("event=source_id_unknown_type type=" + type + " oid=" + oid);
-                return String.valueOf(oid);
-        }
+                yield String.valueOf(oid);
+            }
+        };
     }
 
     public static String getDynamic11ID(Activity activity) {
@@ -264,7 +257,7 @@ public abstract class PostCommentHook extends BaseHook {
                 id = extras.getString("inject_dynamic_id");
                 break;
         }
-        if (id == null){
+        if (id == null) {
             if (HostCallAdapter.isComposeOrVertexActivity(activityName)) {
                 XB.log("event=source_id_missing_vertex activity=" + activityName);
                 dumpIntent(activity);
@@ -279,42 +272,6 @@ public abstract class PostCommentHook extends BaseHook {
             XB.log("Activity：" + activityName);
         }
         return id;
-    }
-
-    @SuppressLint("DiscouragedApi")
-    public static String getBvidFromActivity(Activity activity){
-        if (activity == null) return null;
-        Intent intent = activity.getIntent();
-        if (intent != null) {
-            Bundle extras = intent.getExtras();
-            String fromExtras = HostCallAdapter.videoSourceId(
-                    extras != null ? extras.getString("bvid") : null,
-                    extras != null ? extras.getString("id") : null,
-                    intent.getDataString(),
-                    0L);
-            if (fromExtras != null && !fromExtras.startsWith("AV")) {
-                XB.log("从Intent获取到BV号：" + fromExtras);
-                return fromExtras;
-            }
-        }
-        int viewId = activity.getResources().getIdentifier("avid_title", "id", activity.getPackageName());
-        if (viewId == 0){
-            return null;
-        }
-        TextView descTextView = activity.findViewById(viewId);
-        if (descTextView == null){
-            return null;
-        }
-        CharSequence text = descTextView.getText();
-        if (text == null){
-            return null;
-        }
-        String avidTitle = text.toString();
-        if (avidTitle.startsWith("BV") || avidTitle.startsWith("AV") || avidTitle.startsWith("av")){
-            XB.log("从Activity里获取到BV号："+avidTitle);
-            return avidTitle;
-        }
-        return null;
     }
 
     public String getCookiesAsString(Activity currentActivity, String dbPath) {

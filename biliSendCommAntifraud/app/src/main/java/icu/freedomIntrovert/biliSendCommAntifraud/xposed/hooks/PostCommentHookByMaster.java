@@ -7,8 +7,6 @@ public class PostCommentHookByMaster extends PostCommentHook {
     public PostCommentHookByMaster() {
     }
 
-
-
     @Override
     protected String getBiliCallClassName(ClassLoader classLoader) {
         return "com.bilibili.okretro.call.BiliCall";

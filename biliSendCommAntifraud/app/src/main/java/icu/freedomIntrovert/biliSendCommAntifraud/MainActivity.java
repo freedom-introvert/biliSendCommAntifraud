@@ -291,10 +291,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
 
 
-
-
-
-
     }
     private void initConfigSwitch(boolean initValue, int itemViewRes, int switchRes,boolean needXposed, CompoundButton.OnCheckedChangeListener listener){
         View itemView = findViewById(itemViewRes);
@@ -787,7 +783,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public boolean isXposedEnabled() {
-        return false;
+        return true;
     }
 
     public void needXposedToast(){

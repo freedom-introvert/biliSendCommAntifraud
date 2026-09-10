@@ -49,4 +49,8 @@
 
     </style>
 
+    <style name="Theme.Toolbar" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="colorControlNormal">#ffffff</item>
+    </style>
+
 </resources>
