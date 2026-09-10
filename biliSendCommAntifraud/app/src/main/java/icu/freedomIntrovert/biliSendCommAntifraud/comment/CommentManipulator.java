@@ -552,7 +552,7 @@ public class CommentManipulator {
                         return updateHistoryComment(foundComment, HistoryComment.STATE_NORMAL, historyComment);
                     }
                 }
-            } else if (grN.code == GeneralResponse.CODE_COMMENT_DELETED) {
+            } else if (GeneralResponse.isCommentUnavailable(grN.code)) {
                 return updateHistoryComment(rootComment, HistoryComment.STATE_SHADOW_BAN, historyComment);
             } else {
                 throw new BiliBiliApiException(grN, "无账号获取评论回复页失败");
@@ -591,7 +591,7 @@ public class CommentManipulator {
                     return updateHistoryComment(null, HistoryComment.STATE_DELETED, historyComment);
                 }
             }
-        } else if (gr.code == GeneralResponse.CODE_COMMENT_DELETED) {//根评论挂了
+        } else if (GeneralResponse.isCommentUnavailable(gr.code)) {//根评论挂了
             throw new RootCommentDeadException(historyComment.root, gr);
         } else if (gr.code == GeneralResponse.CODE_COMMENT_AREA_CLOSED) {
             return null;

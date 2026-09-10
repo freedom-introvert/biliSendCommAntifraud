@@ -166,7 +166,7 @@ public class CommentCheckTask extends CommentOperateTask<CommentCheckTask.EventH
                         historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_UNDER_REVIEW);
                         return historyComment;
                     }
-                } else if (noACResp.code == GeneralResponse.CODE_COMMENT_DELETED) {
+                } else if (GeneralResponse.isCommentUnavailable(noACResp.code)) {
                     //评论shadowBan
                     historyComment.setFirstStateAndCurrentState(HistoryComment.STATE_SHADOW_BAN);
                     return historyComment;

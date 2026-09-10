@@ -7,4 +7,9 @@ public class GeneralResponse<T> extends BaseResponse {
     public static final int CODE_COMMENT_NOT_THIS = 12006;
     public static final int CODE_COMMENT_AREA_CLOSED = 12002;
     public T data;
+
+    /** Reply APIs use both codes when an anonymous caller cannot see a comment. */
+    public static boolean isCommentUnavailable(int code) {
+        return code == CODE_COMMENT_DELETED || code == CODE_COMMENT_NOT_THIS;
+    }
 }
