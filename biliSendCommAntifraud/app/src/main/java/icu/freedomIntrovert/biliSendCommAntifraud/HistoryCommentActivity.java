@@ -1,6 +1,7 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.app.ProgressDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -255,7 +256,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
         } else if (itemId == R.id.item_sort) {
             //这要求sortRuler数字与选项位置一致
             AtomicInteger sortRuler = new AtomicInteger(config.getSortRuler());
-            new AlertDialog.Builder(context)
+            new AppAlertDialog.Builder(context)
                     .setTitle("排序")
                     .setIcon(R.drawable.baseline_sort_24)
                     .setSingleChoiceItems(new String[]{"发送日期(新-旧)", "发送日期(旧-新)", "点赞数降序", "评论数降序"}, sortRuler.get(), (dialog, which) -> {
@@ -280,7 +281,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
             AtomicBoolean enableType12 = new AtomicBoolean(config.getFilterRulerEnableType12());
             AtomicBoolean enableType11 = new AtomicBoolean(config.getFilterRulerEnableType11());
             AtomicBoolean enableType17 = new AtomicBoolean(config.getFilterRulerEnableType17());
-            new AlertDialog.Builder(context)
+            new AppAlertDialog.Builder(context)
                     .setTitle("过滤")
                     .setIcon(R.drawable.baseline_filter_alt_24)
                     .setMultiChoiceItems(
@@ -349,7 +350,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
             editInterval.setText(String.valueOf(config.getBatchCheckInterval()));
             Spinner spinner = dialogView.findViewById(R.id.spinner_before_by);
             spinner.setSelection(0);
-            AlertDialog dialog = new AlertDialog.Builder(this)
+            AlertDialog dialog = new AppAlertDialog.Builder(this)
                     .setTitle("批量复查")
                     .setView(dialogView)
                     .setMessage("请注意：设置的过滤与排序不会在此起作用")
@@ -390,7 +391,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
                     "\n按初始状态\n"+generateStat(statisticsDBOpenHelper.countingFirstStatus());
 
 
-            new AlertDialog.Builder(context)
+            new AppAlertDialog.Builder(context)
                     .setTitle("统计")
                     .setPositiveButton("关闭",null)
                     .setNegativeButton("复制", (dialog, which) -> {
@@ -436,7 +437,7 @@ public class HistoryCommentActivity extends AppCompatActivity {
         BatchCheckAdapter adapter = new BatchCheckAdapter(context);
         recyclerView.setAdapter(adapter);
 
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog dialog = new AppAlertDialog.Builder(context)
                 .setTitle(String.format("检查中[%s/%s]……", 0, pendingCheckComments.size()))
                 .setView(dialogView)
                 .setCancelable(false)

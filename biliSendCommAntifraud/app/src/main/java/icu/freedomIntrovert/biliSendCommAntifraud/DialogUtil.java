@@ -1,6 +1,7 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -16,7 +17,7 @@ public class DialogUtil {
     }
 
     public static Dialog dialogMessage(Context context, String title, String message, DialogInterface.OnDismissListener onClose) {
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(context)
+        AlertDialog.Builder dialogBuilder = new AppAlertDialog.Builder(context)
                 .setMessage(message);
         dialogBuilder.setPositiveButton("关闭", null);
         if (onClose != null){

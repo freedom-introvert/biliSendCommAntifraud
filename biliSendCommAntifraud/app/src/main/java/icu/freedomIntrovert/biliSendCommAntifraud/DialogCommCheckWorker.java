@@ -6,10 +6,6 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.view.Gravity;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.Toast;
 import android.util.Log;
 
@@ -23,6 +19,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.CommentArea;
 import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.HistoryComment;
 import icu.freedomIntrovert.biliSendCommAntifraud.db.StatisticsDBOpenHelper;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import icu.freedomIntrovert.biliSendCommAntifraud.view.ProgressBarDialog;
 import icu.freedomIntrovert.biliSendCommAntifraud.workerdialog.AppealCommentDialog;
 import icu.freedomIntrovert.biliSendCommAntifraud.workerdialog.CheckCommentAreaDialog;
@@ -54,17 +51,6 @@ public class DialogCommCheckWorker {
                 .setCancelable(false)
                 .setPositiveButton("后台等待", null)
                 .show();
-
-        // 横屏（pad）模式下，将“等待检查/正在检查评论”窗口整体上移：顶边对齐屏幕顶部，高度保持内容自适应
-        if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            Window window = dialog.alertDialog.getWindow();
-            if (window != null) {
-                WindowManager.LayoutParams attributes = window.getAttributes();
-                attributes.height = WindowManager.LayoutParams.WRAP_CONTENT;
-                attributes.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-                window.setAttributes(attributes);
-            }
-        }
 
         dialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
 
@@ -197,7 +183,7 @@ public class DialogCommCheckWorker {
     }
 
     private void showCommentIsOkResult(HistoryComment comment, DialogInterface.OnDismissListener listener) {
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog dialog = new AppAlertDialog.Builder(context)
                 .setTitle("检查结果")
                 .setMessage("你的评论：“" + comment.comment + "”正常显示！")
                 .setCancelable(false)
@@ -213,7 +199,7 @@ public class DialogCommCheckWorker {
         CommentArea commentArea = comment.commentArea;
         long rpid = comment.rpid;
         String commentText = comment.comment;
-        AlertDialog.Builder resultDialogBuilder = new AlertDialog.Builder(context).setTitle("检查结果");
+        AlertDialog.Builder resultDialogBuilder = new AppAlertDialog.Builder(context).setTitle("检查结果");
         switch (bannedType) {
             case BANNED_TYPE_SHADOW_BAN:
                 resultDialogBuilder.setIcon(R.drawable.hide_black);
@@ -260,7 +246,7 @@ public class DialogCommCheckWorker {
         //更多评论选项
         resultDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
             String[] strings = {"扫描敏感词", "申诉", "删除发布的评论", "复制rpid、oid、type", "监控评论"};
-            new AlertDialog.Builder(context).setTitle("更多选项").setItems(strings, new DialogInterface.OnClickListener() {
+            new AppAlertDialog.Builder(context).setTitle("更多选项").setItems(strings, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     switch (which) {
@@ -322,7 +308,7 @@ public class DialogCommCheckWorker {
     }
 
     public void dialogMessage(String title, String message, DialogInterface.OnDismissListener listener) {
-        new AlertDialog.Builder(context)
+        new AppAlertDialog.Builder(context)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(android.R.string.ok, null)

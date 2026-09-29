@@ -2,6 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.graphics.Paint;
@@ -207,7 +208,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
             View view = View.inflate(context, R.layout.edit_text, null);
             EditText editText = view.findViewById(R.id.edit_text);
             editText.setText(historyComment.comment);
-            new AlertDialog.Builder(context)
+            new AppAlertDialog.Builder(context)
                     .setTitle("编辑重发")
                     .setView(view)
                     .setNegativeButton("取消", new VoidDialogInterfaceOnClickListener())
@@ -292,7 +293,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
             PicturesAdapter picturesAdapter = new PicturesAdapter(context, pictureInfoList, linearLayoutManager);
             rv_images.setAdapter(picturesAdapter);
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(context)
+        AlertDialog.Builder builder = new AppAlertDialog.Builder(context)
                 .setView(dialogView)
                 .setPositiveButton("关闭", new VoidDialogInterfaceOnClickListener());
         //特殊的敏感评论，仅记录并未发送成功，无真正的rpid，所以无更新状态
@@ -336,7 +337,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
         // 在子菜单中添加选项
         popupMenu.getMenu().add("删除记录").setOnMenuItemClickListener(item -> {
             dialog.dismiss();
-            new AlertDialog.Builder(context).setMessage("确认删除吗？")
+            new AppAlertDialog.Builder(context).setMessage("确认删除吗？")
                     .setNegativeButton("手滑了", new VoidDialogInterfaceOnClickListener())
                     .setPositiveButton("确认", (dialog14, which2) -> {
                         if (statisticsDBOpenHelper.deleteHistoryComment(historyComment.rpid) != 0) {
@@ -396,7 +397,7 @@ public class HistoryCommentAdapter extends RecyclerView.Adapter<HistoryCommentAd
 
         if (!historyComment.lastState.equals(HistoryComment.STATE_SENSITIVE)) {
             popupMenu.getMenu().add("删除B站上的评论").setOnMenuItemClickListener(item -> {
-                new AlertDialog.Builder(context)
+                new AppAlertDialog.Builder(context)
                         .setTitle("确认删除吗？")
                         .setMessage("这会删除你在B站上的评论，但不会删除你在本反诈上的历史记录")
                         .setNegativeButton("手滑了",null)

@@ -55,12 +55,12 @@ public class ProgressBarDialog implements DialogInterface {
 
     public static class Builder {
 
-        private final AlertDialog.Builder dialogBuilder;
+        private final AppAlertDialog.Builder dialogBuilder;
         private final ProgressBar progressBar;
 
 
         public Builder(Context context) {
-            dialogBuilder = new AlertDialog.Builder(context);
+            dialogBuilder = new AppAlertDialog.Builder(context);
             View view = View.inflate(context, R.layout.dialog_wait_progress,null);
             progressBar = view.findViewById(R.id.wait_progress_bar);
             dialogBuilder.setView(view);

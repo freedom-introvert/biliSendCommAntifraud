@@ -2,6 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud.workerdialog;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -18,7 +19,7 @@ import icu.freedomIntrovert.biliSendCommAntifraud.comment.bean.Comment;
 public class AppealCommentDialog {
 
     public static void show(Context context, Comment comment, ResultCallback callback) {
-        new AlertDialog.Builder(context)
+        new AppAlertDialog.Builder(context)
                 .setTitle("警告")
                 .setMessage("申诉前请不要在此评论区进行敏感词扫描、戒严检测等重复发送再删除评论的操作，会污染评论区影响申诉（比如恢复了测试评论）！\n" +
                         "申诉依赖于:https://www.bilibili.com/h5/comment/appeal")
@@ -42,7 +43,7 @@ public class AppealCommentDialog {
         //评论区地址不能更改
         edt_appeal_area_location.setEnabled(false);
         edt_reason.setText("评论内容:" + comment.omitCommentText(93));
-        AlertDialog editAppealInfoDialog = new AlertDialog.Builder(context)
+        AlertDialog editAppealInfoDialog = new AppAlertDialog.Builder(context)
                 .setTitle("填写申诉信息")
                 .setView(dialogView)
                 .setNegativeButton("取消", new VoidDialogInterfaceOnClickListener())

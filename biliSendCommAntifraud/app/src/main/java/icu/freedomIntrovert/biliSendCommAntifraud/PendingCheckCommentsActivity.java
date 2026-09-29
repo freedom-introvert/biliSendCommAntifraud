@@ -2,6 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
@@ -50,7 +51,7 @@ public class PendingCheckCommentsActivity extends AppCompatActivity {
 
     @SuppressLint("NotifyDataSetChanged")
     private void showDeleteAllComment() {
-        new AlertDialog.Builder(this)
+        new AppAlertDialog.Builder(this)
                 .setTitle("确认删除吗？")
                 .setMessage("这会删除所有待检查评论")
                 .setNegativeButton(R.string.cancel, null)

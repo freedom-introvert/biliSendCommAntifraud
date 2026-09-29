@@ -4,6 +4,7 @@ import static android.view.KeyEvent.KEYCODE_BACK;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -54,7 +55,7 @@ public class WebViewLoginActivity extends AppCompatActivity {
                     Log.i("Cookies", "Url = " + url);
                     Log.i("Cookies", "Cookies = " + cookieStr);
                     if (cookieStr.contains("bili_jct=")){
-                        new AlertDialog.Builder(context).setTitle("获取到cookie!")
+                        new AppAlertDialog.Builder(context).setTitle("获取到cookie!")
                                 .setMessage(cookieStr)
                                 .setPositiveButton("选择此cookie", new DialogInterface.OnClickListener() {
                                     @Override

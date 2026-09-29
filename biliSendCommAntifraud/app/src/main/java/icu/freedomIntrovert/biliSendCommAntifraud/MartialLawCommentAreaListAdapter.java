@@ -2,6 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -113,12 +114,12 @@ public class MartialLawCommentAreaListAdapter extends RecyclerView.Adapter<Marti
             txv_source_id.setText(area.sourceId);
             txv_band_type.setText(finalDefaultDisposalMethod);
             txv_area_type.setText(finalAreaType);
-            new AlertDialog.Builder(context)
+            new AppAlertDialog.Builder(context)
                     .setTitle("详情")
                     .setView(dialogView)
                     .setPositiveButton("关闭", new VoidDialogInterfaceOnClickListener())
                     .setNeutralButton("删除", (dialog12, which) -> {
-                        new AlertDialog.Builder(context).setMessage("确认删除吗？")
+                        new AppAlertDialog.Builder(context).setMessage("确认删除吗？")
                                 .setNegativeButton("手滑了", new VoidDialogInterfaceOnClickListener())
                                 .setPositiveButton("确认", (dialog14, which2) -> {
                                     if (statisticsDBOpenHelper.deleteMartialLawCommentArea(area.oid) != 0) {

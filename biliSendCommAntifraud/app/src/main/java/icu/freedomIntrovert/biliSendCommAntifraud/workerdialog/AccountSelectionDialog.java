@@ -1,6 +1,7 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.workerdialog;
 
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.view.View;
 
@@ -23,7 +24,7 @@ public class AccountSelectionDialog {
         AccountAdapter accountAdapter = disableUid == null ?
                 new AccountAdapter(context) : new AccountAdapter(context,disableUid);
         recyclerView.setAdapter(accountAdapter);
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog dialog = new AppAlertDialog.Builder(context)
                 .setView(dialogView)
                 .setTitle(title == null ? "选择账号" : title)
                 .setPositiveButton(R.string.cancel, null)

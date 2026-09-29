@@ -2,6 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud.workerdialog;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.text.Spannable;
@@ -39,7 +40,7 @@ public class ScanSensitiveWordDialog {
             return;
         }
         AtomicInteger selected = new AtomicInteger(0);
-        new AlertDialog.Builder(context)
+        new AppAlertDialog.Builder(context)
                 .setTitle("请选择进行敏感扫描的评论区")
                 .setSingleChoiceItems(new String[]{"自己的评论区",
                                 "使用小号转发动态生成新评论区（用完删除转发）",
@@ -107,7 +108,7 @@ public class ScanSensitiveWordDialog {
             pb_wait = dialogView.findViewById(R.id.prog_wait);
             txv_scanning_status = dialogView.findViewById(R.id.txv_scanning_status);
             txv_scanning_progress = dialogView.findViewById(R.id.txv_scanning_progress);
-            this.dialog = new AlertDialog.Builder(context)
+            this.dialog = new AppAlertDialog.Builder(context)
                     .setTitle("正在扫描敏感词……")
                     .setView(dialogView)
                     .setCancelable(false)
