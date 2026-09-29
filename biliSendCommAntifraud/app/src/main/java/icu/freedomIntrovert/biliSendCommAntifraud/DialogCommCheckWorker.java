@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.view.Gravity;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
@@ -54,12 +55,13 @@ public class DialogCommCheckWorker {
                 .setPositiveButton("后台等待", null)
                 .show();
 
-        // 横屏（pad）模式下，将“等待检查/正在检查评论”窗口高度设为最大
+        // 横屏（pad）模式下，将“等待检查/正在检查评论”窗口整体上移：顶边对齐屏幕顶部，高度保持内容自适应
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             Window window = dialog.alertDialog.getWindow();
             if (window != null) {
                 WindowManager.LayoutParams attributes = window.getAttributes();
-                attributes.height = WindowManager.LayoutParams.MATCH_PARENT;
+                attributes.height = WindowManager.LayoutParams.WRAP_CONTENT;
+                attributes.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
                 window.setAttributes(attributes);
             }
         }
