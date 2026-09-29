@@ -1,6 +1,7 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -131,7 +132,7 @@ public class ByXposedLaunchedActivity extends AppCompatActivity {
     }
 
     private void dialogMessageAndExit(String title, String message) {
-        new AlertDialog.Builder(context)
+        new AppAlertDialog.Builder(context)
                 .setTitle(title)
                 .setMessage(message)
                 .setNegativeButton("关闭", (dialog, which) -> finish())

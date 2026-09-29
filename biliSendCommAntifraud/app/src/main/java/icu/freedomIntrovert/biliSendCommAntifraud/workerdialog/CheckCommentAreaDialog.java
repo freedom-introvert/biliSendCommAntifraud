@@ -1,6 +1,7 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.workerdialog;
 
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,7 +38,7 @@ public class CheckCommentAreaDialog {
                 accountDescriptions[i] = accounts[i].toString();
             }
         }
-        new AlertDialog.Builder(context)
+        new AppAlertDialog.Builder(context)
                 .setTitle("请选择检查评论区的账号")
                 .setSingleChoiceItems(accountDescriptions, selected.get(),
                         (dialog, which) -> selected.set(which))
@@ -75,7 +76,7 @@ public class CheckCommentAreaDialog {
             @Override
             public void onAreaOk() {
                 dialog.dismiss();
-                new AlertDialog.Builder(context)
+                new AppAlertDialog.Builder(context)
                         .setTitle("评论区检查结果")
                         .setMessage("评论区没有戒严，是否继续检查该评论是否仅在此评论区被ban？")
                         .setPositiveButton("检查", (dialog1, which) -> {
@@ -100,7 +101,7 @@ public class CheckCommentAreaDialog {
     }
 
     private void checkBannedOnlyInThisArea(Comment comment, Account account){
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog dialog = new AppAlertDialog.Builder(context)
                 .setTitle("检测评论是否仅在该评论区被ban")
                 .setMessage("等待检查中……")
                 .setCancelable(false)
@@ -140,7 +141,7 @@ public class CheckCommentAreaDialog {
 
             private void showResult(String message) {
                 dialog.dismiss();
-                new AlertDialog.Builder(context)
+                new AppAlertDialog.Builder(context)
                         .setTitle("检查结果")
                         .setMessage(message)
                         .setPositiveButton(R.string.ok, null)

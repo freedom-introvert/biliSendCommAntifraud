@@ -1,6 +1,7 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.workerdialog;
 
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.view.View;
@@ -28,7 +29,7 @@ public class SetForwardDynamicDialog {
         View dialogView = View.inflate(context, R.layout.edit_text, null);
         EditText editText = dialogView.findViewById(R.id.edit_text);
         editText.setText(forwardDynamic != null ? forwardDynamic.forwardDynamicUrl : "");
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog dialog = new AppAlertDialog.Builder(context)
                 .setTitle("被转发动态")
                 .setMessage("填动态链接，建议填抽奖动态，用于扫描敏感词时选择非主号转发来创建新评论区")
                 .setView(dialogView)

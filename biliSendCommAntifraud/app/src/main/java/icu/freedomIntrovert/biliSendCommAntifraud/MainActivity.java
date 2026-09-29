@@ -2,6 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -215,7 +216,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
         ll_export_logs.setOnLongClickListener(v -> {
             File logsFolder = new File(getFilesDir(), "logs");
-            AlertDialog dialog = new AlertDialog.Builder(context)
+            AlertDialog dialog = new AppAlertDialog.Builder(context)
                     .setMessage(String.format(Locale.getDefault(), "确认删除全部日志吗？(占用空间%.2fMB)\n日志保留100条，100条之前的会自动删除，您可以不用手动清理",
                             (double) calculateFolderSize(logsFolder) / (1024 * 1024)))
                     .setNegativeButton("取消", new VoidDialogInterfaceOnClickListener())
@@ -339,7 +340,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == 62001) {
             AntifraudApplication app = AntifraudApplication.get();
-            AlertDialog dialog = new AlertDialog.Builder(this)
+            AlertDialog dialog = new AppAlertDialog.Builder(this)
                     .setTitle("API 102 框架状态")
                     .setMessage(app.getFrameworkStatus())
                     .setPositiveButton("重新同步配置", (d, which) -> app.publish())
@@ -377,7 +378,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             currentEditText = editCookie;
             EditText editCommentAreaLocation = editAccountView.findViewById(R.id.edit_comment_area_location);
             editCommentAreaLocation.setText(account.accountCommentArea == null ? "" : account.accountCommentArea.commentAreaLocation);
-            AlertDialog editDialog = new AlertDialog.Builder(context)
+            AlertDialog editDialog = new AppAlertDialog.Builder(context)
                     .setTitle("编辑账号▪" + account.uname)
                     .setView(editAccountView)
                     .setPositiveButton("更新", null)
@@ -433,7 +434,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
         accountAdapter.setItemLongClickListener(account -> {
-            new AlertDialog.Builder(context)
+            new AppAlertDialog.Builder(context)
                     .setTitle("确认删除")
                     .setMessage(String.format("确认删除用户：%s(%s) 吗？", account.uname, account.uid))
                     .setPositiveButton(R.string.ok, (dialog, which) -> {
@@ -444,7 +445,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         });
 
-        AlertDialog listDialog = new AlertDialog.Builder(context)
+        AlertDialog listDialog = new AppAlertDialog.Builder(context)
                 .setTitle("账号列表")
                 .setView(dialogView)
                 .setNegativeButton("添加", null)
@@ -456,7 +457,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             EditText editText = inputView.findViewById(R.id.edit_text);
             editText.setHint("输入cookie");
             currentEditText = editText;
-            AlertDialog addDialog = new AlertDialog.Builder(context)
+            AlertDialog addDialog = new AppAlertDialog.Builder(context)
                     .setTitle("添加账号")
                     .setView(inputView)
                     .setOnDismissListener(dialog -> currentEditText = null)
@@ -680,7 +681,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void cleanInput() {
-        new AlertDialog.Builder(context)
+        new AppAlertDialog.Builder(context)
                 .setTitle("确认清空输入内容？")
                 .setPositiveButton("确定", (dialog, which) -> {
                     edt_bvid.setText("");
@@ -697,7 +698,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         editTextWTByCommentSent.setText(String.valueOf(config.getWaitTime()));
         editTextWTByHasPictures.setText(String.valueOf(config.getWaitTimeByHasPictures()));
         editTextWTByDanmakuSent.setText(String.valueOf(config.getWaitTimeByDanmakuSend()));
-        new AlertDialog.Builder(context).setTitle("设置发评后等待时间（毫秒/ms）")
+        new AppAlertDialog.Builder(context).setTitle("设置发评后等待时间（毫秒/ms）")
                 .setView(dialogView)
                 .setPositiveButton("设置", (dialog, which) -> {
                     long waitTime = Long.parseLong(editTextWTByCommentSent.getText().toString());
@@ -720,7 +721,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         EditText root = dialogView.findViewById(R.id.edit_root);
         EditText sourceId = dialogView.findViewById(R.id.edit_source_id);
 
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog dialog = new AppAlertDialog.Builder(context)
                 .setTitle("定位评论")
                 .setView(dialogView)
                 .setPositiveButton(R.string.ok, null)  // 先传 null，稍后在 onClickListener 手动处理

@@ -1,6 +1,7 @@
 package icu.freedomIntrovert.biliSendCommAntifraud.workerdialog;
 
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.text.TextUtils;
@@ -29,7 +30,7 @@ public class SetRandomCommentsDialog {
         EditText editText = edtView.findViewById(R.id.edit_text);
         editText.setHint("用换行符分割，一行一个，越多越好");
         editText.setText(randomComments.getSourceRandomComments());
-        AlertDialog setRandomDialog = new AlertDialog.Builder(context)
+        AlertDialog setRandomDialog = new AppAlertDialog.Builder(context)
                 .setTitle("随机测试评论池（测试评论区是否戒严等功能所使用）")
                 .setView(edtView).setPositiveButton("设置", null)
                 .setNeutralButton("随机生成", null)
@@ -53,7 +54,7 @@ public class SetRandomCommentsDialog {
 
             Spinner spinner = dialogView.findViewById(R.id.account_spinner);
             spinner.setAdapter(new ArrayAdapter<>(context,android.R.layout.simple_spinner_dropdown_item, AccountManger.getInstance(context).getAccounts()));
-            AlertDialog dialog= new AlertDialog.Builder(context)
+            AlertDialog dialog= new AppAlertDialog.Builder(context)
                     .setTitle("随机生成评论")
                     .setView(dialogView)
                     .setPositiveButton("开始生成", null)

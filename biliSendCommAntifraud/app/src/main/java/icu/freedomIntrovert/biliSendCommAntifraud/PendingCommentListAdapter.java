@@ -2,6 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.view.LayoutInflater;
@@ -45,7 +46,7 @@ public class PendingCommentListAdapter extends RecyclerView.Adapter<PendingComme
         holder.txv_info.setText(comment.commentArea.sourceId);
         holder.txv_date.setText(comment.getFormatDateFor_yMdHms());
         holder.itemView.setOnClickListener(view -> {
-            new AlertDialog.Builder(context)
+            new AppAlertDialog.Builder(context)
                     .setTitle("确认检查此评论")
                     .setMessage(comment.comment)
                     .setPositiveButton(android.R.string.ok, (dialogInterface, i) -> {

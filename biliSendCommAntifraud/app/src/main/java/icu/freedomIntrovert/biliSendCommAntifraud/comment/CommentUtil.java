@@ -2,6 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud.comment;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -50,7 +51,7 @@ public class CommentUtil {
             return;
         }
         if (!config.getRecordeHistory()){
-            new AlertDialog.Builder(context)
+            new AppAlertDialog.Builder(context)
                     .setTitle("需要开启历史评论记录")
                     .setMessage("点击确定开启历史评论记录，并开始监控评论")
                     .setNegativeButton(R.string.cancel,null)
@@ -70,7 +71,7 @@ public class CommentUtil {
         EditText editText = dialogView.findViewById(R.id.edit_text);
         editText.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
         editText.setText("30");
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog dialog = new AppAlertDialog.Builder(context)
                 .setTitle("监控超时限制（分钟）")
                 .setMessage("如遇卡住不动的情况，请设置“耗电管理”“允许应用后台行为”等相关选项")
                 .setView(dialogView)

@@ -2,6 +2,7 @@ package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -51,7 +52,7 @@ public final class LegacyConfigImportActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        if (state == null) new AlertDialog.Builder(this)
+        if (state == null) new AppAlertDialog.Builder(this)
                 .setTitle("导入旧版设置")
                 .setMessage("选择从旧版或文件管理器导出的 config.xml。仅恢复已知设置，不导入账号数据库或历史评论；同名设置会覆盖。旧框架私有目录中的设置不会自动迁出。")
                 .setPositiveButton("选择文件", (d, w) -> startActivityForResult(
@@ -71,7 +72,7 @@ public final class LegacyConfigImportActivity extends Activity {
                 Map<String, Object> values = parse(uri);
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed()) return;
-                    new AlertDialog.Builder(this).setTitle("确认恢复设置")
+                    new AppAlertDialog.Builder(this).setTitle("确认恢复设置")
                             .setMessage("已读取 " + values.size() + " 个已知设置。恢复前会在应用私有目录保留本次覆盖前的设置副本。")
                             .setPositiveButton("恢复", (d, w) -> worker.execute(() -> restore(values)))
                             .setNegativeButton("取消", (d, w) -> finish())
@@ -157,7 +158,7 @@ public final class LegacyConfigImportActivity extends Activity {
     private void message(String text) {
         runOnUiThread(() -> {
             if (isFinishing() || isDestroyed()) return;
-            new AlertDialog.Builder(this).setMessage(text).setPositiveButton("关闭", (d, w) -> finish())
+            new AppAlertDialog.Builder(this).setMessage(text).setPositiveButton("关闭", (d, w) -> finish())
                     .setOnCancelListener(d -> finish()).show();
         });
     }

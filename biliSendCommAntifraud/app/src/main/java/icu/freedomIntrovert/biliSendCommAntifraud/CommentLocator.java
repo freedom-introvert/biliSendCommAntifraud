@@ -1,6 +1,7 @@
 package icu.freedomIntrovert.biliSendCommAntifraud;
 
 import android.app.AlertDialog;
+import icu.freedomIntrovert.biliSendCommAntifraud.view.AppAlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -17,7 +18,7 @@ public class CommentLocator {
     public static void lunch(Context context, int areaType, long oid, long rpid, long root, String sourceId) {
         AtomicInteger selected = new AtomicInteger(0);
         Config config = Config.getInstance(context);
-        new AlertDialog.Builder(context)
+        new AppAlertDialog.Builder(context)
                 .setTitle("选择打开方式")
                 .setSingleChoiceItems(new String[]{"URL Scheme", "国内版（需要挂载XP/LSP）", "国际版（需要挂载XP/LSP）"},
                         config.getLastCommentLocatorMode(), (dialog, which) -> selected.set(which))
